@@ -8,7 +8,7 @@ import {
   Check,
   ClipboardList,
   Loader2,
-  Splitscreen,
+  Split,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 
@@ -167,7 +167,7 @@ export function TaskList({ tasks, onUpdateTask, onToggleTask }: TaskListProps) {
                     onClick={() => handleBreakdown(task)}
                     disabled={isBreakingDown}
                   >
-                    <Splitscreen className="h-4 w-4" />
+                    <Split className="h-4 w-4" />
                     <span className="sr-only">Break down task</span>
                   </Button>
                 )}

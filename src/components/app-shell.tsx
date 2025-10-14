@@ -47,7 +47,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 Zenith Planner
               </h1>
               <p className="text-xs text-muted-foreground">
-                Your AI study partner.
+                Become Master with us
               </p>
             </div>
           </div>
@@ -56,7 +56,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <SidebarMenu>
             {navItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <Link href={item.href} legacyBehavior passHref>
+                <Link href={item.href} className="w-full">
                   <SidebarMenuButton
                     isActive={isActive(item.href)}
                     className="w-full"

@@ -13,6 +13,10 @@ import {
   type SuggestOptimalStudyTimesInput,
   type SuggestOptimalStudyTimesOutput,
 } from '@/ai/flows/suggest-optimal-study-times';
+import {
+  analyzeHydration,
+  type AnalyzeHydrationOutput,
+} from '@/ai/flows/analyze-hydration';
 
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string };
 
@@ -49,5 +53,17 @@ export const suggestTimesAction = async (
   } catch (error) {
     console.error(error);
     return { success: false, error: 'Failed to suggest times. The AI system may be offline.' };
+  }
+};
+
+export const analyzeHydrationAction = async (
+  glassCount: number
+): Promise<ActionResult<AnalyzeHydrationOutput>> => {
+  try {
+    const result = await analyzeHydration({ glassCount });
+    return { success: true, data: result };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: 'Failed to analyze hydration. The AI system may be offline.' };
   }
 };

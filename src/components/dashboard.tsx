@@ -33,11 +33,9 @@ export function Dashboard() {
     }
   };
 
-  const handleAddTask = (taskData: Omit<Task, 'id' | 'completed' | 'deadline'>) => {
-    if (selectedDateForTask) {
-      addTask({ ...taskData, deadline: selectedDateForTask });
-      setIsAddOpen(false);
-    }
+  const handleAddTask = (taskData: Omit<Task, 'id' | 'completed'>) => {
+    addTask(taskData);
+    setIsAddOpen(false);
   };
 
   return (

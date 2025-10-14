@@ -36,7 +36,7 @@ const formSchema = z.object({
 });
 
 type TaskFormProps = {
-  onAddTask: (taskData: Omit<Task, 'id' | 'completed' | 'deadline'>) => void;
+  onAddTask: (taskData: Omit<Task, 'id' | 'completed'>) => void;
   selectedDate?: Date;
 };
 

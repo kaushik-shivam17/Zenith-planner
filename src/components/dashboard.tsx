@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, PlusCircle } from 'lucide-react';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import type { Task } from '@/lib/types';
 import { Clock } from '@/components/clock';
 import { Calendar } from '@/components/ui/calendar';
@@ -87,7 +87,7 @@ export function Dashboard() {
       </div>
 
       <Dialog open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-        <DialogContent className="sm:max-w-auto p-0">
+        <DialogContent className="sm:max-w-auto p-0 w-min">
            <Calendar
               mode="single"
               selected={selectedDateForTask}

@@ -104,18 +104,17 @@ export function FitnessMentor() {
             </Button>
             {advice && (
               <div className="p-4 rounded-md bg-secondary/50 w-full space-y-2 border">
-                <p className="text-sm text-primary flex items-start gap-2">
+                <div className="text-sm text-primary flex items-start gap-2">
                   <Sparkles className="h-4 w-4 text-accent flex-shrink-0 mt-1" />
                   <div>
                     <strong className="text-accent">AI Fitness Mentor:</strong>
                     <div
-                        className="prose prose-sm prose-invert max-w-none mt-1"
-                        dangerouslySetInnerHTML={{
-                          __html: advice.replace(/\n/g, '<br />'),
-                        }}
-                      />
+                        className="prose prose-sm prose-invert max-w-none mt-1 whitespace-pre-wrap"
+                      >
+                      {advice}
+                    </div>
                   </div>
-                </p>
+                </div>
               </div>
             )}
           </CardFooter>

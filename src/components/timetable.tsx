@@ -145,7 +145,7 @@ export function Timetable() {
                         <FormLabel>Day</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl><SelectTrigger><SelectValue placeholder="Select day" /></SelectTrigger></FormControl>
-                          <SelectContent><SelectContent>{days.map(day => <SelectItem key={day} value={day}>{day}</SelectItem>)}</SelectContent></SelectContent>
+                          <SelectContent>{days.map(day => <SelectItem key={day} value={day}>{day}</SelectItem>)}</SelectContent>
                         </Select>
                       </FormItem>
                     )}
@@ -170,7 +170,7 @@ export function Timetable() {
                       <FormItem>
                         <FormLabel>End Time</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select time" /></Selectrigger></FormControl>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger></FormControl>
                           <SelectContent>{timeSlots.map(time => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
                         </Select>
                       </FormItem>

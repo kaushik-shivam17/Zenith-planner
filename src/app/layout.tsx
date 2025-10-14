@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AppShell } from '@/components/app-shell';
+import { TasksProvider } from '@/hooks/use-tasks';
 
 export const metadata: Metadata = {
   title: 'Zenith Planner',
@@ -24,7 +25,9 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <AppShell>{children}</AppShell>
+        <TasksProvider>
+          <AppShell>{children}</AppShell>
+        </TasksProvider>
         <Toaster />
       </body>
     </html>

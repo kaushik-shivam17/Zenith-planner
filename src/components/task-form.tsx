@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import type { Task } from '@/lib/types';
+import { useEffect } from 'react';
 
 const formSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters.'),
@@ -35,21 +36,29 @@ const formSchema = z.object({
 });
 
 type TaskFormProps = {
-  onAddTask: (taskData: Omit<Task, 'id' | 'completed'>) => void;
+  onAddTask: (taskData: Omit<Task, 'id' | 'completed' | 'deadline'>) => void;
+  selectedDate?: Date;
 };
 
-export function TaskForm({ onAddTask }: TaskFormProps) {
+export function TaskForm({ onAddTask, selectedDate }: TaskFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
       details: '',
+      deadline: selectedDate,
     },
   });
 
+  useEffect(() => {
+    if (selectedDate) {
+      form.setValue('deadline', selectedDate);
+    }
+  }, [selectedDate, form]);
+
   function onSubmit(values: z.infer<typeof formSchema>) {
     onAddTask(values);
-    form.reset();
+    form.reset({ title: '', details: '', deadline: selectedDate });
   }
 
   return (

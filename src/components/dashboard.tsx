@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/task-form';
 import { useTasks } from '@/hooks/use-tasks';
+import { Card, CardContent } from '@/components/ui/card';
 
 export function Dashboard() {
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -46,25 +47,24 @@ export function Dashboard() {
           Select a date on the calendar to quickly add a new task or choose a tool from the sidebar.
         </p>
       </div>
-      <div className="rounded-md border">
-        <Calendar
-          mode="single"
-          selected={date}
-          onSelect={handleDateSelect}
-          className="p-0"
-          classNames={{
-            root: 'w-full',
-            months: 'w-full',
-            month: 'w-full',
-            table: 'w-full',
-            head_row: 'grid grid-cols-7',
-            row: 'grid grid-cols-7',
-            day: 'h-16 w-full',
-            day_selected:
-              'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
-          }}
-        />
-      </div>
+
+      <Card
+        className="cursor-pointer hover:bg-secondary/50 transition-colors"
+        onClick={() => handleDateSelect(new Date())}
+      >
+        <CardContent className="p-6 flex flex-col items-center justify-center space-y-2">
+          <div className="text-2xl font-semibold text-muted-foreground">
+            {date ? format(date, 'eeee') : ''}
+          </div>
+          <div className="text-7xl font-bold text-primary">
+            {date ? format(date, 'd') : ''}
+          </div>
+          <div className="text-2xl font-semibold text-muted-foreground">
+            {date ? format(date, 'MMMM yyyy') : ''}
+          </div>
+        </CardContent>
+      </Card>
+
 
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent className="sm:max-w-[425px]">

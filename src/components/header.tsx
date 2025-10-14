@@ -9,6 +9,7 @@ export function Header() {
           Zenith Planner
         </h1>
       </div>
+      <p className="text-muted-foreground">Become Master with us</p>
     </header>
   );
 }

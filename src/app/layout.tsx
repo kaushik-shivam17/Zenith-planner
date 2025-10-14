@@ -4,7 +4,6 @@ import { Toaster } from '@/components/ui/toaster';
 import { AppShell } from '@/components/app-shell';
 import { TasksProvider } from '@/hooks/use-tasks';
 import { FirebaseClientProvider } from '@/firebase';
-import { AuthProvider } from '@/hooks/use-auth-guard';
 
 export const metadata: Metadata = {
   title: 'Zenith Planner',

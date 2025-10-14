@@ -23,10 +23,3 @@ export function useAuthGuard(isProtectedRoute: boolean) {
 
   return { user, isUserLoading };
 }
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-    // The useAuthGuard hook is now applied within AppShell, which determines if a route is protected.
-    // This provider remains as a structural element for wrapping the app, but redirection logic
-    // is centralized in the component that uses the useAuthGuard hook.
-    return children;
-}

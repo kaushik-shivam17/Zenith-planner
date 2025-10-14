@@ -22,6 +22,10 @@ import {
   type GenerateTimetableInput,
   type GenerateTimetableOutput,
 } from '@/ai/flows/generate-timetable';
+import {
+  getFitnessAdvice,
+  type GetFitnessAdviceOutput,
+} from '@/ai/flows/get-fitness-advice';
 import type { Task } from '@/lib/types';
 
 
@@ -100,5 +104,17 @@ export const generateTimetableAction = async (
   } catch (error) {
     console.error(error);
     return { success: false, error: 'Failed to generate timetable. The AI system may be offline.' };
+  }
+};
+
+export const getFitnessAdviceAction = async (
+  prompt: string
+): Promise<ActionResult<GetFitnessAdviceOutput>> => {
+  try {
+    const result = await getFitnessAdvice({ prompt });
+    return { success: true, data: result };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: 'Failed to get fitness advice. The AI system may be offline.' };
   }
 };

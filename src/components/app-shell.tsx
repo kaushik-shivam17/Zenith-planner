@@ -5,6 +5,7 @@ import {
   BadgeCheck,
   BrainCircuit,
   Calendar,
+  HeartPulse,
   LayoutDashboard,
   Rocket,
   Target,
@@ -32,6 +33,7 @@ const navItems = [
   { href: '/timetable', label: 'Timetable', icon: Calendar },
   { href: '/focus', label: 'Focus AI', icon: BrainCircuit },
   { href: '/wellness', label: 'Wellness', icon: AppWindow },
+  { href: '/fitness', label: 'Fitness', icon: HeartPulse },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {

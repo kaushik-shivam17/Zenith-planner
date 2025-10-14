@@ -4,6 +4,7 @@ import {
   AppWindow,
   BadgeCheck,
   BrainCircuit,
+  Calendar,
   LayoutDashboard,
   Target,
 } from 'lucide-react';
@@ -27,7 +28,8 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/tasks', label: 'Tasks', icon: BadgeCheck },
-  { href: '/missions', label: 'Missions', icon: Target },
+  { href: '/goals', label: 'Goals', icon: Target },
+  { href: '/timetable', label: 'Timetable', icon: Calendar },
   { href: '/focus', label: 'Focus AI', icon: BrainCircuit },
   { href: '/wellness', label: 'Wellness', icon: AppWindow },
 ];

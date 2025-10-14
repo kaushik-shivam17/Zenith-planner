@@ -17,6 +17,13 @@ import {
   analyzeHydration,
   type AnalyzeHydrationOutput,
 } from '@/ai/flows/analyze-hydration';
+import {
+  generateTimetable,
+  type GenerateTimetableInput,
+  type GenerateTimetableOutput,
+} from '@/ai/flows/generate-timetable';
+import type { Task } from '@/lib/types';
+
 
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string };
 
@@ -65,5 +72,33 @@ export const analyzeHydrationAction = async (
   } catch (error) {
     console.error(error);
     return { success: false, error: 'Failed to analyze hydration. The AI system may be offline.' };
+  }
+};
+
+type GenerateTimetableActionInput = {
+  tasks: Task[];
+  customEvents: {
+    title: string;
+    day: string;
+    startTime: string;
+    endTime: string;
+  }[];
+};
+
+export const generateTimetableAction = async (
+  input: GenerateTimetableActionInput
+): Promise<ActionResult<GenerateTimetableOutput>> => {
+  try {
+    // Convert Date objects to string to make them serializable for the AI flow
+    const serializableTasks = input.tasks.map(task => ({
+      ...task,
+      deadline: task.deadline.toISOString(),
+    }));
+
+    const result = await generateTimetable({ ...input, tasks: serializableTasks });
+    return { success: true, data: result };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: 'Failed to generate timetable. The AI system may be offline.' };
   }
 };

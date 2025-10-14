@@ -16,22 +16,26 @@ import {
 import { TaskForm } from '@/components/task-form';
 import { useTasks } from '@/hooks/use-tasks';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from './ui/button';
 
 export function Dashboard() {
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const [selectedDateForTask, setSelectedDateForTask] = useState<Date | undefined>(new Date());
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const { addTask } = useTasks();
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
     if (selectedDate) {
-      setDate(selectedDate);
+      setSelectedDateForTask(selectedDate);
+      setIsCalendarOpen(false);
       setIsAddOpen(true);
     }
   };
 
   const handleAddTask = (taskData: Omit<Task, 'id' | 'completed' | 'deadline'>) => {
-    if (date) {
-      addTask({ ...taskData, deadline: date });
+    if (selectedDateForTask) {
+      addTask({ ...taskData, deadline: selectedDateForTask });
       setIsAddOpen(false);
     }
   };
@@ -43,10 +47,21 @@ export function Dashboard() {
       </div>
 
       <Card
-        className="cursor-pointer hover:bg-secondary/50 transition-colors"
-        onClick={() => handleDateSelect(new Date())}
+        className="cursor-pointer hover:bg-secondary/50 transition-colors relative"
       >
-        <CardContent className="p-6 flex flex-col items-center justify-center space-y-2">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="absolute top-4 right-4"
+          onClick={() => setIsCalendarOpen(true)}
+        >
+          <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+          <span className="sr-only">Open Calendar</span>
+        </Button>
+        <CardContent 
+          className="p-6 flex flex-col items-center justify-center space-y-2"
+          onClick={() => handleDateSelect(new Date())}
+        >
           <div className="text-2xl font-semibold text-muted-foreground">
             {date ? format(date, 'eeee') : ''}
           </div>
@@ -68,17 +83,31 @@ export function Dashboard() {
         </p>
       </div>
 
+      <Dialog open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+        <DialogContent className="sm:max-w-auto p-0">
+           <Calendar
+              mode="single"
+              selected={selectedDateForTask}
+              onSelect={handleDateSelect}
+              className="p-0"
+              classNames={{
+                months: "p-4"
+              }}
+            />
+        </DialogContent>
+      </Dialog>
+
 
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Log a New Task for {date ? format(date, 'PPP') : ''}</DialogTitle>
+            <DialogTitle>Log a New Task for {selectedDateForTask ? format(selectedDateForTask, 'PPP') : ''}</DialogTitle>
             <DialogDescription>
               Input the details for a new task objective. Click save when
               you&apos;re done.
             </DialogDescription>
           </DialogHeader>
-          <TaskForm onAddTask={handleAddTask} selectedDate={date} />
+          <TaskForm onAddTask={handleAddTask} selectedDate={selectedDateForTask} />
         </DialogContent>
       </Dialog>
     </div>

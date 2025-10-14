@@ -9,9 +9,6 @@ export function Header() {
           Zenith Planner
         </h1>
       </div>
-      <p className="text-muted-foreground">
-        Your calm, cyberpunk AI assistant for mastering your tasks and time.
-      </p>
     </header>
   );
 }

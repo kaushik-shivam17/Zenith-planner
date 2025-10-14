@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bed, Coffee, GlassWater, Lightbulb, Move } from 'lucide-react';
+import { Bed, Coffee, GlassWater, Lightbulb, Minus, Move, Plus } from 'lucide-react';
 
 import {
   Card,
@@ -11,9 +11,11 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { PRODUCTIVITY_TIPS } from '@/lib/constants';
+import { Button } from './ui/button';
 
 export function WellnessHub() {
   const [tip, setTip] = useState('');
+  const [waterCount, setWaterCount] = useState(0);
 
   useEffect(() => {
     setTip(
@@ -21,8 +23,10 @@ export function WellnessHub() {
     );
   }, []);
 
-  const reminders = [
-    { icon: GlassWater, text: 'Hydrate' },
+  const handleWaterIncrement = () => setWaterCount(waterCount + 1);
+  const handleWaterDecrement = () => setWaterCount(Math.max(0, waterCount - 1));
+
+  const staticReminders = [
     { icon: Move, text: 'Move' },
     { icon: Coffee, text: 'Break' },
     { icon: Bed, text: 'Rest' },
@@ -42,10 +46,26 @@ export function WellnessHub() {
       <CardContent className="space-y-6">
         <p className="text-muted-foreground italic">"{tip}"</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-          {reminders.map((reminder) => (
+          <div className="flex flex-col items-center gap-2">
+            <div className="p-3 rounded-full bg-secondary">
+              <GlassWater className="w-5 h-5 text-primary" />
+            </div>
+            <span className="text-sm font-medium">Hydrate</span>
+            <div className="flex items-center gap-2">
+              <Button size="icon" variant="ghost" onClick={handleWaterDecrement} className="h-6 w-6">
+                <Minus className="h-4 w-4" />
+              </Button>
+              <span className="text-lg font-bold">{waterCount}</span>
+              <Button size="icon" variant="ghost" onClick={handleWaterIncrement} className="h-6 w-6">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {staticReminders.map((reminder) => (
             <div
               key={reminder.text}
-              className="flex flex-col items-center gap-2"
+              className="flex flex-col items-center gap-2 justify-center"
             >
               <div className="p-3 rounded-full bg-secondary">
                 <reminder.icon className="w-5 h-5 text-primary" />

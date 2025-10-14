@@ -108,10 +108,11 @@ export const generateTimetableAction = async (
 };
 
 export const getFitnessAdviceAction = async (
-  prompt: string
+  prompt: string,
+  bmi?: number
 ): Promise<ActionResult<GetFitnessAdviceOutput>> => {
   try {
-    const result = await getFitnessAdvice({ prompt });
+    const result = await getFitnessAdvice({ prompt, bmi });
     return { success: true, data: result };
   } catch (error) {
     console.error(error);

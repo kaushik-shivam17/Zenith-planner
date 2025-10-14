@@ -12,7 +12,8 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GetFitnessAdviceInputSchema = z.object({
-  prompt: z.string().describe('The user\'s question or prompt about fitness.'),
+  prompt: z.string().describe("The user's question or prompt about fitness."),
+  bmi: z.number().optional().describe("The user's Body Mass Index (BMI)."),
 });
 export type GetFitnessAdviceInput = z.infer<typeof GetFitnessAdviceInputSchema>;
 
@@ -34,6 +35,15 @@ const prompt = ai.definePrompt({
   input: {schema: GetFitnessAdviceInputSchema},
   output: {schema: GetFitnessAdviceOutputSchema},
   prompt: `You are an expert AI fitness mentor. Your goal is to provide helpful, safe, and encouraging fitness advice.
+
+  {{#if bmi}}
+  The user's BMI is {{bmi}}.
+  - If the BMI is less than 18.5, it's considered underweight. Gently suggest focusing on nutrient-dense foods and strength training to build healthy mass.
+  - If the BMI is between 18.5 and 24.9, it's in the healthy range. Congratulate them and say that you will not provide specific advice based on their BMI as they are in a healthy range, but you can still answer their question.
+  - If the BMI is 25 or higher, it's considered overweight. Gently suggest a combination of balanced nutrition and regular physical activity, like brisk walking or cycling.
+
+  After addressing the BMI (if provided), answer the user's main question.
+  {{/if}}
 
   User's question: {{{prompt}}}
 

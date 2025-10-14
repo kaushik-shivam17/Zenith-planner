@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { HeartPulse, Loader2, Sparkles } from 'lucide-react';
+import { doc } from 'firebase/firestore';
 
 import { getFitnessAdviceAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -26,15 +27,28 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { useFirebase } from '@/firebase';
+import { useDoc } from '@/firebase/firestore/use-doc';
 
 const formSchema = z.object({
   prompt: z.string().min(10, 'Please enter at least 10 characters.'),
 });
 
+type UserProfile = {
+  height?: number;
+  weight?: number;
+};
+
 export function FitnessMentor() {
   const [advice, setAdvice] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuthGuard(true);
+  const { firestore } = useFirebase();
+
+  const userDocRef = user ? doc(firestore, 'users', user.uid) : null;
+  const { data: userProfile } = useDoc<UserProfile>(userDocRef);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,7 +60,13 @@ export function FitnessMentor() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setAdvice(null);
-    const result = await getFitnessAdviceAction(values.prompt);
+    
+    let bmi: number | undefined = undefined;
+    if (userProfile?.height && userProfile?.weight) {
+      bmi = userProfile.weight / (userProfile.height * userProfile.height);
+    }
+    
+    const result = await getFitnessAdviceAction(values.prompt, bmi);
 
     if (result.success && result.data) {
       setAdvice(result.data.advice);
@@ -71,7 +91,7 @@ export function FitnessMentor() {
               <span>AI Fitness Mentor</span>
             </CardTitle>
             <CardDescription>
-              Ask for fitness tips, workout ideas, or nutrition advice.
+              Ask for fitness tips, workout ideas, or nutrition advice. Your BMI will be automatically included for more personalized advice if available on your profile.
             </CardDescription>
           </CardHeader>
           <CardContent>

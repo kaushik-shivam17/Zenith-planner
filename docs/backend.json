@@ -8,7 +8,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the user."
+          "description": "Unique identifier for the user (matches Firebase Auth UID)."
         },
         "name": {
           "type": "string",
@@ -22,6 +22,14 @@
         "class": {
           "type": "string",
           "description": "The user's class or grade (optional)."
+        },
+        "height": {
+          "type": "number",
+          "description": "User's height in meters (optional)."
+        },
+        "weight": {
+          "type": "number",
+          "description": "User's weight in kilograms (optional)."
         }
       },
       "required": [
@@ -34,7 +42,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "BMI",
       "type": "object",
-      "description": "Represents a user's Body Mass Index (BMI) data.",
+      "description": "Represents a user's Body Mass Index (BMI) data at a point in time.",
       "properties": {
         "id": {
           "type": "string",
@@ -52,20 +60,29 @@
           "type": "string",
           "description": "The date when the BMI was recorded.",
           "format": "date-time"
+        },
+        "height": {
+          "type": "number",
+          "description": "User's height in meters at the time of recording."
+        },
+        "weight": {
+          "type": "number",
+          "description": "User's weight in kilograms at the time of recording."
         }
       },
       "required": [
         "id",
         "userId",
         "bmiValue",
-        "date"
+        "date",
+        "height",
+        "weight"
       ]
     }
   },
   "auth": {
     "providers": [
-      "password",
-      "anonymous"
+      "password"
     ]
   },
   "firestore": {
@@ -77,23 +94,23 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Stores user profile information.  Users can only read/write their own document.",
+          "description": "Stores user profile information, including BMI-related data. Users can only read/write their own document.",
           "params": [
             {
               "name": "userId",
-              "description": "The unique identifier for the user.  This is the Firebase Auth UID."
+              "description": "The unique identifier for the user. This is the Firebase Auth UID."
             }
           ]
         }
       },
       {
-        "path": "/users/{userId}/bmi/{bmiId}",
+        "path": "/users/{userId}/bmiHistory/{bmiId}",
         "definition": {
           "entityName": "BMI",
           "schema": {
             "$ref": "#/backend/entities/BMI"
           },
-          "description": "Stores BMI data for a specific user. Users can only read/write their own BMI records. Includes denormalized 'userId' for authorization independence, though not technically necessary due to path-based authorization.",
+          "description": "Stores historical BMI data for a specific user. Users can only read/write their own BMI records.",
           "params": [
             {
               "name": "userId",
@@ -106,7 +123,6 @@
           ]
         }
       }
-    ],
-    "reasoning": "The Firestore structure is designed to ensure data security, scalability, and debuggability, focusing on authorization independence and clear access patterns. User data and BMI records are stored in separate collections with a parent-child relationship, enabling efficient data retrieval and secure access control.  The structure achieves Authorization Independence by using path-based ownership, eliminating the need for `get()` calls in security rules. It supports the required QAPs through structural segregation, as each collection has a homogeneous security posture.  The BMI documents are stored as subcollections of the users collection. This structure permits the listing of BMI records for a specific user, and only that user, without needing to filter based on the userId field."
+    ]
   }
 }

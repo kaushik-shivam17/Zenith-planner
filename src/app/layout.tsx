@@ -3,6 +3,8 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AppShell } from '@/components/app-shell';
 import { TasksProvider } from '@/hooks/use-tasks';
+import { FirebaseClientProvider } from '@/firebase';
+import { AuthProvider } from '@/hooks/use-auth-guard';
 
 export const metadata: Metadata = {
   title: 'Zenith Planner',
@@ -25,9 +27,13 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <TasksProvider>
-          <AppShell>{children}</AppShell>
-        </TasksProvider>
+        <FirebaseClientProvider>
+          <AuthProvider>
+            <TasksProvider>
+              <AppShell>{children}</AppShell>
+            </TasksProvider>
+          </AuthProvider>
+        </FirebaseClientProvider>
         <Toaster />
       </body>
     </html>

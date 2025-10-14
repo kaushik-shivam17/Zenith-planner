@@ -40,12 +40,6 @@ export function Dashboard() {
     <div className="space-y-8">
       <div className="flex flex-col items-center justify-center space-y-4">
         <Clock />
-        <h1 className="text-4xl font-bold tracking-tight text-center">
-          Welcome to Zenith Planner
-        </h1>
-        <p className="text-lg text-muted-foreground text-center max-w-md">
-          Select a date on the calendar to quickly add a new task or choose a tool from the sidebar.
-        </p>
       </div>
 
       <Card
@@ -64,6 +58,15 @@ export function Dashboard() {
           </div>
         </CardContent>
       </Card>
+      
+      <div className="flex flex-col items-center justify-center space-y-4 pt-4">
+        <h1 className="text-4xl font-bold tracking-tight text-center">
+          Welcome to Zenith Planner
+        </h1>
+        <p className="text-lg text-muted-foreground text-center max-w-md">
+          Select a date on the calendar to quickly add a new task or choose a tool from the sidebar.
+        </p>
+      </div>
 
 
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>

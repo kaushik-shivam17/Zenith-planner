@@ -1,0 +1,76 @@
+/**
+ * @fileoverview Firestore Security Rules for Zenith Planner.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model. Users can only access their own profile data and BMI records.
+ *
+ * Data Structure:
+ * - All user data is stored under `/users/{userId}`, where `{userId}` matches the Firebase Auth UID.
+ * - BMI records are stored as subcollections under each user's document: `/users/{userId}/bmi/{bmiId}`.
+ *
+ * Key Security Decisions:
+ * - Users cannot list all users.
+ * - Users can only read and write their own BMI records.
+ * - Data consistency between the path and document ID is enforced on creation and updates.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Enforces user-ownership for profile data.
+     * @path /users/{userId}
+     * @allow (create) - User with UID 'user_abc' can create their own profile at /users/user_abc.
+     * @allow (get, update, delete) - User with UID 'user_abc' can read, update, and delete their profile at /users/user_abc.
+     * @deny (create, get, update, delete) - User with UID 'user_xyz' cannot access /users/user_abc.
+     * @principle Enforces document ownership for writes.
+     */
+    match /users/{userId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Enforces user-ownership for BMI records.
+     * @path /users/{userId}/bmi/{bmiId}
+     * @allow (create) - User with UID 'user_abc' can create a BMI record under /users/user_abc/bmi/bmi_123.
+     * @allow (get, update, delete) - User with UID 'user_abc' can read, update, and delete their BMI record under /users/user_abc/bmi/bmi_123.
+     * @deny (create, get, update, delete) - User with UID 'user_xyz' cannot access /users/user_abc/bmi/bmi_123.
+     * @principle Restricts access to a user's own data tree and validates relational integrity between documents.
+     */
+    match /users/{userId}/bmi/{bmiId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}

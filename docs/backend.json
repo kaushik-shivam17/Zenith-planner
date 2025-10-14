@@ -1,0 +1,112 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the Zenith Planner application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "name": {
+          "type": "string",
+          "description": "The user's full name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "class": {
+          "type": "string",
+          "description": "The user's class or grade (optional)."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email"
+      ]
+    },
+    "BMI": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "BMI",
+      "type": "object",
+      "description": "Represents a user's Body Mass Index (BMI) data.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the BMI record."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N BMI)"
+        },
+        "bmiValue": {
+          "type": "number",
+          "description": "The calculated BMI value."
+        },
+        "date": {
+          "type": "string",
+          "description": "The date when the BMI was recorded.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "bmiValue",
+        "date"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information.  Users can only read/write their own document.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user.  This is the Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/bmi/{bmiId}",
+        "definition": {
+          "entityName": "BMI",
+          "schema": {
+            "$ref": "#/backend/entities/BMI"
+          },
+          "description": "Stores BMI data for a specific user. Users can only read/write their own BMI records. Includes denormalized 'userId' for authorization independence, though not technically necessary due to path-based authorization.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "bmiId",
+              "description": "The unique identifier for the BMI record."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure data security, scalability, and debuggability, focusing on authorization independence and clear access patterns. User data and BMI records are stored in separate collections with a parent-child relationship, enabling efficient data retrieval and secure access control.  The structure achieves Authorization Independence by using path-based ownership, eliminating the need for `get()` calls in security rules. It supports the required QAPs through structural segregation, as each collection has a homogeneous security posture.  The BMI documents are stored as subcollections of the users collection. This structure permits the listing of BMI records for a specific user, and only that user, without needing to filter based on the userId field."
+  }
+}

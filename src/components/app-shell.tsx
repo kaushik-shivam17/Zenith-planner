@@ -6,6 +6,7 @@ import {
   BrainCircuit,
   Calendar,
   LayoutDashboard,
+  Rocket,
   Target,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -20,14 +21,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Header } from '@/components/header';
-import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/tasks', label: 'Tasks', icon: BadgeCheck },
+  { href: '/missions', label: 'Missions', icon: Rocket },
   { href: '/goals', label: 'Goals', icon: Target },
   { href: '/timetable', label: 'Timetable', icon: Calendar },
   { href: '/focus', label: 'Focus AI', icon: BrainCircuit },

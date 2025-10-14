@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { useFirebase } from '@/firebase';
+import { useFirebase, useMemoFirebase } from '@/firebase';
 import { useDoc } from '@/firebase/firestore/use-doc';
 
 const formSchema = z.object({
@@ -47,7 +47,10 @@ export function FitnessMentor() {
   const { user } = useAuthGuard(true);
   const { firestore } = useFirebase();
 
-  const userDocRef = user ? doc(firestore, 'users', user.uid) : null;
+  const userDocRef = useMemoFirebase(
+    () => (user ? doc(firestore, 'users', user.uid) : null),
+    [user, firestore]
+  );
   const { data: userProfile } = useDoc<UserProfile>(userDocRef);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -63,7 +66,9 @@ export function FitnessMentor() {
     
     let bmi: number | undefined = undefined;
     if (userProfile?.height && userProfile?.weight) {
-      bmi = userProfile.weight / (userProfile.height * userProfile.height);
+      if (userProfile.height > 0) {
+        bmi = userProfile.weight / (userProfile.height * userProfile.height);
+      }
     }
     
     const result = await getFitnessAdviceAction(values.prompt, bmi);

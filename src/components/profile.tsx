@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { useFirebase, useUser, setDocumentNonBlocking } from '@/firebase';
+import { useFirebase, useUser, setDocumentNonBlocking, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { doc, serverTimestamp } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
@@ -45,7 +45,10 @@ export function Profile() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const userDocRef = user ? doc(firestore, 'users', user.uid) : null;
+  const userDocRef = useMemoFirebase(
+    () => (user ? doc(firestore, 'users', user.uid) : null),
+    [user, firestore]
+  );
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
   const form = useForm<UserProfile>({
@@ -64,6 +67,7 @@ export function Profile() {
       form.reset(userProfile);
     }
     if (user && !userProfile) {
+      form.setValue('name', user.displayName || '');
       form.setValue('email', user.email || '');
     }
   }, [userProfile, user, form]);
@@ -90,7 +94,7 @@ export function Profile() {
   }
   
   const bmi =
-    userProfile?.height && userProfile?.weight
+    userProfile?.height && userProfile?.weight && userProfile.height > 0
       ? (userProfile.weight / (userProfile.height * userProfile.height)).toFixed(2)
       : null;
 
@@ -164,7 +168,7 @@ export function Profile() {
                     <FormItem>
                       <FormLabel>Height (m)</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="e.g., 1.75" {...field} />
+                        <Input type="number" step="0.01" placeholder="e.g., 1.75" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -177,7 +181,7 @@ export function Profile() {
                     <FormItem>
                       <FormLabel>Weight (kg)</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="e.g., 70" {...field} />
+                        <Input type="number" step="0.1" placeholder="e.g., 70" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

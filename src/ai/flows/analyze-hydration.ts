@@ -37,7 +37,7 @@ const prompt = ai.definePrompt({
 
   Water glasses consumed: {{{glassCount}}}
 
-  Provide a very brief (1-2 sentences) analysis. For example: "That's a great start! Aim for a few more glasses to stay fully hydrated." or "Excellent job staying hydrated today!". Be encouraging.`,
+  Provide a very brief (1-2 sentences) analysis with a relevant emoji (e.g.,💧, 👍, ✨). For example: "That's a great start! Aim for a few more glasses to stay fully hydrated. 👍" or "Excellent job staying hydrated today! ✨". Be encouraging.`,
 });
 
 const analyzeHydrationFlow = ai.defineFlow(

@@ -38,7 +38,7 @@ const prompt = ai.definePrompt({
 
   Tasks and Deadlines: {{{tasks}}}
 
-  Generate a clear and practical study schedule.
+  Generate a clear and practical study schedule. Use relevant emojis (e.g., 📚, 🎯, ✨) to make the schedule more engaging.
   Speak in short, clear sentences. Be helpful but not too chatty. Use a friendly, digital, calm tone like a quiet cyberpunk AI.
   Do NOT talk about games, levels, experience points, or fantasy. Keep everything about real life and real progress.`,
 });

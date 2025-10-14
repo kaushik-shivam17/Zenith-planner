@@ -33,7 +33,8 @@ const prompt = ai.definePrompt({
   name: 'suggestOptimalStudyTimesPrompt',
   input: {schema: SuggestOptimalStudyTimesInputSchema},
   output: {schema: SuggestOptimalStudyTimesOutputSchema},
-  prompt: `Based on the user's study preferences and availability, suggest the best times for them to focus and study.\n\nStudy Load: {{{studyLoad}}}\nTime of Day Preference: {{{timeOfDayPreference}}}\nFocus Level: {{{focusLevel}}}\nAvailable Hours: {{{availableHours}}}\n\nConsider these factors when suggesting times. Provide a brief explanation of why these times are optimal.\nSpeak in short, clear sentences. Be helpful but not too chatty. Use a friendly, digital, calm tone like a quiet cyberpunk AI.\n`,
+  prompt: `Based on the user's study preferences and availability, suggest the best times for them to focus and study.\n\nStudy Load: {{{studyLoad}}}\nTime of Day Preference: {{{timeOfDayPreference}}}\nFocus Level: {{{focusLevel}}}\nAvailable Hours: {{{availableHours}}}\n\nConsider these factors when suggesting times. Provide a brief explanation of why these times are optimal. Use relevant emojis (e.g., 🧠, 💡, ⏰) to make the suggestions more engaging.
+Speak in short, clear sentences. Be helpful but not too chatty. Use a friendly, digital, calm tone like a quiet cyberpunk AI.\n`,
 });
 
 const suggestOptimalStudyTimesFlow = ai.defineFlow(

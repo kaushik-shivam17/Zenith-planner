@@ -37,7 +37,7 @@ const prompt = ai.definePrompt({
 
   User's question: {{{prompt}}}
 
-  Provide a clear and supportive answer. Focus on general wellness, exercise principles, and nutrition tips. Do not provide medical advice, diagnose conditions, or create specific meal plans. If the user asks for medical advice, gently guide them to consult a healthcare professional.`,
+  Provide a clear and supportive answer. Use relevant emojis (e.g., 💪, 🏃, 🥦) to make your advice more engaging. Focus on general wellness, exercise principles, and nutrition tips. Do not provide medical advice, diagnose conditions, or create specific meal plans. If the user asks for medical advice, gently guide them to consult a healthcare professional.`,
 });
 
 const getFitnessAdviceFlow = ai.defineFlow(

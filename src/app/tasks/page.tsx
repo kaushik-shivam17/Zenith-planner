@@ -3,9 +3,6 @@
 import { useState } from 'react';
 import type { Task } from '@/lib/types';
 import { TaskManager } from '@/components/task-manager';
-import { FocusSuggester } from '@/components/focus-suggester';
-import { WellnessHub } from '@/components/wellness-hub';
-import { Missions } from '@/components/missions';
 
 const initialTasks: Task[] = [
   {
@@ -31,7 +28,7 @@ const initialTasks: Task[] = [
   },
 ];
 
-export function Dashboard() {
+export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
 
   const addTask = (taskData: Omit<Task, 'id' | 'completed'>) => {
@@ -56,22 +53,12 @@ export function Dashboard() {
       )
     );
   };
-
   return (
-    <div className="space-y-8">
-      <TaskManager
-        tasks={tasks}
-        onAddTask={addTask}
-        onUpdateTask={updateTask}
-        onToggleTask={toggleTaskCompletion}
-      />
-       <div className="grid lg:grid-cols-3 gap-8">
-        <Missions />
-        <div className="lg:col-span-2 grid gap-8">
-          <FocusSuggester />
-          <WellnessHub />
-        </div>
-      </div>
-    </div>
+    <TaskManager
+      tasks={tasks}
+      onAddTask={addTask}
+      onUpdateTask={updateTask}
+      onToggleTask={toggleTaskCompletion}
+    />
   );
 }

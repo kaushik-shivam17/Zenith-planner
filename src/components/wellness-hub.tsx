@@ -133,7 +133,7 @@ export function WellnessHub() {
         </div>
         {hydrationAnalysis && (
           <div className="p-3 rounded-md bg-accent/10 border border-accent/20">
-            <p className="text-sm text-accent-foreground flex items-center gap-2">
+            <p className="text-sm text-primary flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-accent flex-shrink-0" />
               <strong className="text-accent">AI Hydration Coach:</strong> {hydrationAnalysis}
             </p>

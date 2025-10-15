@@ -31,16 +31,16 @@ interface MissionsContextType {
 const MissionsContext = createContext<MissionsContextType | undefined>(undefined);
 
 export function MissionsProvider({ children }: { children: ReactNode }) {
-  const { user, firestore } = useFirebase();
+  const { user, firestore, isUserLoading } = useFirebase();
 
   const missionsCollectionRef = useMemoFirebase(
     () => (user ? collection(firestore, 'users', user.uid, 'missions') : null),
-    [user, firestore]
+    [user, firestore, isUserLoading]
   );
   
   const goalsCollectionRef = useMemoFirebase(
     () => (user ? collection(firestore, `users/${user.uid}/goals`) : null),
-    [user, firestore]
+    [user, firestore, isUserLoading]
   );
 
   const { data: missionsData, isLoading: isMissionsLoading } = useCollection<Omit<Mission, 'id'|'progress'>>(missionsCollectionRef);
@@ -122,7 +122,7 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
     [missionsCollectionRef, goalsCollectionRef, user, firestore]
   );
   
-  const isLoading = isMissionsLoading || areGoalsLoading;
+  const isLoading = isUserLoading || isMissionsLoading || areGoalsLoading;
 
   const value: MissionsContextType = {
     missions: missions || [],

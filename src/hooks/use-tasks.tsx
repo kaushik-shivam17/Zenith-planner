@@ -29,14 +29,14 @@ interface TasksContextType {
 const TasksContext = createContext<TasksContextType | undefined>(undefined);
 
 export function TasksProvider({ children }: { children: ReactNode }) {
-  const { user, firestore } = useFirebase();
+  const { user, firestore, isUserLoading } = useFirebase();
 
   const tasksCollectionRef = useMemoFirebase(
     () => (user ? collection(firestore, 'users', user.uid, 'tasks') : null),
-    [user, firestore]
+    [user, firestore, isUserLoading]
   );
 
-  const { data: rawTasks, isLoading } = useCollection<Omit<Task, 'id'>>(
+  const { data: rawTasks, isLoading: areTasksLoading } = useCollection<Omit<Task, 'id'>>(
     tasksCollectionRef
   );
 
@@ -65,7 +65,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
 
   const addTask = useCallback(
     (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => {
-      if (!tasksCollectionRef) return;
+      if (!tasksCollectionRef || !user) return;
       const newTask = {
         ...taskData,
         userId: user!.uid,
@@ -104,6 +104,8 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     },
     [tasksCollectionRef, tasks]
   );
+
+  const isLoading = isUserLoading || areTasksLoading;
 
   const value = {
     tasks: tasks.map(t => ({...t, deadline: t.deadline instanceof Timestamp ? t.deadline.toDate() : t.deadline})),

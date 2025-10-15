@@ -162,7 +162,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </Sidebar>
       <SidebarInset>
         <main className="min-h-screen p-4 sm:p-6 md:p-8">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-5xl mx-auto fade-in">
             <div className="md:hidden mb-4">
               <Header />
             </div>

@@ -10,7 +10,6 @@ import {
   LogIn,
   LogOut,
   Rocket,
-  Target,
   User as UserIcon,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -33,12 +32,12 @@ import { Header } from '@/components/header';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { Target } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/tasks', label: 'Tasks', icon: BadgeCheck },
   { href: '/missions', label: 'Missions', icon: Rocket },
-  { href: '/goals', label: 'Goals', icon: Target },
   { href: '/timetable', label: 'Timetable', icon: Calendar },
   { href: '/focus', label: 'Focus AI', icon: BrainCircuit },
   { href: '/wellness', label: 'Wellness', icon: AppWindow },

@@ -6,6 +6,7 @@ import {
   ReactNode,
   useCallback,
   useMemo,
+  useState,
   useEffect,
 } from 'react';
 import type { Mission } from '@/lib/types';
@@ -32,15 +33,20 @@ const MissionsContext = createContext<MissionsContextType | undefined>(undefined
 
 export function MissionsProvider({ children }: { children: ReactNode }) {
   const { user, firestore, isUserLoading } = useFirebase();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const missionsCollectionRef = useMemoFirebase(
     () => (user ? collection(firestore, 'users', user.uid, 'missions') : null),
-    [user, firestore, isUserLoading]
+    [user, firestore]
   );
   
   const goalsCollectionRef = useMemoFirebase(
     () => (user ? collection(firestore, `users/${user.uid}/goals`) : null),
-    [user, firestore, isUserLoading]
+    [user, firestore]
   );
 
   const { data: missionsData, isLoading: isMissionsLoading } = useCollection<Omit<Mission, 'id'|'progress'>>(missionsCollectionRef);
@@ -122,7 +128,7 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
     [missionsCollectionRef, goalsCollectionRef, user, firestore]
   );
   
-  const isLoading = isUserLoading || isMissionsLoading || areGoalsLoading;
+  const isLoading = !isClient || isUserLoading || isMissionsLoading || areGoalsLoading;
 
   const value: MissionsContextType = {
     missions: missions || [],

@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AppShell } from '@/components/app-shell';
 import { TasksProvider } from '@/hooks/use-tasks';
+import { MissionsProvider } from '@/hooks/use-missions';
 import { FirebaseClientProvider } from '@/firebase';
 import { Analytics } from '@vercel/analytics/react';
 
@@ -29,7 +30,9 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <FirebaseClientProvider>
           <TasksProvider>
-            <AppShell>{children}</AppShell>
+            <MissionsProvider>
+              <AppShell>{children}</AppShell>
+            </MissionsProvider>
           </TasksProvider>
         </FirebaseClientProvider>
         <Toaster />

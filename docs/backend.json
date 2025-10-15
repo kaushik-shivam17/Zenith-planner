@@ -124,6 +124,42 @@
         "completed",
         "createdAt"
       ]
+    },
+    "Mission": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Mission",
+      "type": "object",
+      "description": "Represents a long-term goal or mission for a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique identifier for the mission."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who owns this mission."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the mission."
+        },
+        "progress": {
+          "type": "number",
+          "description": "The user-reported progress of the mission, from 0 to 100."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the mission was created."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "progress",
+        "createdAt"
+      ]
     }
   },
   "auth": {
@@ -185,6 +221,26 @@
             {
               "name": "taskId",
               "description": "The unique identifier for the task."
+            }
+          ]
+        }
+      },
+       {
+        "path": "/users/{userId}/missions/{missionId}",
+        "definition": {
+          "entityName": "Mission",
+          "schema": {
+            "$ref": "#/backend/entities/Mission"
+          },
+          "description": "Stores long-term missions for a specific user. Users can only read/write their own missions.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "missionId",
+              "description": "The unique identifier for the mission."
             }
           ]
         }

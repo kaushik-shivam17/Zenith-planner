@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Bot, Loader2, Plus, Rocket, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import {
@@ -19,68 +20,37 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import { Input } from './ui/input';
-import { useToast } from '@/hooks/use-toast';
-import { breakDownTaskAction } from '@/app/actions';
+import { useMissions } from '@/hooks/use-missions';
+import type { Mission } from '@/lib/types';
+import { Slider } from './ui/slider';
 
-type Mission = {
-  id: string;
-  title: string;
-  progress: number;
-};
-
-type Breakdown = {
-  title: string;
-  steps: string[];
-};
 
 export function Missions() {
-  const [missions, setMissions] = useState<Mission[]>([
-    { id: '1', title: 'Launch a startup', progress: 25 },
-    { id: '2', title: 'Run a marathon', progress: 50 },
-    { id: '3', title: 'Write a novel', progress: 10 },
-  ]);
+  const router = useRouter();
+  const { missions, addMission, deleteMission, updateMissionProgress, isLoading } = useMissions();
   const [newMissionTitle, setNewMissionTitle] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
-  const [breakdownData, setBreakdownData] = useState<Breakdown | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-
+  
   const handleAddMission = () => {
     if (newMissionTitle.trim()) {
-      setMissions([
-        ...missions,
-        {
-          id: crypto.randomUUID(),
-          title: newMissionTitle,
-          progress: 0,
-        },
-      ]);
+      addMission({ title: newMissionTitle });
       setNewMissionTitle('');
       setIsAddOpen(false);
     }
   };
 
-  const handleDeleteMission = (id: string) => {
-    setMissions(missions.filter((mission) => mission.id !== id));
+  const handleBreakdown = (mission: Mission) => {
+    // Navigate to the roadmap page for the specific mission
+    router.push(`/roadmap/${mission.id}?type=mission`);
   };
 
-  const handleBreakdown = async (mission: Mission) => {
-    setIsLoading(true);
-    setBreakdownData(null);
-    const result = await breakDownTaskAction(mission.title);
-    if (result.success && result.data) {
-      setBreakdownData({ title: mission.title, steps: result.data.steps });
-      setIsBreakdownOpen(true);
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Breakdown Failed',
-        description: result.error,
-      });
-    }
-    setIsLoading(false);
-  };
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -114,13 +84,14 @@ export function Missions() {
                   value={newMissionTitle}
                   onChange={(e) => setNewMissionTitle(e.target.value)}
                   placeholder="e.g., Learn to play the guitar"
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddMission()}
                 />
                 <Button onClick={handleAddMission}>Add</Button>
               </div>
             </DialogContent>
           </Dialog>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           {missions.length === 0 ? (
              <div className="text-center text-muted-foreground py-12">
                 <Rocket className="mx-auto h-12 w-12" />
@@ -129,39 +100,34 @@ export function Missions() {
             </div>
           ) : (
             missions.map((mission) => (
-            <div key={mission.id} className="group flex flex-col gap-2">
+            <div key={mission.id} className="group flex flex-col gap-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">{mission.title}</span>
-                <span className="text-xs text-muted-foreground">
+                <span className="font-medium">{mission.title}</span>
+                <span className="text-sm text-muted-foreground">
                   {mission.progress}%
                 </span>
               </div>
-              <div className="w-full bg-secondary rounded-full h-2.5">
-                <div
-                  className="bg-primary h-2.5 rounded-full"
-                  style={{ width: `${mission.progress}%` }}
-                ></div>
-              </div>
+              <Slider 
+                defaultValue={[mission.progress]} 
+                max={100} 
+                step={1}
+                onValueCommit={(value) => updateMissionProgress(mission.id, value[0])}
+              />
                <div className="flex justify-end gap-2 items-center">
                 <Button
                     variant="ghost"
                     size="sm"
                     className="h-7"
                     onClick={() => handleBreakdown(mission)}
-                    disabled={isLoading}
                   >
-                    {isLoading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Bot className="mr-2 h-4 w-4" />
-                    )}
-                    Use AI
+                    <Bot className="mr-2 h-4 w-4" />
+                    AI Roadmap
                   </Button>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => handleDeleteMission(mission.id)}
+                  onClick={() => deleteMission(mission.id)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -171,28 +137,6 @@ export function Missions() {
           )}
         </CardContent>
       </Card>
-
-      <Dialog open={isBreakdownOpen} onOpenChange={setIsBreakdownOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Bot />
-              <span>Mission Breakdown: {breakdownData?.title}</span>
-            </DialogTitle>
-            <DialogDescription>
-              The AI has broken down your mission into smaller steps.
-            </DialogDescription>
-          </DialogHeader>
-          <ul className="space-y-2 pt-4">
-            {breakdownData?.steps.map((step, index) => (
-              <li key={index} className="flex items-start gap-3">
-                <Rocket className="h-4 w-4 mt-1 text-accent flex-shrink-0" />
-                <span>{step}</span>
-              </li>
-            ))}
-          </ul>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

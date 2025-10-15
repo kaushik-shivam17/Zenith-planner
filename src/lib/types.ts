@@ -9,3 +9,11 @@ export type Task = {
   subtasks?: string[];
   userId: string;
 };
+
+export type Mission = {
+  id: string;
+  userId: string;
+  title: string;
+  progress: number;
+  createdAt: Timestamp;
+};

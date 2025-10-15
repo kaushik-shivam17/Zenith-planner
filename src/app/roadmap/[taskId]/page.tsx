@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState, useRef, useMemo } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useTasks } from '@/hooks/use-tasks';
-import { ArrowLeft, Bot, Loader2, Send } from 'lucide-react';
+import { useMissions } from '@/hooks/use-missions';
+import { ArrowLeft, Bot, Loader2, Send, Split } from 'lucide-react';
 import {
   generateTaskRoadmapAction,
   continueConversationAction,
@@ -21,7 +22,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Timestamp } from 'firebase/firestore';
 
 type ChatMessage = {
   role: 'user' | 'model';
@@ -29,10 +29,15 @@ type ChatMessage = {
 };
 
 export default function RoadmapPage() {
-  const { taskId } = useParams();
-  const { getTaskById, isLoading: areTasksLoading } = useTasks();
+  const { taskId: id } = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
+
+  const itemType = searchParams.get('type') === 'mission' ? 'mission' : 'task';
+
+  const { getTaskById, isLoading: areTasksLoading } = useTasks();
+  const { getMissionById, isLoading: areMissionsLoading } = useMissions();
 
   const [roadmap, setRoadmap] = useState<GenerateTaskRoadmapOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,17 +47,25 @@ export default function RoadmapPage() {
   const [userInput, setUserInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-
-  const task = getTaskById(taskId as string);
+  
+  const item = useMemo(() => {
+    if (itemType === 'mission') {
+      return getMissionById(id as string);
+    }
+    return getTaskById(id as string);
+  }, [id, itemType, getMissionById, getTaskById]);
+  
+  const isItemLoading = areTasksLoading || areMissionsLoading;
 
   useEffect(() => {
-    if (areTasksLoading) {
+    if (isItemLoading) {
       return;
     }
-    if (task) {
+    if (item) {
       const fetchRoadmap = async () => {
         setIsLoading(true);
-        const result = await generateTaskRoadmapAction(task.title);
+        setError(null);
+        const result = await generateTaskRoadmapAction(item.title);
         if (result.success) {
           setRoadmap(result.data);
           setChatHistory([{ role: 'model', content: result.data.introduction }]);
@@ -67,10 +80,11 @@ export default function RoadmapPage() {
         setIsLoading(false);
       };
       fetchRoadmap();
-    } else {
+    } else if (!isItemLoading) {
+      setError(`The requested ${itemType} could not be found.`);
       setIsLoading(false);
     }
-  }, [task, toast, areTasksLoading]);
+  }, [item, isItemLoading, toast, itemType]);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -79,7 +93,7 @@ export default function RoadmapPage() {
   }, [chatHistory]);
 
   const handleSendMessage = async () => {
-    if (!userInput.trim() || !task) return;
+    if (!userInput.trim() || !item) return;
 
     const newUserMessage: ChatMessage = { role: 'user', content: userInput };
     setChatHistory((prev) => [...prev, newUserMessage]);
@@ -87,21 +101,20 @@ export default function RoadmapPage() {
     setIsChatLoading(true);
 
     const conversationHistoryForApi = chatHistory
-      .filter((msg) => msg.role === 'model' && chatHistory[chatHistory.indexOf(msg) + 1]?.role === 'user')
-      .map((msg, index) => ({
-        user: chatHistory[chatHistory.indexOf(msg) + 1]?.content || '',
-        model: msg.content,
-      }));
+      .filter((msg, index) => msg.role === 'model' && chatHistory[index + 1]?.role === 'user')
+      .map((modelMsg, index) => {
+          const userMsg = chatHistory.find((msg, i) => i > index && msg.role === 'user');
+          return {
+              model: modelMsg.content,
+              user: userMsg ? userMsg.content : ''
+          };
+      });
 
-    if (chatHistory[chatHistory.length -1].role === 'user') {
-       conversationHistoryForApi.push({ user: chatHistory[chatHistory.length-1].content, model: '' });
-    } else {
-         conversationHistoryForApi.push({ user: userInput, model: '' });
-    }
-
+    // Add the latest user message
+    conversationHistoryForApi.push({ user: userInput, model: ''});
 
     const result = await continueConversationAction(
-      task.title,
+      item.title,
       conversationHistoryForApi
     );
 
@@ -120,29 +133,33 @@ export default function RoadmapPage() {
     }
     setIsChatLoading(false);
   };
+  
+  const backUrl = itemType === 'mission' ? '/missions' : '/tasks';
+  const backLabel = itemType === 'mission' ? 'Back to Missions' : 'Back to Tasks';
 
-  if (isLoading || areTasksLoading) {
+  if (isLoading || isItemLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-full min-h-[80vh] text-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
         <h2 className="text-2xl font-semibold">Generating Your Roadmap...</h2>
-        <p className="text-muted-foreground">The AI is crafting a personalized plan for your task.</p>
+        <p className="text-muted-foreground">The AI is crafting a personalized plan for your {itemType}.</p>
       </div>
     );
   }
 
-  if (error || !task) {
+  if (error || !item) {
     return (
       <div className="flex flex-col items-center justify-center h-full min-h-[80vh] text-center">
+         <Split className="h-16 w-16 text-destructive mb-4" />
         <h2 className="text-2xl font-semibold text-destructive">
-          {error ? 'Failed to Generate Roadmap' : 'Task Not Found'}
+          {error ? 'Failed to Generate Roadmap' : `${itemType === 'task' ? 'Task' : 'Mission'} Not Found`}
         </h2>
         <p className="text-muted-foreground max-w-md mt-2">
-          {error || "We couldn't find the task you're looking for. It might have been deleted."}
+          {error || `We couldn't find the ${itemType} you're looking for. It might have been deleted.`}
         </p>
-        <Button onClick={() => router.push('/tasks')} className="mt-6">
+        <Button onClick={() => router.push(backUrl)} className="mt-6">
           <ArrowLeft className="mr-2" />
-          Back to Tasks
+          {backLabel}
         </Button>
       </div>
     );
@@ -151,11 +168,11 @@ export default function RoadmapPage() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
-        <Button variant="ghost" onClick={() => router.push('/tasks')} className="mb-4">
+        <Button variant="ghost" onClick={() => router.push(backUrl)} className="mb-4">
           <ArrowLeft className="mr-2" />
-          Back to All Tasks
+          {backLabel}
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Roadmap: {task.title}</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Roadmap: {item.title}</h1>
         {roadmap && (
           <Accordion type="multiple" defaultValue={roadmap.milestones.map(m => m.title)} className="w-full">
             {roadmap.milestones.map((milestone) => (

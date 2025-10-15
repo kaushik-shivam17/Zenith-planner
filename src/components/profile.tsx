@@ -57,8 +57,8 @@ export function Profile() {
       name: '',
       email: '',
       class: '',
-      height: undefined,
-      weight: undefined,
+      height: '' as any, // Initialize with empty string
+      weight: '' as any, // Initialize with empty string
     },
   });
   
@@ -66,7 +66,11 @@ export function Profile() {
 
   useEffect(() => {
     if (userProfile) {
-      form.reset(userProfile);
+      form.reset({
+        ...userProfile,
+        height: userProfile.height ?? '',
+        weight: userProfile.weight ?? '',
+      });
     }
     if (user && !userProfile) {
       form.setValue('name', user.displayName || '');
@@ -96,8 +100,8 @@ export function Profile() {
   }
   
   const bmi =
-    height && weight && height > 0
-      ? (weight / (height * height)).toFixed(2)
+    height && weight && Number(height) > 0
+      ? (Number(weight) / (Number(height) * Number(height))).toFixed(2)
       : null;
 
 
@@ -157,7 +161,7 @@ export function Profile() {
                     <FormItem>
                       <FormLabel>Class (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Grade 12" {...field} />
+                        <Input placeholder="e.g., Grade 12" {...field} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -170,7 +174,7 @@ export function Profile() {
                     <FormItem>
                       <FormLabel>Height (m)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" placeholder="e.g., 1.75" {...field} />
+                        <Input type="number" step="0.01" placeholder="e.g., 1.75" {...field} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -183,7 +187,7 @@ export function Profile() {
                     <FormItem>
                       <FormLabel>Weight (kg)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.1" placeholder="e.g., 70" {...field} />
+                        <Input type="number" step="0.1" placeholder="e.g., 70" {...field} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

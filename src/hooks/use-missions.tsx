@@ -17,7 +17,7 @@ import {
   deleteDocumentNonBlocking,
   useMemoFirebase,
 } from '@/firebase';
-import { collection, doc, serverTimestamp, query, where } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, query, where, getDocs, writeBatch } from 'firebase/firestore';
 
 interface MissionsContextType {
   missions: Mission[];

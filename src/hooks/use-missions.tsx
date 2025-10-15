@@ -24,7 +24,7 @@ interface MissionsContextType {
   getMissionById: (missionId: string) => Mission | undefined;
   addMission: (missionData: Pick<Mission, 'title'>) => void;
   updateMissionProgress: (missionId: string, progress: number) => void;
-  deleteMission: (missionId: string) => void;
+  deleteMission: (missionId: string) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -71,10 +71,10 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
 
   const addMission = useCallback(
     (missionData: Pick<Mission, 'title'>) => {
-      if (!missionsCollectionRef) return;
+      if (!missionsCollectionRef || !user) return;
       const newMission = {
         ...missionData,
-        userId: user!.uid,
+        userId: user.uid,
         progress: 0,
         createdAt: serverTimestamp(),
       };
@@ -94,26 +94,37 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
 
    const deleteMission = useCallback(
     async (missionId: string) => {
-      if (!missionsCollectionRef || !user) return;
+      if (!missionsCollectionRef || !goalsCollectionRef || !user) return;
       
-      // We are not using the hook here because we need to imperatively fetch and delete.
-      const goalsSubCollectionRef = collection(firestore, 'users', user.uid, 'missions', missionId, 'goals');
-      const goalsSnapshot = await getDocs(goalsSubCollectionRef);
       const batch = writeBatch(firestore);
-      goalsSnapshot.forEach(goalDoc => {
+
+      // 1. Delete goals from the sub-collection
+      const goalsSubCollectionRef = collection(firestore, 'users', user.uid, 'missions', missionId, 'goals');
+      const goalsSubSnapshot = await getDocs(goalsSubCollectionRef);
+      goalsSubSnapshot.forEach(goalDoc => {
         batch.delete(goalDoc.ref);
       });
-      await batch.commit();
 
+      // 2. Delete goals from the global collection
+      const q = query(goalsCollectionRef, where("missionId", "==", missionId));
+      const goalsGlobalSnapshot = await getDocs(q);
+      goalsGlobalSnapshot.forEach(goalDoc => {
+        batch.delete(goalDoc.ref);
+      });
+      
+      // 3. Delete the mission document itself
       const missionDocRef = doc(missionsCollectionRef, missionId);
-      deleteDocumentNonBlocking(missionDocRef);
+      batch.delete(missionDocRef);
+
+      // 4. Commit the batch
+      await batch.commit();
     },
-    [missionsCollectionRef, user, firestore]
+    [missionsCollectionRef, goalsCollectionRef, user, firestore]
   );
   
   const isLoading = isMissionsLoading || areGoalsLoading;
 
-  const value = {
+  const value: MissionsContextType = {
     missions: missions || [],
     getMissionById,
     addMission,

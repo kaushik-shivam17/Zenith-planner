@@ -27,6 +27,11 @@ const GenerateStudyScheduleOutputSchema = z.object({
 export type GenerateStudyScheduleOutput = z.infer<typeof GenerateStudyScheduleOutputSchema>;
 
 export async function generateStudySchedule(input: GenerateStudyScheduleInput): Promise<GenerateStudyScheduleOutput> {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error(
+      'The GEMINI_API_KEY environment variable is not set. Please add it to your .env file.'
+    );
+  }
   return generateStudyScheduleFlow(input);
 }
 

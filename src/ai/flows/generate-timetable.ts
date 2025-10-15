@@ -41,6 +41,11 @@ const GenerateTimetableOutputSchema = z.object({
 export type GenerateTimetableOutput = z.infer<typeof GenerateTimetableOutputSchema>;
 
 export async function generateTimetable(input: GenerateTimetableInput): Promise<GenerateTimetableOutput> {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error(
+      'The GEMINI_API_KEY environment variable is not set. Please add it to your .env file.'
+    );
+  }
   return generateTimetableFlow(input);
 }
 

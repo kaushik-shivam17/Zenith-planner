@@ -35,9 +35,9 @@ export const generateScheduleAction = async (
   try {
     const result = await generateStudySchedule({ tasks });
     return { success: true, data: result };
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    return { success: false, error: 'Failed to generate schedule. The AI system may be offline.' };
+    return { success: false, error: error.message || 'Failed to generate schedule. The AI system may be offline.' };
   }
 };
 
@@ -59,9 +59,9 @@ export const suggestTimesAction = async (
   try {
     const result = await suggestOptimalStudyTimes(input);
     return { success: true, data: result };
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    return { success: false, error: 'Failed to suggest times. The AI system may be offline.' };
+    return { success: false, error: error.message || 'Failed to suggest times. The AI system may be offline.' };
   }
 };
 
@@ -97,9 +97,9 @@ export const generateTimetableAction = async (
 
     const result = await generateTimetable({ ...input, tasks: serializableTasks });
     return { success: true, data: result };
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    return { success: false, error: 'Failed to generate timetable. The AI system may be offline.' };
+    return { success: false, error: error.message || 'Failed to generate timetable. The AI system may be offline.' };
   }
 };
 
@@ -135,8 +135,8 @@ export const continueConversationAction = async (
   try {
     const result = await continueConversation({ taskTitle, history });
     return { success: true, data: result };
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    return { success: false, error: 'Failed to continue conversation. The AI system may be offline.' };
+    return { success: false, error: error.message || 'Failed to continue conversation. The AI system may be offline.' };
   }
 };

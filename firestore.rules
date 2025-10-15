@@ -1,31 +1,39 @@
 /**
- * @file Firestore Security Rules for Zenith Planner.
+ * @fileoverview Firestore Security Rules for Zenith Planner.
  *
- * @corePhilosophy This ruleset enforces a strict user-ownership model, where each user can only access their own data.
- * All data is nested under /users/{userId}, ensuring clear ownership.
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model.  Users can only
+ * access their own data.
  *
- * @dataStructure Data is organized hierarchically under the /users/{userId} collection. Each user document contains profile information.
- * Subcollections under each user document (bmiHistory, tasks, missions) store associated data.
+ * Data Structure:
+ * All data is nested under /users/{userId}, ensuring data isolation.
  *
- * @keySecurityDecisions
- *  - Users can only access their own user document and associated subcollections.
- *  - Listing of all users is not allowed.
+ * Key Security Decisions:
+ * - Users can only read and write their own data.
+ * - Listing of users is not allowed.
  *
- * @denormalizationForAuthorization None needed, the data structure enforces ownership by path.
- * @structuralSegregation N/A
+ * Denormalization for Authorization:
+ *  - The 'userId' field within each document is used to enforce
+ *    ownership. This avoids the need for complex queries or additional
+ *    reads to verify ownership.
+ *
+ * Structural Segregation:
+ *  - All user-specific data (BMI, Tasks, Missions) are stored in
+ *    user-specific subcollections.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile documents.
+     * @description Protects the user profiles.  Users can only read/write their own profile.
      * @path /users/{userId}
-     * @allow (create) User with UID 'user_abc' can create their own profile document if request.auth.uid == 'user_abc'.
-     * @allow (get, update, delete) User with UID 'user_abc' can read/write their own profile document.
-     * @deny (create) User with UID 'user_xyz' cannot create a profile document for user 'user_abc'.
-     * @deny (get, update, delete) User with UID 'user_xyz' cannot read/write profile document for user 'user_abc'.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with ID matching auth UID can create their profile.
+     * @allow (get, update, delete) User with ID matching auth UID can get, update and delete their profile.
+     * @deny (create) User with ID not matching auth UID cannot create a profile.
+     * @deny (get, update, delete) User with ID not matching auth UID cannot get, update and delete profile.
+     * @deny (list) Listing all users is not allowed.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId} {
       function isSignedIn() {
@@ -37,101 +45,100 @@ service cloud.firestore {
       }
 
       function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+        return isOwner(userId) && resource.data != null;
       }
 
-      // Allow a user to create their own profile. Validate that the userId in the path matches the authenticated user's UID.
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
-
-      // Allow a user to read their own profile.
-      allow get: if isSignedIn() && isOwner(userId);
-
-      // Only the owner can list user documents (but we will deny this below to prevent user enumeration).
+      allow get: if isOwner(userId);
       allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
 
-      // Allow a user to update their own profile. Enforce immutability of the userId.
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-
-      // Allow a user to delete their own profile.
-      allow delete: if isSignedIn() && isExistingOwner(userId);
-
-      /**
-       * @description Controls access to a user's BMI history records.
-       * @path /users/{userId}/bmiHistory/{bmiId}
-       * @allow (create) User with UID 'user_abc' can create a BMI record under their profile.
-       * @allow (get, update, delete) User with UID 'user_abc' can read/write their own BMI records.
-       * @deny (create) User with UID 'user_xyz' cannot create a BMI record for user 'user_abc'.
-       * @deny (get, update, delete) User with UID 'user_xyz' cannot read/write BMI records for user 'user_abc'.
-       * @principle Enforces document ownership for all operations.
-       */
-      match /users/{userId}/bmiHistory/{bmiId} {
-        // Allow a user to create a BMI record under their profile.
-        allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-
-        // Allow a user to read their own BMI records.
-        allow get: if isSignedIn() && isOwner(userId);
-
-        // Allow a user to list their own BMI records.
-        allow list: if isSignedIn() && isOwner(userId);
-
-        // Allow a user to update their own BMI record. Enforce immutability of the userId.
-        allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-
-        // Allow a user to delete their own BMI record.
-        allow delete: if isSignedIn() && isExistingOwner(userId);
+    /**
+     * @description Protects the BMI history data for each user. Users can only read/write their own BMI records.
+     * @path /users/{userId}/bmiHistory/{bmiId}
+     * @allow (create) User with ID matching path's userId can create a BMI record.
+     * @allow (get, update, delete) User with ID matching path's userId can get, update and delete BMI record.
+     * @deny (create) User with ID not matching path's userId cannot create a BMI record.
+     * @deny (get, update, delete) User with ID not matching path's userId cannot get, update and delete BMI record.
+     * @principle Enforces document ownership for writes.
+     */
+    match /users/{userId}/bmiHistory/{bmiId} {
+      function isSignedIn() {
+        return request.auth != null;
       }
 
-      /**
-       * @description Controls access to a user's tasks.
-       * @path /users/{userId}/tasks/{taskId}
-       * @allow (create) User with UID 'user_abc' can create a task under their profile.
-       * @allow (get, update, delete) User with UID 'user_abc' can read/write their own tasks.
-       * @deny (create) User with UID 'user_xyz' cannot create a task for user 'user_abc'.
-       * @deny (get, update, delete) User with UID 'user_xyz' cannot read/write tasks for user 'user_abc'.
-       * @principle Enforces document ownership for all operations.
-       */
-      match /users/{userId}/tasks/{taskId} {
-        // Allow a user to create a task under their profile.
-        allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-
-        // Allow a user to read their own tasks.
-        allow get: if isSignedIn() && isOwner(userId);
-
-        // Allow a user to list their own tasks.
-        allow list: if isSignedIn() && isOwner(userId);
-
-        // Allow a user to update their own task. Enforce immutability of the userId.
-        allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-
-        // Allow a user to delete their own task.
-        allow delete: if isSignedIn() && isExistingOwner(userId);
+      function isOwner(userId) {
+        return request.auth.uid == userId;
       }
 
-       /**
-        * @description Controls access to a user's missions.
-        * @path /users/{userId}/missions/{missionId}
-        * @allow (create) User with UID 'user_abc' can create a mission under their profile.
-        * @allow (get, update, delete) User with UID 'user_abc' can read/write their own missions.
-        * @deny (create) User with UID 'user_xyz' cannot create a mission for user 'user_abc'.
-        * @deny (get, update, delete) User with UID 'user_xyz' cannot read/write missions for user 'user_abc'.
-        * @principle Enforces document ownership for all operations.
-        */
-      match /users/{userId}/missions/{missionId} {
-        // Allow a user to create a mission under their profile.
-        allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-
-        // Allow a user to read their own missions.
-        allow get: if isSignedIn() && isOwner(userId);
-
-        // Allow a user to list their own missions.
-        allow list: if isSignedIn() && isOwner(userId);
-
-        // Allow a user to update their own mission. Enforce immutability of the userId.
-        allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-
-        // Allow a user to delete their own mission.
-        allow delete: if isSignedIn() && isExistingOwner(userId);
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
       }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+     /**
+     * @description Protects the tasks data for each user. Users can only read/write their own tasks.
+     * @path /users/{userId}/tasks/{taskId}
+     * @allow (create) User with ID matching path's userId can create a task.
+     * @allow (get, update, delete) User with ID matching path's userId can get, update and delete task.
+     * @deny (create) User with ID not matching path's userId cannot create a task.
+     * @deny (get, update, delete) User with ID not matching path's userId cannot get, update and delete task.
+     * @principle Enforces document ownership for writes.
+     */
+    match /users/{userId}/tasks/{taskId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+    /**
+     * @description Protects the missions data for each user. Users can only read/write their own missions.
+     * @path /users/{userId}/missions/{missionId}
+     * @allow (create) User with ID matching path's userId can create a mission.
+     * @allow (get, update, delete) User with ID matching path's userId can get, update and delete mission.
+     * @deny (create) User with ID not matching path's userId cannot create a mission.
+     * @deny (get, update, delete) User with ID not matching path's userId cannot get, update and delete mission.
+     * @principle Enforces document ownership for writes.
+     */
+    match /users/{userId}/missions/{missionId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
   }
 }

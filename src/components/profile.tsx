@@ -58,17 +58,19 @@ export function Profile() {
       name: '',
       email: '',
       class: '',
-      height: '' as any,
-      weight: '' as any,
+      height: undefined,
+      weight: undefined,
     },
   });
 
   useEffect(() => {
     if (userProfile) {
       form.reset({
-        ...userProfile,
-        height: userProfile.height ?? '',
-        weight: userProfile.weight ?? '',
+        name: userProfile.name ?? '',
+        email: userProfile.email ?? '',
+        class: userProfile.class ?? '',
+        height: userProfile.height ?? undefined,
+        weight: userProfile.weight ?? undefined,
       });
     }
     if (user && !userProfile) {
@@ -100,14 +102,17 @@ export function Profile() {
 
   const handleCalculateBmi = () => {
     const { height, weight } = form.getValues();
-    if (height && weight && Number(height) > 0) {
-      const bmiValue = (Number(weight) / (Number(height) * Number(height))).toFixed(2);
+    const numHeight = Number(height);
+    const numWeight = Number(weight);
+
+    if (numHeight > 0 && numWeight > 0) {
+      const bmiValue = (numWeight / (numHeight * numHeight)).toFixed(2);
       setBmi(bmiValue);
     } else {
       toast({
         variant: 'destructive',
         title: 'Missing Information',
-        description: 'Please enter both height and weight to calculate BMI.',
+        description: 'Please enter a valid height and weight to calculate BMI.',
       });
       setBmi(null);
     }
@@ -183,7 +188,7 @@ export function Profile() {
                     <FormItem>
                       <FormLabel>Height (m)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" placeholder="e.g., 1.75" {...field} value={field.value ?? ''} onChange={(e) => { field.onChange(e); setBmi(null); }} />
+                        <Input type="number" step="0.01" placeholder="e.g., 1.75" {...field} value={field.value ?? ''} onChange={(e) => { field.onChange(e.target.valueAsNumber); setBmi(null); }} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -196,7 +201,7 @@ export function Profile() {
                     <FormItem>
                       <FormLabel>Weight (kg)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.1" placeholder="e.g., 70" {...field} value={field.value ?? ''} onChange={(e) => { field.onChange(e); setBmi(null); }}/>
+                        <Input type="number" step="0.1" placeholder="e.g., 70" {...field} value={field.value ?? ''} onChange={(e) => { field.onChange(e.target.valueAsNumber); setBmi(null); }}/>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

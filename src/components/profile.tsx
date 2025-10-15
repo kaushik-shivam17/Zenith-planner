@@ -102,19 +102,19 @@ export function Profile() {
 
   const handleCalculateBmi = () => {
     const { height, weight } = form.getValues();
-    const numHeight = parseFloat(height as any);
-    const numWeight = parseFloat(weight as any);
+    const numHeight = height ? parseFloat(String(height)) : 0;
+    const numWeight = weight ? parseFloat(String(weight)) : 0;
 
     if (numHeight > 0 && numWeight > 0) {
       const bmiValue = (numWeight / (numHeight * numHeight)).toFixed(2);
       setBmi(bmiValue);
     } else {
+      setBmi(null);
       toast({
         variant: 'destructive',
         title: 'Missing Information',
         description: 'Please enter a valid height and weight to calculate BMI.',
       });
-      setBmi(null);
     }
   };
 

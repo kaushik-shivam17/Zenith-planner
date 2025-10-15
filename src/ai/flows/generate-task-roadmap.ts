@@ -64,6 +64,11 @@ const generateTaskRoadmapFlow = ai.defineFlow(
     outputSchema: GenerateTaskRoadmapOutputSchema,
   },
   async (input) => {
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error(
+        'The GEMINI_API_KEY environment variable is not set. Please add it to your .env file.'
+      );
+    }
     const { output } = await prompt(input);
     return output!;
   }

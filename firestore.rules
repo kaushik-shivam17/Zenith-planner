@@ -1,139 +1,150 @@
-/**
- * @fileoverview Firestore Security Rules for Zenith Planner.
- *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model. Each user can only
- * access data associated with their own user ID.
- *
- * Data Structure:
- * - /users/{userId}: Stores user profiles.
- * - /users/{userId}/bmiHistory/{bmiId}: Stores BMI history for each user.
- * - /users/{userId}/tasks/{taskId}: Stores tasks for each user.
- * - /users/{userId}/missions/{missionId}: Stores missions for each user.
- *
- * Key Security Decisions:
- * - Users can only create, read, update, and delete their own user documents
- *   and associated subcollections (BMI history, tasks, missions).
- * - Listing of user documents is disallowed. Listing is allowed for the
- *   user's subcollections (BMI history, tasks, missions).
- * - No global admin roles are defined in this initial ruleset.
- *
- * Denormalization for Authorization:
- *  -  The `userId` is used in subcollections to ensure that the user ID matches the document ID in the path.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is authenticated.
-     * @return {boolean} True if the request is authenticated, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the requested user ID matches the authenticated user's ID.
-     * @param {string} userId The user ID to check.
-     * @return {boolean} True if the user ID matches the authenticated user's ID, false otherwise.
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the requested user ID matches the authenticated user's ID and the resource exists.
-     * @param {string} userId The user ID to check.
-     * @return {boolean} True if the user ID matches the authenticated user's ID and the resource exists, false otherwise.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Rules for the /users/{userId} collection.
+     * @description Controls access to user profile documents.
      * @path /users/{userId}
-     * @allow (create) - A user can create their own user document if the userId matches their auth.uid.
-     * @allow (get) - A user can read their own user document.
-     * @allow (update) - A user can update their own user document.
-     * @allow (delete) - A user can delete their own user document.
-     * @deny (create) - A user cannot create a document with a userId that does not match their auth.uid.
-     * @deny (get) - A user cannot read another user's document.
-     * @deny (update) - A user cannot update another user's document.
-     * @deny (delete) - A user cannot delete another user's document.
-     * @principle Enforces document ownership for all operations on user documents.
+     * @allow (create) User with UID 'user123' can create their own profile document at /users/user123.
+     * @deny (create) User with UID 'user456' cannot create a profile document at /users/user123.
+     * @allow (get) User with UID 'user123' can read their own profile document at /users/user123.
+     * @deny (get) User with UID 'user456' cannot read the profile document at /users/user123.
+     * @allow (update) User with UID 'user123' can update their own profile document at /users/user123.
+     * @deny (update) User with UID 'user456' cannot update the profile document at /users/user123.
+     * @allow (delete) User with UID 'user123' can delete their own profile document at /users/user123.
+     * @deny (delete) User with UID 'user456' cannot delete the profile document at /users/user123.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false; // Disallowing listing of user documents.
-      allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      // Helper function to check if the user is signed in
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      // Helper function to check if the user is the owner of the document
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      // Allow a user to create their own document if the UID matches the document ID
+      allow create: if isSignedIn() && isOwner(userId);
+
+      // Allow a user to read their own document
+      allow get: if isSignedIn() && isOwner(userId);
+
+      // Disallow listing of user documents
+      allow list: if false;
+
+      // Allow a user to update their own document
+      allow update: if isSignedIn() && isOwner(userId);
+
+      // Allow a user to delete their own document
+      allow delete: if isSignedIn() && isOwner(userId);
     }
 
     /**
-     * @description Rules for the /users/{userId}/bmiHistory/{bmiId} collection.
+     * @description Controls access to BMI history documents for a specific user.
      * @path /users/{userId}/bmiHistory/{bmiId}
-     * @allow (create) - A user can create a BMI record in their own bmiHistory collection.
-     * @allow (get) - A user can read a BMI record in their own bmiHistory collection.
-     * @allow (update) - A user can update a BMI record in their own bmiHistory collection.
-     * @allow (delete) - A user can delete a BMI record in their own bmiHistory collection.
-     * @deny (create) - A user cannot create a BMI record in another user's bmiHistory collection.
-     * @deny (get) - A user cannot read a BMI record in another user's bmiHistory collection.
-     * @deny (update) - A user cannot update a BMI record in another user's bmiHistory collection.
-     * @deny (delete) - A user cannot delete a BMI record in another user's bmiHistory collection.
-     * @principle Enforces document ownership for all operations on BMI history records.
+     * @allow (create) User with UID 'user123' can create a BMI record under /users/user123/bmiHistory/bmi456.
+     * @deny (create) User with UID 'user456' cannot create a BMI record under /users/user123/bmiHistory/bmi456.
+     * @allow (get) User with UID 'user123' can read their own BMI record at /users/user123/bmiHistory/bmi456.
+     * @deny (get) User with UID 'user456' cannot read the BMI record at /users/user123/bmiHistory/bmi456.
+     * @allow (update) User with UID 'user123' can update their own BMI record at /users/user123/bmiHistory/bmi456.
+     * @deny (update) User with UID 'user456' cannot update the BMI record at /users/user123/bmiHistory/bmi456.
+     * @allow (delete) User with UID 'user123' can delete their own BMI record at /users/user123/bmiHistory/bmi456.
+     * @deny (delete) User with UID 'user456' cannot delete the BMI record at /users/user123/bmiHistory/bmi456.
+     * @principle Enforces document ownership for all operations within the user's BMI history.
      */
     match /users/{userId}/bmiHistory/{bmiId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      // Helper function to check if the user is the owner of the document
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      // Allow a user to create a BMI record if they are the owner
+      allow create: if isSignedIn() && request.auth.uid == userId;
+
+      // Allow a user to read their own BMI record
+      allow get: if isSignedIn() && request.auth.uid == userId;
+
+      // Allow a user to list their own BMI records
+      allow list: if isSignedIn() && request.auth.uid == userId;
+
+      // Allow a user to update their own BMI record
+      allow update: if isSignedIn() && request.auth.uid == userId;
+
+      // Allow a user to delete their own BMI record
+      allow delete: if isSignedIn() && request.auth.uid == userId;
     }
 
     /**
-     * @description Rules for the /users/{userId}/tasks/{taskId} collection.
+     * @description Controls access to task documents for a specific user.
      * @path /users/{userId}/tasks/{taskId}
-     * @allow (create) - A user can create a task in their own tasks collection.
-     * @allow (get) - A user can read a task in their own tasks collection.
-     * @allow (update) - A user can update a task in their own tasks collection.
-     * @allow (delete) - A user can delete a task in their own tasks collection.
-     * @deny (create) - A user cannot create a task in another user's tasks collection.
-     * @deny (get) - A user cannot read a task in another user's tasks collection.
-     * @deny (update) - A user cannot update a task in another user's tasks collection.
-     * @deny (delete) - A user cannot delete a task in another user's tasks collection.
-     * @principle Enforces document ownership for all operations on task records.
+     * @allow (create) User with UID 'user123' can create a task under /users/user123/tasks/task456.
+     * @deny (create) User with UID 'user456' cannot create a task under /users/user123/tasks/task456.
+     * @allow (get) User with UID 'user123' can read their own task at /users/user123/tasks/task456.
+     * @deny (get) User with UID 'user456' cannot read the task at /users/user123/tasks/task456.
+     * @allow (update) User with UID 'user123' can update their own task at /users/user123/tasks/task456.
+     * @deny (update) User with UID 'user456' cannot update the task at /users/user123/tasks/task456.
+     * @allow (delete) User with UID 'user123' can delete their own task at /users/user123/tasks/task456.
+     * @deny (delete) User with UID 'user456' cannot delete the task at /users/user123/tasks/task456.
+     * @principle Enforces document ownership for all operations within the user's tasks.
      */
     match /users/{userId}/tasks/{taskId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      // Helper function to check if the user is the owner of the document
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      // Allow a user to create a task if they are the owner
+      allow create: if isSignedIn() && request.auth.uid == userId;
+
+      // Allow a user to read their own task
+      allow get: if isSignedIn() && request.auth.uid == userId;
+
+      // Allow a user to list their own tasks
+      allow list: if isSignedIn() && request.auth.uid == userId;
+
+      // Allow a user to update their own task
+      allow update: if isSignedIn() && request.auth.uid == userId;
+
+      // Allow a user to delete their own task
+      allow delete: if isSignedIn() && request.auth.uid == userId;
     }
-     /**
-     * @description Rules for the /users/{userId}/missions/{missionId} collection.
+
+      /**
+     * @description Controls access to mission documents for a specific user.
      * @path /users/{userId}/missions/{missionId}
-     * @allow (create) - A user can create a mission in their own missions collection.
-     * @allow (get) - A user can read a mission in their own missions collection.
-     * @allow (list) - A user can list missions in their own missions collection.
-     * @allow (update) - A user can update a mission in their own missions collection.
-     * @allow (delete) - A user can delete a mission in their own missions collection.
-     * @deny (create) - A user cannot create a mission in another user's missions collection.
-     * @deny (get) - A user cannot read a mission in another user's missions collection.
-     * @deny (list) - A user cannot list missions in another user's missions collection.
-     * @deny (update) - A user cannot update a mission in another user's missions collection.
-     * @deny (delete) - A user cannot delete a mission in another user's missions collection.
-     * @principle Enforces document ownership for all operations on mission records.
+     * @allow (create) User with UID 'user123' can create a mission under /users/user123/missions/mission456.
+     * @deny (create) User with UID 'user456' cannot create a mission under /users/user123/missions/mission456.
+     * @allow (get) User with UID 'user123' can read their own mission at /users/user123/missions/mission456.
+     * @deny (get) User with UID 'user456' cannot read the mission at /users/user123/missions/mission456.
+     * @allow (update) User with UID 'user123' can update their own mission at /users/user123/missions/mission456.
+     * @deny (update) User with UID 'user456' cannot update the mission at /users/user123/missions/mission456.
+     * @allow (delete) User with UID 'user123' can delete their own mission at /users/user123/missions/mission456.
+     * @deny (delete) User with UID 'user456' cannot delete the mission at /users/user123/missions/mission456.
+     * @principle Enforces document ownership for all operations within the user's missions.
      */
     match /users/{userId}/missions/{missionId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      // Helper function to check if the user is the owner of the document
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      // Allow a user to create a mission if they are the owner
+      allow create: if isSignedIn() && request.auth.uid == userId;
+
+      // Allow a user to read their own mission
+      allow get: if isSignedIn() && request.auth.uid == userId;
+
+      // Allow a user to list their own missions
+      allow list: if isSignedIn() && request.auth.uid == userId;
+
+      // Allow a user to update their own mission
+      allow update: if isSignedIn() && request.auth.uid == userId;
+
+      // Allow a user to delete their own mission
+      allow delete: if isSignedIn() && request.auth.uid == userId;
     }
   }
 }

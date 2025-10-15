@@ -1,76 +1,91 @@
 /**
- * @fileoverview Firestore Security Rules for Zenith Planner.
- *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model. Users can only access their own profile data and BMI records.
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a strict user-ownership model for the Zenith Planner application.
  *
  * Data Structure:
- * - All user data is stored under `/users/{userId}`, where `{userId}` matches the Firebase Auth UID.
- * - BMI records are stored as subcollections under each user's document: `/users/{userId}/bmi/{bmiId}`.
+ * - /users/{userId}: Stores user profile information. Only the user can read/write their own profile.
+ * - /users/{userId}/bmiHistory/{bmiId}: Stores BMI history. Only the user can read/write their own BMI records.
+ * - /users/{userId}/tasks/{taskId}: Stores tasks. Only the user can read/write their own tasks.
  *
  * Key Security Decisions:
- * - Users cannot list all users.
- * - Users can only read and write their own BMI records.
- * - Data consistency between the path and document ID is enforced on creation and updates.
+ * - Users can only access data under their own user ID.
+ * - Listing of users is disallowed.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Enforces user-ownership for profile data.
+     * @description Enforces access control for user profiles. Only the authenticated user can read and write their own profile.
      * @path /users/{userId}
-     * @allow (create) - User with UID 'user_abc' can create their own profile at /users/user_abc.
-     * @allow (get, update, delete) - User with UID 'user_abc' can read, update, and delete their profile at /users/user_abc.
-     * @deny (create, get, update, delete) - User with UID 'user_xyz' cannot access /users/user_abc.
-     * @principle Enforces document ownership for writes.
+     * @allow (get) Authenticated user with UID 'Tlm6UhzT1qMBNC0G7izQErk0Wl53' reading their own profile.
+     * @allow (create) Authenticated user with UID 'Tlm6UhzT1qMBNC0G7izQErk0Wl53' creating their own profile.
+     * @allow (update) Authenticated user with UID 'Tlm6UhzT1qMBNC0G7izQErk0Wl53' updating their own profile.
+     * @allow (delete) Authenticated user with UID 'Tlm6UhzT1qMBNC0G7izQErk0Wl53' deleting their own profile.
+     * @deny (get) Authenticated user with UID 'OtherUser' attempting to read user profile 'Tlm6UhzT1qMBNC0G7izQErk0Wl53'.
+     * @deny (create) Unauthenticated user attempting to create a profile.
+     * @principle Enforces document ownership for all read and write operations.
      */
     match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
       allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && (request.resource.data.id == resource.data.id);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces user-ownership for BMI records.
-     * @path /users/{userId}/bmi/{bmiId}
-     * @allow (create) - User with UID 'user_abc' can create a BMI record under /users/user_abc/bmi/bmi_123.
-     * @allow (get, update, delete) - User with UID 'user_abc' can read, update, and delete their BMI record under /users/user_abc/bmi/bmi_123.
-     * @deny (create, get, update, delete) - User with UID 'user_xyz' cannot access /users/user_abc/bmi/bmi_123.
-     * @principle Restricts access to a user's own data tree and validates relational integrity between documents.
+     * @description Enforces access control for BMI history. Only the authenticated user can read and write their own BMI records.
+     * @path /users/{userId}/bmiHistory/{bmiId}
+     * @allow (get) Authenticated user with UID 'Tlm6UhzT1qMBNC0G7izQErk0Wl53' reading their own BMI history.
+     * @allow (create) Authenticated user with UID 'Tlm6UhzT1qMBNC0G7izQErk0Wl53' creating their own BMI history.
+     * @allow (update) Authenticated user with UID 'Tlm6UhzT1qMBNC0G7izQErk0Wl53' updating their own BMI history.
+     * @allow (delete) Authenticated user with UID 'Tlm6UhzT1qMBNC0G7izQErk0Wl53' deleting their own BMI history.
+     * @deny (get) Authenticated user with UID 'OtherUser' attempting to read user 'Tlm6UhzT1qMBNC0G7izQErk0Wl53' BMI history.
+     * @deny (create) Unauthenticated user attempting to create a BMI history.
+     * @principle Enforces document ownership for all read and write operations.
      */
-    match /users/{userId}/bmi/{bmiId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
+    match /users/{userId}/bmiHistory/{bmiId} {
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && (request.resource.data.userId == resource.data.userId);
       allow delete: if isExistingOwner(userId);
     }
+
+    /**
+     * @description Enforces access control for tasks. Only the authenticated user can read and write their own tasks.
+     * @path /users/{userId}/tasks/{taskId}
+     * @allow (get) Authenticated user with UID 'Tlm6UhzT1qMBNC0G7izQErk0Wl53' reading their own task.
+     * @allow (list) Authenticated user with UID 'Tlm6UhzT1qMBNC0G7izQErk0Wl53' listing their own tasks.
+     * @allow (create) Authenticated user with UID 'Tlm6UhzT1qMBNC0G7izQErk0Wl53' creating their own task.
+     * @allow (update) Authenticated user with UID 'Tlm6UhzT1qMBNC0G7izQErk0Wl53' updating their own task.
+     * @allow (delete) Authenticated user with UID 'Tlm6UhzT1qMBNC0G7izQErk0Wl53' deleting their own task.
+     * @deny (get) Authenticated user with UID 'OtherUser' attempting to read user 'Tlm6UhzT1qMBNC0G7izQErk0Wl53' tasks.
+     * @deny (create) Unauthenticated user attempting to create a task.
+     * @principle Enforces document ownership for all read and write operations.
+     */
+    match /users/{userId}/tasks/{taskId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && (request.resource.data.userId == resource.data.userId);
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+
+  // Helper function to determine if the request is made by the document owner.
+  function isOwner(userId) {
+    return isSignedIn() && request.auth.uid == userId;
+  }
+
+  // Helper function to determine if the request is made by the document owner and the document exists.
+  function isExistingOwner(userId) {
+    return isOwner(userId) && resource != null;
+  }
+
+  // Helper function to determine if a user is signed in.
+  function isSignedIn() {
+    return request.auth != null;
   }
 }

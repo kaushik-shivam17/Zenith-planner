@@ -76,13 +76,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar>
         <SidebarHeader className="p-4">
           <div className="flex items-center gap-3">
-            <Target className="w-8 h-8 text-primary" />
             <div className="flex flex-col">
               <h1 className="text-xl font-bold tracking-tighter font-headline text-foreground">
                 Zenith Planner
               </h1>
               <p className="text-xs text-muted-foreground">
-                Become Master with us
+                Become Pro with us
               </p>
             </div>
           </div>

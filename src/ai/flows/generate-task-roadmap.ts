@@ -49,9 +49,9 @@ Task: {{{taskTitle}}}
 Generate a roadmap with the following structure:
 1.  **Introduction**: A short, encouraging sentence to get the user started.
 2.  **Milestones**: Break the task into 3-5 logical milestones. Each milestone should have:
-    *   A clear `title`.
-    *   A single, relevant `emoji` that fits the milestone's theme.
-    *   A list of 3-5 concrete `steps` to achieve the milestone.
+    *   A clear \`title\`.
+    *   A single, relevant \`emoji\` that fits the milestone's theme.
+    *   A list of 3-5 concrete \`steps\` to achieve the milestone.
 3.  **Conclusion**: A final motivational sentence to inspire the user to begin.
 
 Make the language positive and action-oriented. The goal is to make the user feel confident and prepared to tackle their task.`,

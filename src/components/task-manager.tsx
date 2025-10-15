@@ -54,7 +54,7 @@ export function TaskManager({
         </div>
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <PlusCircle className="mr-2" />
               Add Task
             </Button>

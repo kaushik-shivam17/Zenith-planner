@@ -51,7 +51,10 @@ export function Dashboard() {
           variant="ghost" 
           size="icon" 
           className="absolute top-4 right-4"
-          onClick={() => setIsCalendarOpen(true)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsCalendarOpen(true);
+          }}
         >
           <CalendarIcon className="h-5 w-5 text-muted-foreground" />
           <span className="sr-only">Open Calendar</span>
@@ -60,26 +63,26 @@ export function Dashboard() {
           className="p-6 flex flex-col items-center justify-center space-y-2"
           onClick={() => handleDateSelect(new Date())}
         >
-          <div className="text-2xl font-semibold text-muted-foreground">
+          <div className="text-xl md:text-2xl font-semibold text-muted-foreground">
             {date ? format(date, 'eeee') : ''}
           </div>
-          <div className="text-7xl font-bold text-primary">
+          <div className="text-6xl md:text-7xl font-bold text-primary">
             {date ? format(date, 'd') : ''}
           </div>
-          <div className="text-2xl font-semibold text-muted-foreground">
+          <div className="text-xl md:text-2xl font-semibold text-muted-foreground">
             {date ? format(date, 'MMMM yyyy') : ''}
           </div>
         </CardContent>
       </Card>
       
       <div className="flex flex-col items-center justify-center space-y-4 pt-4">
-        <h1 className="text-4xl font-bold tracking-tight text-center">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-center">
           Welcome to Zenith Planner
         </h1>
         <p className="text-sm font-semibold text-muted-foreground tracking-wider">
           this is created by Shivam Kaushik
         </p>
-        <p className="text-lg text-muted-foreground text-center max-w-md">
+        <p className="text-base md:text-lg text-muted-foreground text-center max-w-md">
           Select a date on the calendar to quickly add a new task or choose a tool from the sidebar.
         </p>
       </div>

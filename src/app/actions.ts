@@ -22,6 +22,8 @@ import {
   getFitnessAdvice,
   type GetFitnessAdviceOutput,
 } from '@/ai/flows/get-fitness-advice';
+import { generateTaskRoadmap, type GenerateTaskRoadmapOutput } from '@/ai/flows/generate-task-roadmap';
+import { continueConversation, type ContinueConversationOutput } from '@/ai/flows/continue-conversation';
 import type { Task } from '@/lib/types';
 
 
@@ -101,5 +103,30 @@ export const getFitnessAdviceAction = async (
   } catch (error) {
     console.error(error);
     return { success: false, error: 'Failed to get fitness advice. The AI system may be offline.' };
+  }
+};
+
+export const generateTaskRoadmapAction = async (
+  taskTitle: string
+): Promise<ActionResult<GenerateTaskRoadmapOutput>> => {
+  try {
+    const result = await generateTaskRoadmap({ taskTitle });
+    return { success: true, data: result };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: 'Failed to generate roadmap. The AI system may be offline.' };
+  }
+};
+
+export const continueConversationAction = async (
+  taskTitle: string,
+  history: { user: string; model: string }[]
+): Promise<ActionResult<ContinueConversationOutput>> => {
+  try {
+    const result = await continueConversation({ taskTitle, history });
+    return { success: true, data: result };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: 'Failed to continue conversation. The AI system may be offline.' };
   }
 };

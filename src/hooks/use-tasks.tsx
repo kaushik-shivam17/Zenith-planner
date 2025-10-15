@@ -29,6 +29,7 @@ const initialTasks: Task[] = [
 
 interface TasksContextType {
   tasks: Task[];
+  getTaskById: (taskId: string) => Task | undefined;
   addTask: (taskData: Omit<Task, 'id' | 'completed'>) => void;
   updateTask: (updatedTask: Task) => void;
   toggleTaskCompletion: (taskId: string) => void;
@@ -38,6 +39,10 @@ const TasksContext = createContext<TasksContextType | undefined>(undefined);
 
 export function TasksProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
+
+  const getTaskById = (taskId: string) => {
+    return tasks.find(task => task.id === taskId);
+  };
 
   const addTask = (taskData: Omit<Task, 'id' | 'completed'>) => {
     const newTask: Task = {
@@ -63,7 +68,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <TasksContext.Provider value={{ tasks, addTask, updateTask, toggleTaskCompletion }}>
+    <TasksContext.Provider value={{ tasks, getTaskById, addTask, updateTask, toggleTaskCompletion }}>
       {children}
     </TasksContext.Provider>
   );

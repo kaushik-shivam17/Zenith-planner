@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Bot,
   BrainCircuit,
@@ -35,31 +36,16 @@ type TaskListProps = {
 
 export function TaskList({ tasks, onUpdateTask, onToggleTask }: TaskListProps) {
   const { toast } = useToast();
-  const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
-  const [breakdownData, setBreakdownData] = useState<{
-    title: string;
-    steps: string[];
-  } | null>(null);
-  const [isBreakingDown, setIsBreakingDown] = useState(false);
+  const router = useRouter();
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [scheduleData, setScheduleData] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isBreakingDown, setIsBreakingDown] = useState<string | null>(null);
 
-  const handleBreakdown = async (task: Task) => {
-    setIsBreakingDown(true);
-    setBreakdownData(null);
-    const result = await breakDownTaskAction(task.title);
-    if (result.success && result.data) {
-      setBreakdownData({ title: task.title, steps: result.data.steps });
-      setIsBreakdownOpen(true);
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Breakdown Failed',
-        description: result.error,
-      });
-    }
-    setIsBreakingDown(false);
+  const handleBreakdown = (task: Task) => {
+    setIsBreakingDown(task.id);
+    // Navigate to the new roadmap page
+    router.push(`/roadmap/${task.id}`);
   };
 
   const handleGenerateSchedule = async () => {
@@ -165,37 +151,20 @@ export function TaskList({ tasks, onUpdateTask, onToggleTask }: TaskListProps) {
                     variant="ghost"
                     size="icon"
                     onClick={() => handleBreakdown(task)}
-                    disabled={isBreakingDown}
+                    disabled={!!isBreakingDown}
                   >
-                    <Split className="h-4 w-4" />
-                    <span className="sr-only">Break down task</span>
+                    {isBreakingDown === task.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Split className="h-4 w-4" />
+                    )}
+                    <span className="sr-only">Create Roadmap</span>
                   </Button>
                 )}
               </div>
             ))}
         </div>
       </ScrollArea>
-      <Dialog open={isBreakdownOpen} onOpenChange={setIsBreakdownOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Bot />
-              <span>Task Breakdown: {breakdownData?.title}</span>
-            </DialogTitle>
-            <DialogDescription>
-              The AI has broken down your task into smaller steps.
-            </DialogDescription>
-          </DialogHeader>
-          <ul className="space-y-2 pt-4">
-            {breakdownData?.steps.map((step, index) => (
-              <li key={index} className="flex items-start gap-3">
-                <Check className="h-4 w-4 mt-1 text-accent flex-shrink-0" />
-                <span>{step}</span>
-              </li>
-            ))}
-          </ul>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
         <DialogContent className="max-w-2xl">

@@ -24,7 +24,7 @@ export type BreakDownTaskOutput = z.infer<typeof BreakDownTaskOutputSchema>;
 export async function breakDownTask(input: BreakDownTaskInput): Promise<BreakDownTaskOutput> {
   if (!process.env.GEMINI_API_KEY) {
     throw new Error(
-      'The GEMINI_API_KEY environment variable is not set. Please add it to your Vercel project settings.'
+      'The GEMINI_API_KEY environment variable is not set. Please add it to your .env file.'
     );
   }
   return breakDownTaskFlow(input);

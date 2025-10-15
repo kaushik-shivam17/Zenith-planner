@@ -94,30 +94,36 @@ export default function RoadmapPage() {
 
   const handleSendMessage = async () => {
     if (!userInput.trim() || !item) return;
-
+  
     const newUserMessage: ChatMessage = { role: 'user', content: userInput };
-    setChatHistory((prev) => [...prev, newUserMessage]);
+    const newChatHistory = [...chatHistory, newUserMessage];
+    setChatHistory(newChatHistory);
     setUserInput('');
     setIsChatLoading(true);
-
-    const conversationHistoryForApi = chatHistory
-      .filter((msg, index) => msg.role === 'model' && chatHistory[index + 1]?.role === 'user')
-      .map((modelMsg, index) => {
-          const userMsg = chatHistory.find((msg, i) => i > index && msg.role === 'user');
-          return {
-              model: modelMsg.content,
-              user: userMsg ? userMsg.content : ''
-          };
-      });
-
-    // Add the latest user message
-    conversationHistoryForApi.push({ user: userInput, model: ''});
-
+  
+    // Correctly build the history for the API
+    const conversationHistoryForApi: { user: string; model: string }[] = [];
+    let currentUserMessage = '';
+  
+    // Start from index 1 because the first message is always from the model
+    for (let i = 1; i < newChatHistory.length; i++) {
+      const message = newChatHistory[i];
+      if (message.role === 'user') {
+        currentUserMessage = message.content;
+        if (i === newChatHistory.length - 1) { // If it's the last message
+           conversationHistoryForApi.push({ user: currentUserMessage, model: '' });
+        }
+      } else if (message.role === 'model' && currentUserMessage) {
+        conversationHistoryForApi.push({ user: currentUserMessage, model: message.content });
+        currentUserMessage = ''; // Reset for the next pair
+      }
+    }
+  
     const result = await continueConversationAction(
       item.title,
       conversationHistoryForApi
     );
-
+  
     if (result.success) {
       setChatHistory((prev) => [
         ...prev,
@@ -129,7 +135,8 @@ export default function RoadmapPage() {
         title: 'Error',
         description: result.error,
       });
-      setChatHistory(prev => prev.slice(0, -1)); // remove optimistic user message
+      // Revert optimistic update
+      setChatHistory(prev => prev.slice(0, -1));
     }
     setIsChatLoading(false);
   };

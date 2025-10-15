@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  AppWindow,
   BadgeCheck,
   BrainCircuit,
   Calendar,
@@ -30,7 +29,6 @@ import {
 } from '@/components/ui/sidebar';
 import { Header } from '@/components/header';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Target } from 'lucide-react';
 
@@ -40,7 +38,6 @@ const navItems = [
   { href: '/missions', label: 'Missions', icon: Rocket },
   { href: '/timetable', label: 'Timetable', icon: Calendar },
   { href: '/focus', label: 'Focus AI', icon: BrainCircuit },
-  { href: '/wellness', label: 'Wellness', icon: AppWindow },
   { href: '/fitness', label: 'Fitness', icon: HeartPulse },
 ];
 

@@ -6,6 +6,7 @@ import {
   ReactNode,
   useCallback,
   useMemo,
+  useEffect,
 } from 'react';
 import type { Mission } from '@/lib/types';
 import {
@@ -16,7 +17,7 @@ import {
   deleteDocumentNonBlocking,
   useMemoFirebase,
 } from '@/firebase';
-import { collection, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, query, where } from 'firebase/firestore';
 
 interface MissionsContextType {
   missions: Mission[];
@@ -36,8 +37,30 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
     () => (user ? collection(firestore, 'users', user.uid, 'missions') : null),
     [user, firestore]
   );
+  
+  const goalsCollectionRef = useMemoFirebase(
+    () => (user ? collection(firestore, `users/${user.uid}/goals`) : null),
+    [user, firestore]
+  );
 
-  const { data: missions, isLoading } = useCollection<Mission>(missionsCollectionRef);
+  const { data: missionsData, isLoading: isMissionsLoading } = useCollection<Omit<Mission, 'id'|'progress'>>(missionsCollectionRef);
+  const { data: allGoals, isLoading: areGoalsLoading } = useCollection<{missionId: string, completed: boolean}>(goalsCollectionRef);
+
+  const missions = useMemo(() => {
+    if (!missionsData) return [];
+    
+    return missionsData.map(mission => {
+      const missionGoals = allGoals?.filter(goal => goal.missionId === mission.id) || [];
+      const completedGoals = missionGoals.filter(goal => goal.completed).length;
+      const progress = missionGoals.length > 0 ? (completedGoals / missionGoals.length) * 100 : 0;
+      
+      return {
+        ...mission,
+        progress,
+      };
+    });
+  }, [missionsData, allGoals]);
+
 
   const getMissionById = useCallback(
     (missionId: string) => {
@@ -70,13 +93,25 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
   );
 
    const deleteMission = useCallback(
-    (missionId: string) => {
-      if (!missionsCollectionRef) return;
+    async (missionId: string) => {
+      if (!missionsCollectionRef || !user) return;
+      
+      // We are not using the hook here because we need to imperatively fetch and delete.
+      const goalsSubCollectionRef = collection(firestore, 'users', user.uid, 'missions', missionId, 'goals');
+      const goalsSnapshot = await getDocs(goalsSubCollectionRef);
+      const batch = writeBatch(firestore);
+      goalsSnapshot.forEach(goalDoc => {
+        batch.delete(goalDoc.ref);
+      });
+      await batch.commit();
+
       const missionDocRef = doc(missionsCollectionRef, missionId);
       deleteDocumentNonBlocking(missionDocRef);
     },
-    [missionsCollectionRef]
+    [missionsCollectionRef, user, firestore]
   );
+  
+  const isLoading = isMissionsLoading || areGoalsLoading;
 
   const value = {
     missions: missions || [],

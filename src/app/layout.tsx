@@ -29,11 +29,11 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
-          <TasksProvider>
-            <MissionsProvider>
-              <AppShell>{children}</AppShell>
-            </MissionsProvider>
-          </TasksProvider>
+          <MissionsProvider>
+            <TasksProvider>
+                <AppShell>{children}</AppShell>
+            </TasksProvider>
+          </MissionsProvider>
         </FirebaseClientProvider>
         <Toaster />
         <Analytics />

@@ -23,6 +23,7 @@ import {
 } from '@/ai/flows/get-fitness-advice';
 import { generateTaskRoadmap, type GenerateTaskRoadmapOutput } from '@/ai/flows/generate-task-roadmap';
 import { continueConversation, type ContinueConversationOutput } from '@/ai/flows/continue-conversation';
+import { suggestGoalsForMission, type SuggestGoalsForMissionOutput } from '@/ai/flows/suggest-goals-for-mission';
 import type { Task as ClientTask } from '@/lib/types';
 import { Timestamp } from 'firebase/firestore';
 
@@ -138,5 +139,18 @@ export const continueConversationAction = async (
   } catch (error: any) {
     console.error(error);
     return { success: false, error: error.message || 'Failed to continue conversation. The AI system may be offline.' };
+  }
+};
+
+
+export const suggestGoalsForMissionAction = async (
+  missionTitle: string
+): Promise<ActionResult<SuggestGoalsForMissionOutput>> => {
+  try {
+    const result = await suggestGoalsForMission({ missionTitle });
+    return { success: true, data: result };
+  } catch (error: any) {
+    console.error(error);
+    return { success: false, error: error.message || 'Failed to suggest goals. The AI system may be offline.' };
   }
 };

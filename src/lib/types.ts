@@ -17,3 +17,12 @@ export type Mission = {
   progress: number;
   createdAt: Timestamp;
 };
+
+export type Goal = {
+  id: string;
+  userId: string;
+  missionId: string;
+  title: string;
+  completed: boolean;
+  createdAt: Timestamp;
+};

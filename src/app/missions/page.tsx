@@ -1,5 +1,115 @@
-import { Missions } from '@/components/missions';
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Loader2, Plus, Rocket } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { useMissions } from '@/hooks/use-missions';
+import { Progress } from '@/components/ui/progress';
 
 export default function MissionsPage() {
-  return <Missions />;
+  const router = useRouter();
+  const { missions, addMission, isLoading } = useMissions();
+  const [newMissionTitle, setNewMissionTitle] = useState('');
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  
+  const handleAddMission = () => {
+    if (newMissionTitle.trim()) {
+      addMission({ title: newMissionTitle });
+      setNewMissionTitle('');
+      setIsAddOpen(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Rocket />
+              <span>Missions</span>
+            </CardTitle>
+            <CardDescription>
+              Your ambitious, long-term missions. Click one to manage its goals.
+            </CardDescription>
+          </div>
+          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2" />
+                Add Mission
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add a New Mission</DialogTitle>
+                <DialogDescription>
+                  What great endeavor will you embark on?
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex gap-2">
+                <Input
+                  value={newMissionTitle}
+                  onChange={(e) => setNewMissionTitle(e.target.value)}
+                  placeholder="e.g., Learn to play the guitar"
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddMission()}
+                />
+                <Button onClick={handleAddMission}>Add</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {missions.length === 0 ? (
+             <div className="text-center text-muted-foreground py-12">
+                <Rocket className="mx-auto h-12 w-12" />
+                <h3 className="mt-4 text-lg font-semibold">No missions yet</h3>
+                <p className="mt-1 text-sm">Add a new mission to get started on your next big adventure.</p>
+            </div>
+          ) : (
+            missions.map((mission) => (
+            <Card 
+              key={mission.id} 
+              className="group flex flex-col gap-3 p-4 hover:bg-secondary/50 cursor-pointer transition-colors"
+              onClick={() => router.push(`/missions/${mission.id}`)}
+            >
+              <div className="flex justify-between items-center">
+                <span className="font-medium">{mission.title}</span>
+                <span className="text-sm text-muted-foreground">
+                  {Math.round(mission.progress)}%
+                </span>
+              </div>
+              <Progress value={mission.progress} />
+            </Card>
+          ))
+          )}
+        </CardContent>
+      </Card>
+    </>
+  );
 }

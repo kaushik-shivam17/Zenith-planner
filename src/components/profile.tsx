@@ -58,8 +58,8 @@ export function Profile() {
       name: '',
       email: '',
       class: '',
-      height: '',
-      weight: '',
+      height: undefined,
+      weight: undefined,
     },
   });
 
@@ -69,11 +69,10 @@ export function Profile() {
         name: userProfile.name ?? '',
         email: userProfile.email ?? '',
         class: userProfile.class ?? '',
-        height: userProfile.height ?? '',
-        weight: userProfile.weight ?? '',
+        height: userProfile.height ?? undefined,
+        weight: userProfile.weight ?? undefined,
       });
-    }
-    if (user && !userProfile) {
+    } else if (user) {
       form.setValue('name', user.displayName || '');
       form.setValue('email', user.email || '');
     }
@@ -103,23 +102,15 @@ export function Profile() {
   const handleCalculateBmi = () => {
     const { height, weight } = form.getValues();
   
-    // Convert to numbers safely
-    const numHeight = parseFloat(height?.toString() || '');
-    const numWeight = parseFloat(weight?.toString() || '');
-  
-    // Check for valid numeric values
-    const isHeightValid = !isNaN(numHeight) && numHeight > 0;
-    const isWeightValid = !isNaN(numWeight) && numWeight > 0;
-  
-    if (isHeightValid && isWeightValid) {
-      const bmiValue = (numWeight / (numHeight * numHeight)).toFixed(2);
+    if (height && weight && height > 0 && weight > 0) {
+      const bmiValue = (weight / (height * height)).toFixed(2);
       setBmi(bmiValue);
     } else {
       setBmi(null);
       toast({
         variant: 'destructive',
         title: 'Missing or Invalid Information',
-        description: 'Please enter a valid numeric height and weight greater than zero to calculate BMI.',
+        description: 'Please enter a valid height and weight greater than zero to calculate BMI.',
       });
     }
   };
@@ -202,8 +193,8 @@ export function Profile() {
                           {...field}
                           value={field.value ?? ''}
                           onChange={(e) => {
-                            const value = e.target.valueAsNumber;
-                            field.onChange(isNaN(value) ? '' : value);
+                            const value = e.target.value;
+                            field.onChange(value === '' ? undefined : parseFloat(value));
                             setBmi(null);
                           }}
                         />
@@ -226,8 +217,8 @@ export function Profile() {
                           {...field}
                           value={field.value ?? ''}
                           onChange={(e) => {
-                            const value = e.target.valueAsNumber;
-                            field.onChange(isNaN(value) ? '' : value);
+                            const value = e.target.value;
+                            field.onChange(value === '' ? undefined : parseFloat(value));
                             setBmi(null);
                           }}
                         />

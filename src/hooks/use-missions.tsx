@@ -43,29 +43,20 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
     () => (user ? collection(firestore, 'users', user.uid, 'missions') : null),
     [user, firestore]
   );
-  
-  const goalsCollectionRef = useMemoFirebase(
-    () => (user ? collection(firestore, `users/${user.uid}/goals`) : null),
-    [user, firestore]
-  );
 
   const { data: missionsData, isLoading: isMissionsLoading } = useCollection<Omit<Mission, 'id'|'progress'>>(missionsCollectionRef);
-  const { data: allGoals, isLoading: areGoalsLoading } = useCollection<{missionId: string, completed: boolean}>(goalsCollectionRef);
 
   const missions = useMemo(() => {
     if (!missionsData) return [];
     
     return missionsData.map(mission => {
-      const missionGoals = allGoals?.filter(goal => goal.missionId === mission.id) || [];
-      const completedGoals = missionGoals.filter(goal => goal.completed).length;
-      const progress = missionGoals.length > 0 ? (completedGoals / missionGoals.length) * 100 : 0;
-      
+      const progress = mission.totalGoals > 0 ? (mission.completedGoals / mission.totalGoals) * 100 : 0;
       return {
         ...mission,
         progress,
       };
     });
-  }, [missionsData, allGoals]);
+  }, [missionsData]);
 
 
   const getMissionById = useCallback(
@@ -83,6 +74,8 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
         userId: user.uid,
         progress: 0,
         createdAt: serverTimestamp(),
+        totalGoals: 0,
+        completedGoals: 0,
       };
       addDocumentNonBlocking(missionsCollectionRef, newMission);
     },
@@ -100,35 +93,28 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
 
    const deleteMission = useCallback(
     async (missionId: string) => {
-      if (!missionsCollectionRef || !goalsCollectionRef || !user) return;
+      if (!missionsCollectionRef || !user) return;
       
       const batch = writeBatch(firestore);
 
-      // 1. Delete goals from the sub-collection
+      // Delete goals from the sub-collection
       const goalsSubCollectionRef = collection(firestore, 'users', user.uid, 'missions', missionId, 'goals');
       const goalsSubSnapshot = await getDocs(goalsSubCollectionRef);
       goalsSubSnapshot.forEach(goalDoc => {
         batch.delete(goalDoc.ref);
       });
-
-      // 2. Delete goals from the global collection
-      const q = query(goalsCollectionRef, where("missionId", "==", missionId));
-      const goalsGlobalSnapshot = await getDocs(q);
-      goalsGlobalSnapshot.forEach(goalDoc => {
-        batch.delete(goalDoc.ref);
-      });
       
-      // 3. Delete the mission document itself
+      // Delete the mission document itself
       const missionDocRef = doc(missionsCollectionRef, missionId);
       batch.delete(missionDocRef);
 
-      // 4. Commit the batch
+      // Commit the batch
       await batch.commit();
     },
-    [missionsCollectionRef, goalsCollectionRef, user, firestore]
+    [missionsCollectionRef, user, firestore]
   );
   
-  const isLoading = !isClient || isUserLoading || isMissionsLoading || areGoalsLoading;
+  const isLoading = !isClient || isUserLoading || isMissionsLoading;
 
   const value: MissionsContextType = {
     missions: missions || [],

@@ -151,6 +151,14 @@
           "type": "string",
           "format": "date-time",
           "description": "The timestamp when the mission was created."
+        },
+        "totalGoals": {
+          "type": "number",
+          "description": "The total number of goals for this mission."
+        },
+        "completedGoals": {
+          "type": "number",
+          "description": "The number of completed goals for this mission."
         }
       },
       "required": [
@@ -158,6 +166,49 @@
         "userId",
         "title",
         "progress",
+        "createdAt",
+        "totalGoals",
+        "completedGoals"
+      ]
+    },
+    "Goal": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Goal",
+      "type": "object",
+      "description": "Represents a single goal or sub-task for a mission.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique identifier for the goal."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who owns this goal."
+        },
+        "missionId": {
+          "type": "string",
+          "description": "The ID of the mission this goal belongs to."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the goal."
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether the goal has been completed."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the goal was created."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "missionId",
+        "title",
+        "completed",
         "createdAt"
       ]
     }
@@ -241,6 +292,30 @@
             {
               "name": "missionId",
               "description": "The unique identifier for the mission."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/missions/{missionId}/goals/{goalId}",
+        "definition": {
+          "entityName": "Goal",
+          "schema": {
+            "$ref": "#/backend/entities/Goal"
+          },
+          "description": "Stores goals for a specific mission. Users can only read/write their own goals.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "missionId",
+              "description": "The unique identifier for the mission."
+            },
+            {
+              "name": "goalId",
+              "description": "The unique identifier for the goal."
             }
           ]
         }

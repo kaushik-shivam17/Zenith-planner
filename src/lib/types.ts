@@ -16,6 +16,8 @@ export type Mission = {
   title: string;
   progress: number;
   createdAt: Timestamp;
+  totalGoals: number;
+  completedGoals: number;
 };
 
 export type Goal = {

@@ -15,7 +15,8 @@ import {
   deleteDocumentNonBlocking,
   useMemoFirebase,
 } from '@/firebase';
-import { collection, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, runTransaction, increment } from 'firebase/firestore';
+import { useMissions } from './use-missions';
 
 interface GoalsContextType {
   goals: Goal[];
@@ -30,62 +31,89 @@ const GoalsContext = createContext<GoalsContextType | undefined>(undefined);
 // This is not a real provider. It's a hook that scopes goals to a mission.
 export function useGoals(missionId: string) {
   const { user, firestore } = useFirebase();
+  const { getMissionById } = useMissions();
 
   const goalsCollectionRef = useMemoFirebase(
     () => (user ? collection(firestore, 'users', user.uid, 'missions', missionId, 'goals') : null),
     [user, firestore, missionId]
   );
   
-  // Also create a reference to the global goals collection for progress calculation
-  const globalGoalsCollectionRef = useMemoFirebase(
-    () => (user ? collection(firestore, `users/${user.uid}/goals`) : null),
-    [user, firestore]
-  );
-
   const { data: goals, isLoading } = useCollection<Goal>(goalsCollectionRef);
 
   const addGoal = useCallback(
-    (goalData: Pick<Goal, 'title'>) => {
-      if (!goalsCollectionRef || !globalGoalsCollectionRef || !user) return;
+    async (goalData: Pick<Goal, 'title'>) => {
+      if (!goalsCollectionRef || !user) return;
+      
+      const missionDocRef = doc(firestore, 'users', user.uid, 'missions', missionId);
+      const newGoalRef = doc(goalsCollectionRef);
+
       const newGoal = {
         ...goalData,
+        id: newGoalRef.id,
         userId: user.uid,
         missionId,
         completed: false,
         createdAt: serverTimestamp(),
       };
-      // Add to both collections non-blockingly
-      addDocumentNonBlocking(goalsCollectionRef, newGoal);
-      addDocumentNonBlocking(globalGoalsCollectionRef, newGoal);
+      
+      try {
+        await runTransaction(firestore, async (transaction) => {
+          transaction.set(newGoalRef, newGoal);
+          transaction.update(missionDocRef, { totalGoals: increment(1) });
+        });
+      } catch (e) {
+        console.error("Transaction failed: ", e);
+      }
     },
-    [goalsCollectionRef, globalGoalsCollectionRef, user, missionId]
+    [goalsCollectionRef, user, missionId, firestore]
   );
 
   const toggleGoalCompletion = useCallback(
-    (goalId: string) => {
-      if (!goalsCollectionRef || !globalGoalsCollectionRef || !goals) return;
+    async (goalId: string) => {
+      if (!goalsCollectionRef || !goals) return;
       const goal = goals.find((g) => g.id === goalId);
-      if (goal) {
+      if (goal && user) {
         const newCompletedState = !goal.completed;
         const goalDocRef = doc(goalsCollectionRef, goalId);
-        const globalGoalDocRef = doc(globalGoalsCollectionRef, goalId);
-
-        updateDocumentNonBlocking(goalDocRef, { completed: newCompletedState });
-        updateDocumentNonBlocking(globalGoalDocRef, { completed: newCompletedState });
+        const missionDocRef = doc(firestore, 'users', user.uid, 'missions', missionId);
+        
+        try {
+           await runTransaction(firestore, async (transaction) => {
+            transaction.update(goalDocRef, { completed: newCompletedState });
+            transaction.update(missionDocRef, { completedGoals: increment(newCompletedState ? 1 : -1) });
+          });
+        } catch (e) {
+          console.error("Transaction failed: ", e);
+        }
       }
     },
-    [goalsCollectionRef, globalGoalsCollectionRef, goals]
+    [goalsCollectionRef, goals, user, missionId, firestore]
   );
 
   const deleteGoal = useCallback(
-    (goalId: string) => {
-      if (!goalsCollectionRef || !globalGoalsCollectionRef) return;
+    async (goalId: string) => {
+      if (!goalsCollectionRef || !user || !goals) return;
+      
+      const goalToDelete = goals.find(g => g.id === goalId);
+      if (!goalToDelete) return;
+
       const goalDocRef = doc(goalsCollectionRef, goalId);
-      const globalGoalDocRef = doc(globalGoalsCollectionRef, goalId);
-      deleteDocumentNonBlocking(goalDocRef);
-      deleteDocumentNonBlocking(globalGoalDocRef);
+      const missionDocRef = doc(firestore, 'users', user.uid, 'missions', missionId);
+
+      try {
+        await runTransaction(firestore, async (transaction) => {
+          transaction.delete(goalDocRef);
+          const decrementCompleted = goalToDelete.completed ? -1 : 0;
+          transaction.update(missionDocRef, { 
+            totalGoals: increment(-1),
+            completedGoals: increment(decrementCompleted),
+           });
+        });
+      } catch (e) {
+        console.error("Transaction failed: ", e);
+      }
     },
-    [goalsCollectionRef, globalGoalsCollectionRef]
+    [goalsCollectionRef, user, missionId, firestore, goals]
   );
 
   return {

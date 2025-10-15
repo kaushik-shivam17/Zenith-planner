@@ -102,8 +102,8 @@ export function Profile() {
 
   const handleCalculateBmi = () => {
     const { height, weight } = form.getValues();
-    const numHeight = Number(height);
-    const numWeight = Number(weight);
+    const numHeight = parseFloat(height as any);
+    const numWeight = parseFloat(weight as any);
 
     if (numHeight > 0 && numWeight > 0) {
       const bmiValue = (numWeight / (numHeight * numHeight)).toFixed(2);

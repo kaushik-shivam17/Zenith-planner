@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
@@ -44,6 +44,7 @@ export function Profile() {
   const { firestore } = useFirebase();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bmi, setBmi] = useState<string | null>(null);
 
   const userDocRef = useMemoFirebase(
     () => (user ? doc(firestore, 'users', user.uid) : null),
@@ -57,12 +58,10 @@ export function Profile() {
       name: '',
       email: '',
       class: '',
-      height: '' as any, // Initialize with empty string
-      weight: '' as any, // Initialize with empty string
+      height: '' as any,
+      weight: '' as any,
     },
   });
-  
-  const { height, weight } = useWatch({ control: form.control });
 
   useEffect(() => {
     if (userProfile) {
@@ -98,11 +97,21 @@ export function Profile() {
     });
     setIsSubmitting(false);
   }
-  
-  const bmi =
-    height && weight && Number(height) > 0
-      ? (Number(weight) / (Number(height) * Number(height))).toFixed(2)
-      : null;
+
+  const handleCalculateBmi = () => {
+    const { height, weight } = form.getValues();
+    if (height && weight && Number(height) > 0) {
+      const bmiValue = (Number(weight) / (Number(height) * Number(height))).toFixed(2);
+      setBmi(bmiValue);
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Missing Information',
+        description: 'Please enter both height and weight to calculate BMI.',
+      });
+      setBmi(null);
+    }
+  };
 
 
   if (isProfileLoading || !user) {
@@ -174,7 +183,7 @@ export function Profile() {
                     <FormItem>
                       <FormLabel>Height (m)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" placeholder="e.g., 1.75" {...field} value={field.value ?? ''} />
+                        <Input type="number" step="0.01" placeholder="e.g., 1.75" {...field} value={field.value ?? ''} onChange={(e) => { field.onChange(e); setBmi(null); }} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -187,7 +196,7 @@ export function Profile() {
                     <FormItem>
                       <FormLabel>Weight (kg)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.1" placeholder="e.g., 70" {...field} value={field.value ?? ''} />
+                        <Input type="number" step="0.1" placeholder="e.g., 70" {...field} value={field.value ?? ''} onChange={(e) => { field.onChange(e); setBmi(null); }}/>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -201,10 +210,15 @@ export function Profile() {
                   </div>
                 )}
               </div>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Changes
-              </Button>
+              <div className="flex items-center gap-4">
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save Changes
+                </Button>
+                 <Button type="button" variant="outline" onClick={handleCalculateBmi}>
+                  Check BMI
+                </Button>
+              </div>
             </form>
           </Form>
         </CardContent>

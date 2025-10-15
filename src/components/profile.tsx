@@ -58,8 +58,8 @@ export function Profile() {
       name: '',
       email: '',
       class: '',
-      height: undefined,
-      weight: undefined,
+      height: '',
+      weight: '',
     },
   });
 
@@ -69,8 +69,8 @@ export function Profile() {
         name: userProfile.name ?? '',
         email: userProfile.email ?? '',
         class: userProfile.class ?? '',
-        height: userProfile.height ?? undefined,
-        weight: userProfile.weight ?? undefined,
+        height: userProfile.height ?? '',
+        weight: userProfile.weight ?? '',
       });
     }
     if (user && !userProfile) {
@@ -102,21 +102,28 @@ export function Profile() {
 
   const handleCalculateBmi = () => {
     const { height, weight } = form.getValues();
-    const numHeight = parseFloat(String(height));
-    const numWeight = parseFloat(String(weight));
-
-    if (numHeight > 0 && numWeight > 0) {
+  
+    // Convert to numbers safely
+    const numHeight = parseFloat(height?.toString() || '');
+    const numWeight = parseFloat(weight?.toString() || '');
+  
+    // Check for valid numeric values
+    const isHeightValid = !isNaN(numHeight) && numHeight > 0;
+    const isWeightValid = !isNaN(numWeight) && numWeight > 0;
+  
+    if (isHeightValid && isWeightValid) {
       const bmiValue = (numWeight / (numHeight * numHeight)).toFixed(2);
       setBmi(bmiValue);
     } else {
       setBmi(null);
       toast({
         variant: 'destructive',
-        title: 'Missing Information',
-        description: 'Please enter a valid height and weight to calculate BMI.',
+        title: 'Missing or Invalid Information',
+        description: 'Please enter a valid numeric height and weight greater than zero to calculate BMI.',
       });
     }
   };
+  
 
 
   if (isProfileLoading || !user) {

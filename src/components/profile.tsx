@@ -1,10 +1,10 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { useFirebase, useUser, setDocumentNonBlocking, useMemoFirebase } from '@/firebase';
+import { useFirebase, setDocumentNonBlocking, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { doc, serverTimestamp } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
@@ -61,6 +61,8 @@ export function Profile() {
       weight: undefined,
     },
   });
+  
+  const { height, weight } = useWatch({ control: form.control });
 
   useEffect(() => {
     if (userProfile) {
@@ -94,8 +96,8 @@ export function Profile() {
   }
   
   const bmi =
-    userProfile?.height && userProfile?.weight && userProfile.height > 0
-      ? (userProfile.weight / (userProfile.height * userProfile.height)).toFixed(2)
+    height && weight && height > 0
+      ? (weight / (height * height)).toFixed(2)
       : null;
 
 

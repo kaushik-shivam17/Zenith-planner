@@ -30,7 +30,6 @@ import {
 import { Header } from '@/components/header';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useToast } from '@/hooks/use-toast';
-import { Target } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 const navItems = [

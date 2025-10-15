@@ -27,6 +27,11 @@ export type GetFitnessAdviceOutput = z.infer<typeof GetFitnessAdviceOutputSchema
 export async function getFitnessAdvice(
   input: GetFitnessAdviceInput
 ): Promise<GetFitnessAdviceOutput> {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error(
+      'The GEMINI_API_KEY environment variable is not set. Please add it to your .env file.'
+    );
+  }
   return getFitnessAdviceFlow(input);
 }
 

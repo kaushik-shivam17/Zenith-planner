@@ -110,9 +110,9 @@ export const getFitnessAdviceAction = async (
   try {
     const result = await getFitnessAdvice({ prompt, bmi });
     return { success: true, data: result };
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    return { success: false, error: 'Failed to get fitness advice. The AI system may be offline.' };
+    return { success: false, error: error.message || 'Failed to get fitness advice. The AI system may be offline.' };
   }
 };
 

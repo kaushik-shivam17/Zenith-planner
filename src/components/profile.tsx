@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
@@ -102,8 +102,8 @@ export function Profile() {
 
   const handleCalculateBmi = () => {
     const { height, weight } = form.getValues();
-    const numHeight = height ? parseFloat(String(height)) : 0;
-    const numWeight = weight ? parseFloat(String(weight)) : 0;
+    const numHeight = parseFloat(String(height));
+    const numWeight = parseFloat(String(weight));
 
     if (numHeight > 0 && numWeight > 0) {
       const bmiValue = (numWeight / (numHeight * numHeight)).toFixed(2);
@@ -188,7 +188,18 @@ export function Profile() {
                     <FormItem>
                       <FormLabel>Height (m)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" placeholder="e.g., 1.75" {...field} value={field.value ?? ''} onChange={(e) => { field.onChange(e.target.valueAsNumber); setBmi(null); }} />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="e.g., 1.75"
+                          {...field}
+                          value={field.value ?? ''}
+                          onChange={(e) => {
+                            const value = e.target.valueAsNumber;
+                            field.onChange(isNaN(value) ? '' : value);
+                            setBmi(null);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -201,7 +212,18 @@ export function Profile() {
                     <FormItem>
                       <FormLabel>Weight (kg)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.1" placeholder="e.g., 70" {...field} value={field.value ?? ''} onChange={(e) => { field.onChange(e.target.valueAsNumber); setBmi(null); }}/>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          placeholder="e.g., 70"
+                          {...field}
+                          value={field.value ?? ''}
+                          onChange={(e) => {
+                            const value = e.target.valueAsNumber;
+                            field.onChange(isNaN(value) ? '' : value);
+                            setBmi(null);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

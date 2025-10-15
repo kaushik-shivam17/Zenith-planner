@@ -31,6 +31,7 @@ import { Header } from '@/components/header';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useToast } from '@/hooks/use-toast';
 import { Target } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -50,6 +51,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useAuthGuard(protectedRoutes.has(pathname));
   const { toast } = useToast();
   const isActive = (href: string) => pathname === href;
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -70,6 +76,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   };
 
+  if (!isClient) {
+    return (
+       <div className="flex h-screen w-full items-center justify-center">
+         {/* You can replace this with a more sophisticated skeleton loader */}
+        <p>Loading...</p>
+      </div>
+    )
+  }
 
   return (
     <SidebarProvider>

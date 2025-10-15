@@ -80,7 +80,7 @@ export function Dashboard() {
           Welcome to Zenith Planner
         </h1>
         <p className="text-sm font-semibold text-muted-foreground tracking-wider">
-          this is created by Shivam Kaushik
+          Created by Shivam Kaushik
         </p>
         <p className="text-base md:text-lg text-muted-foreground text-center max-w-md">
           Select a date on the calendar to quickly add a new task or choose a tool from the sidebar.

@@ -194,7 +194,7 @@ export function Profile() {
                   )}
                 />
                  {bmi && (
-                  <div className="flex items-center p-4 rounded-md bg-secondary">
+                  <div className="flex items-center p-4 rounded-md bg-secondary sm:col-span-2">
                     <p className="text-sm font-medium text-foreground">
                       Your calculated BMI is: <strong className="text-primary">{bmi}</strong>
                     </p>

@@ -78,6 +78,52 @@
         "height",
         "weight"
       ]
+    },
+    "Task": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Task",
+      "type": "object",
+      "description": "Represents a single task for a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique identifier for the task."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who owns this task."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the task."
+        },
+        "details": {
+          "type": "string",
+          "description": "Optional details about the task."
+        },
+        "deadline": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The deadline for the task as a Firestore Timestamp."
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether the task has been completed."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the task was created."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "deadline",
+        "completed",
+        "createdAt"
+      ]
     }
   },
   "auth": {
@@ -119,6 +165,26 @@
             {
               "name": "bmiId",
               "description": "The unique identifier for the BMI record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tasks/{taskId}",
+        "definition": {
+          "entityName": "Task",
+          "schema": {
+            "$ref": "#/backend/entities/Task"
+          },
+          "description": "Stores tasks for a specific user. Users can only read/write their own tasks.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "taskId",
+              "description": "The unique identifier for the task."
             }
           ]
         }

@@ -12,8 +12,8 @@ import {
   Split,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import type { Timestamp } from 'firebase/firestore';
 
-import type { Task } from '@/lib/types';
 import { breakDownTaskAction, generateScheduleAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +27,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+
+// The Task type from the props will have a JS Date object.
+type Task = {
+  id: string;
+  title: string;
+  details?: string;
+  deadline: Date; // JS Date
+  completed: boolean;
+  subtasks?: string[];
+};
+
 
 type TaskListProps = {
   tasks: Task[];
@@ -115,6 +126,10 @@ export function TaskList({ tasks, onUpdateTask, onToggleTask }: TaskListProps) {
       <ScrollArea className="h-[400px] pr-4">
         <div className="space-y-4">
           {tasks
+            .map(task => ({
+              ...task,
+              deadline: task.deadline instanceof Date ? task.deadline : (task.deadline as unknown as Timestamp).toDate(),
+            }))
             .sort((a, b) => a.deadline.getTime() - b.deadline.getTime())
             .map((task) => (
               <div

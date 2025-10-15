@@ -1,76 +1,121 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  ReactNode,
+  useCallback,
+  useMemo,
+} from 'react';
 import type { Task } from '@/lib/types';
-
-const initialTasks: Task[] = [
-  {
-    id: '1',
-    title: 'Finish Math Homework',
-    details: 'Complete exercises from chapter 5.',
-    deadline: new Date(new Date().setDate(new Date().getDate() + 2)),
-    completed: false,
-  },
-  {
-    id: '2',
-    title: 'Study for History Exam',
-    details: 'Review notes on World War II.',
-    deadline: new Date(new Date().setDate(new Date().getDate() + 3)),
-    completed: false,
-  },
-  {
-    id: '3',
-    title: 'Write English Essay',
-    details: 'Draft and revise the essay on Shakespeare.',
-    deadline: new Date(new Date().setDate(new Date().getDate() + 5)),
-    completed: true,
-  },
-];
+import {
+  useFirebase,
+  useCollection,
+  addDocumentNonBlocking,
+  updateDocumentNonBlocking,
+  useMemoFirebase,
+} from '@/firebase';
+import { collection, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
 
 interface TasksContextType {
   tasks: Task[];
   getTaskById: (taskId: string) => Task | undefined;
-  addTask: (taskData: Omit<Task, 'id' | 'completed'>) => void;
-  updateTask: (updatedTask: Task) => void;
+  addTask: (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => void;
+  updateTask: (taskId: string, updates: Partial<Omit<Task, 'id' | 'userId'>>) => void;
   toggleTaskCompletion: (taskId: string) => void;
+  isLoading: boolean;
 }
 
 const TasksContext = createContext<TasksContextType | undefined>(undefined);
 
 export function TasksProvider({ children }: { children: ReactNode }) {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const { user, firestore } = useFirebase();
 
-  const getTaskById = (taskId: string) => {
-    return tasks.find(task => task.id === taskId);
-  };
+  const tasksCollectionRef = useMemoFirebase(
+    () => (user ? collection(firestore, 'users', user.uid, 'tasks') : null),
+    [user, firestore]
+  );
 
-  const addTask = (taskData: Omit<Task, 'id' | 'completed'>) => {
-    const newTask: Task = {
-      ...taskData,
-      id: crypto.randomUUID(),
-      completed: false,
-    };
-    setTasks((prevTasks) => [...prevTasks, newTask]);
-  };
+  const { data: rawTasks, isLoading } = useCollection<Omit<Task, 'id'>>(
+    tasksCollectionRef
+  );
 
-  const updateTask = (updatedTask: Task) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
-    );
-  };
+  const tasks = useMemo((): Task[] => {
+    if (!rawTasks) return [];
+    return rawTasks.map((task) => ({
+      ...task,
+      // Safely convert Firestore Timestamp to JS Date for client-side use
+      deadline: task.deadline instanceof Timestamp ? task.deadline.toDate() : new Date(),
+    })).sort((a, b) => a.deadline.getTime() - b.deadline.getTime());
+  }, [rawTasks]);
 
-  const toggleTaskCompletion = (taskId: string) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task
-      )
-    );
+
+  const getTaskById = useCallback(
+    (taskId: string) => {
+      const task = tasks.find((task) => task.id === taskId);
+      if (!task) return undefined;
+      // Return a version of the task with a JS Date object
+      return {
+        ...task,
+        deadline: task.deadline instanceof Timestamp ? task.deadline.toDate() : task.deadline,
+      };
+    },
+    [tasks]
+  );
+
+  const addTask = useCallback(
+    (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => {
+      if (!tasksCollectionRef) return;
+      const newTask = {
+        ...taskData,
+        userId: user!.uid,
+        completed: false,
+        createdAt: serverTimestamp(),
+        deadline: Timestamp.fromDate(taskData.deadline), // Convert JS Date to Firestore Timestamp
+      };
+      addDocumentNonBlocking(tasksCollectionRef, newTask);
+    },
+    [tasksCollectionRef, user]
+  );
+
+  const updateTask = useCallback(
+    (taskId: string, updates: Partial<Omit<Task, 'id' | 'userId'>>) => {
+      if (!tasksCollectionRef) return;
+      const taskDocRef = doc(tasksCollectionRef, taskId);
+      
+      const updatesForFirestore = { ...updates };
+      if (updates.deadline && updates.deadline instanceof Date) {
+        (updatesForFirestore as any).deadline = Timestamp.fromDate(updates.deadline);
+      }
+
+      updateDocumentNonBlocking(taskDocRef, updatesForFirestore);
+    },
+    [tasksCollectionRef]
+  );
+
+  const toggleTaskCompletion = useCallback(
+    (taskId: string) => {
+      if (!tasksCollectionRef) return;
+      const task = tasks.find((t) => t.id === taskId);
+      if (task) {
+        const taskDocRef = doc(tasksCollectionRef, taskId);
+        updateDocumentNonBlocking(taskDocRef, { completed: !task.completed });
+      }
+    },
+    [tasksCollectionRef, tasks]
+  );
+
+  const value = {
+    tasks: tasks.map(t => ({...t, deadline: t.deadline instanceof Timestamp ? t.deadline.toDate() : t.deadline})),
+    getTaskById,
+    addTask,
+    updateTask,
+    toggleTaskCompletion,
+    isLoading,
   };
 
   return (
-    <TasksContext.Provider value={{ tasks, getTaskById, addTask, updateTask, toggleTaskCompletion }}>
-      {children}
-    </TasksContext.Provider>
+    <TasksContext.Provider value={value}>{children}</TasksContext.Provider>
   );
 }
 

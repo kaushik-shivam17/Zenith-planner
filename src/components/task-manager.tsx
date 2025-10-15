@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { PlusCircle } from 'lucide-react';
+import type { Timestamp } from 'firebase/firestore';
 
-import type { Task } from '@/lib/types';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -23,9 +24,18 @@ import {
 import { TaskForm } from '@/components/task-form';
 import { TaskList } from '@/components/task-list';
 
+type Task = {
+  id: string;
+  title: string;
+  details?: string;
+  deadline: Date; 
+  completed: boolean;
+  subtasks?: string[];
+};
+
 type TaskManagerProps = {
   tasks: Task[];
-  onAddTask: (taskData: Omit<Task, 'id' | 'completed'>) => void;
+  onAddTask: (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => void;
   onUpdateTask: (updatedTask: Task) => void;
   onToggleTask: (taskId: string) => void;
 };
@@ -38,7 +48,7 @@ export function TaskManager({
 }: TaskManagerProps) {
   const [isAddOpen, setIsAddOpen] = useState(false);
 
-  const handleTaskAdded = (taskData: Omit<Task, 'id' | 'completed'>) => {
+  const handleTaskAdded = (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => {
     onAddTask(taskData);
     setIsAddOpen(false);
   };

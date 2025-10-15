@@ -35,13 +35,15 @@ const formSchema = z.object({
   }),
 });
 
+type TaskFormValues = z.infer<typeof formSchema>;
+
 type TaskFormProps = {
-  onAddTask: (taskData: Omit<Task, 'id' | 'completed'>) => void;
+  onAddTask: (taskData: TaskFormValues) => void;
   selectedDate?: Date;
 };
 
 export function TaskForm({ onAddTask, selectedDate }: TaskFormProps) {
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<TaskFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
@@ -56,7 +58,7 @@ export function TaskForm({ onAddTask, selectedDate }: TaskFormProps) {
     }
   }, [selectedDate, form]);
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  function onSubmit(values: TaskFormValues) {
     onAddTask(values);
     form.reset({ title: '', details: '', deadline: selectedDate });
   }

@@ -21,6 +21,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import { Timestamp } from 'firebase/firestore';
 
 type ChatMessage = {
   role: 'user' | 'model';
@@ -29,7 +30,7 @@ type ChatMessage = {
 
 export default function RoadmapPage() {
   const { taskId } = useParams();
-  const { getTaskById } = useTasks();
+  const { getTaskById, isLoading: areTasksLoading } = useTasks();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -45,6 +46,9 @@ export default function RoadmapPage() {
   const task = getTaskById(taskId as string);
 
   useEffect(() => {
+    if (areTasksLoading) {
+      return;
+    }
     if (task) {
       const fetchRoadmap = async () => {
         setIsLoading(true);
@@ -63,8 +67,10 @@ export default function RoadmapPage() {
         setIsLoading(false);
       };
       fetchRoadmap();
+    } else {
+      setIsLoading(false);
     }
-  }, [task, toast]);
+  }, [task, toast, areTasksLoading]);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -115,7 +121,7 @@ export default function RoadmapPage() {
     setIsChatLoading(false);
   };
 
-  if (isLoading) {
+  if (isLoading || areTasksLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-full min-h-[80vh] text-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />

@@ -22,6 +22,11 @@ const BreakDownTaskOutputSchema = z.object({
 export type BreakDownTaskOutput = z.infer<typeof BreakDownTaskOutputSchema>;
 
 export async function breakDownTask(input: BreakDownTaskInput): Promise<BreakDownTaskOutput> {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error(
+      'GEMINI_API_KEY is not set. Please set it in your .env file or environment variables.'
+    );
+  }
   return breakDownTaskFlow(input);
 }
 

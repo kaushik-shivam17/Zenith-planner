@@ -1,120 +1,127 @@
 /**
  * @fileoverview Firestore Security Rules for Zenith Planner.
  *
- * Core Philosophy: This ruleset enforces a strict user-ownership model for user-specific data
- * and provides public read access for global focus tips.
+ * Core Philosophy: This ruleset enforces a strict user-ownership model for user-specific data,
+ * while allowing public read access to shared resources like focus tips.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles.
- * - /users/{userId}/tasks/{taskId}: Stores tasks associated with a specific user.
- * - /users/{userId}/timetableEvents/{timetableEventId}: Stores timetable events for a specific user.
- * - /users/{userId}/reminders/{reminderId}: Stores reminders for a specific user.
- * - /focus_tips/{focusTipId}: Stores global focus tips.
+ * - /users/{userId}: Stores user profiles. Only the authenticated user can read/write their own profile.
+ * - /users/{userId}/tasks/{taskId}: Stores tasks associated with a specific user. Only the user can read/write their own tasks.
+ * - /users/{userId}/timetableEvents/{timetableEventId}: Stores timetable events for a specific user. Only the user can read/write their own timetable events.
+ * - /users/{userId}/reminders/{reminderId}: Stores reminders for a specific user. Only the user can read/write their own reminders.
+ * - /focus_tips/{focusTipId}: Stores global focus tips. Public read access.
  *
  * Key Security Decisions:
- * - Users can only access their own data under the /users/{userId} collection and its subcollections.
- * - Public read access is granted to the /focus_tips collection.
- * - Listing of user subcollections (tasks, timetableEvents, reminders) is allowed only for the owner.
+ * - User listing is implicitly denied via the rules structure.
+ * - Focus tips are publicly readable.
+ *
+ * Denormalization for Authorization:
+ *   - All user-owned documents contain the userId in the path, which simplifies ownership checks.
+ *
+ * Structural Segregation:
+ *   - User-specific data is stored under the /users/{userId} path, ensuring private access.
+ *   - Public data (focus tips) is stored in a top-level collection.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Enforces that only the authenticated user can read and write their own profile.
+     * @description Controls access to user profiles.
      * @path /users/{userId}
-     * @allow (get, create, update, delete) - User with UID 'user123' can read, create, update, and delete their own profile at /users/user123.
-     * @deny (get, create, update, delete) - User with UID 'user456' cannot read, create, update, or delete the profile at /users/user123.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with ID 'user123' can create their profile.
+     * @allow (get) User with ID 'user123' can read their profile.
+     * @allow (update) User with ID 'user123' can update their profile.
+     * @allow (delete) User with ID 'user123' can delete their profile.
+     * @deny (create) User with ID 'user456' cannot create a profile with ID 'user123'.
+     * @principle Enforces document ownership for writes and reads.
      */
     match /users/{userId} {
       function isOwner(userId) {
         return request.auth != null && request.auth.uid == userId;
       }
 
-      function isExistingOwner(userId) {
-          return isOwner(userId) && resource != null;
-      }
-
       allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isOwner(userId) && resource.data.id == userId;
+      allow delete: if isOwner(userId) && resource != null;
     }
 
     /**
-     * @description Enforces that only the authenticated user can read and write their own tasks.
+     * @description Controls access to tasks for a specific user.
      * @path /users/{userId}/tasks/{taskId}
-     * @allow (get, list, create, update, delete) - User with UID 'user123' can read, list, create, update, and delete their own tasks under /users/user123/tasks.
-     * @deny (get, list, create, update, delete) - User with UID 'user456' cannot read, list, create, update, or delete tasks under /users/user123/tasks.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with ID 'user123' can create a task under their profile.
+     * @allow (get) User with ID 'user123' can read a task under their profile.
+     * @allow (update) User with ID 'user123' can update a task under their profile.
+     * @allow (delete) User with ID 'user123' can delete a task under their profile.
+     * @deny (create) User with ID 'user456' cannot create a task under user 'user123'.
+     * @principle Restricts access to a user's own task data.
      */
     match /users/{userId}/tasks/{taskId} {
       function isOwner(userId) {
         return request.auth != null && request.auth.uid == userId;
       }
 
-      function isExistingOwner(userId) {
-          return isOwner(userId) && resource != null;
-      }
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && resource.data.userId == userId && resource != null;
+      allow delete: if isOwner(userId) && resource != null;
     }
 
     /**
-     * @description Enforces that only the authenticated user can read and write their own timetable events.
+     * @description Controls access to timetable events for a specific user.
      * @path /users/{userId}/timetableEvents/{timetableEventId}
-     * @allow (get, list, create, update, delete) - User with UID 'user123' can read, list, create, update, and delete their own timetable events under /users/user123/timetableEvents.
-     * @deny (get, list, create, update, delete) - User with UID 'user456' cannot read, list, create, update, or delete timetable events under /users/user123/timetableEvents.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with ID 'user123' can create a timetable event under their profile.
+     * @allow (get) User with ID 'user123' can read a timetable event under their profile.
+     * @allow (update) User with ID 'user123' can update a timetable event under their profile.
+     * @allow (delete) User with ID 'user123' can delete a timetable event under their profile.
+     * @deny (create) User with ID 'user456' cannot create a timetable event under user 'user123'.
+     * @principle Restricts access to a user's own timetable event data.
      */
     match /users/{userId}/timetableEvents/{timetableEventId} {
       function isOwner(userId) {
         return request.auth != null && request.auth.uid == userId;
       }
 
-      function isExistingOwner(userId) {
-          return isOwner(userId) && resource != null;
-      }
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && resource.data.userId == userId && resource != null;
+      allow delete: if isOwner(userId) && resource != null;
     }
 
     /**
-     * @description Enforces that only the authenticated user can read and write their own reminders.
+     * @description Controls access to reminders for a specific user.
      * @path /users/{userId}/reminders/{reminderId}
-     * @allow (get, list, create, update, delete) - User with UID 'user123' can read, list, create, update, and delete their own reminders under /users/user123/reminders.
-     * @deny (get, list, create, update, delete) - User with UID 'user456' cannot read, list, create, update, or delete reminders under /users/user123/reminders.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with ID 'user123' can create a reminder under their profile.
+     * @allow (get) User with ID 'user123' can read a reminder under their profile.
+     * @allow (update) User with ID 'user123' can update a reminder under their profile.
+     * @allow (delete) User with ID 'user123' can delete a reminder under their profile.
+     * @deny (create) User with ID 'user456' cannot create a reminder under user 'user123'.
+     * @principle Restricts access to a user's own reminder data.
      */
     match /users/{userId}/reminders/{reminderId} {
       function isOwner(userId) {
         return request.auth != null && request.auth.uid == userId;
       }
 
-      function isExistingOwner(userId) {
-          return isOwner(userId) && resource != null;
-      }
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && resource.data.userId == userId && resource != null;
+      allow delete: if isOwner(userId) && resource != null;
     }
 
     /**
-     * @description Allows public read access to focus tips.
+     * @description Controls access to focus tips. Public read access.
      * @path /focus_tips/{focusTipId}
-     * @allow (get, list) - Any user can read focus tips.
-     * @deny (create, update, delete) - Only admin users can create, update, or delete focus tips.
-     * @principle Provides public read access with restricted write access.
+     * @allow (get) Any user can read focus tips.
+     * @deny (create) No user can create focus tips.
+     * @deny (update) No user can update focus tips.
+     * @deny (delete) No user can delete focus tips.
+     * @principle Allows public read access but restricts write access.
      */
     match /focus_tips/{focusTipId} {
       allow get: if true;

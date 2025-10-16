@@ -11,10 +11,10 @@ import {
   Loader2,
   Split,
 } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isPast } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 
-import { breakDownTaskAction, generateScheduleAction } from '@/app/actions';
+import { generateScheduleAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -131,10 +131,12 @@ export function TaskList({ tasks, onUpdateTask, onToggleTask }: TaskListProps) {
               deadline: task.deadline instanceof Date ? task.deadline : (task.deadline as unknown as Timestamp).toDate(),
             }))
             .sort((a, b) => a.deadline.getTime() - b.deadline.getTime())
-            .map((task) => (
+            .map((task) => {
+              const isOverdue = isPast(task.deadline) && !task.completed;
+              return (
               <div
                 key={task.id}
-                className="flex items-start gap-4 p-4 rounded-md border transition-all"
+                className={`flex items-start gap-4 p-4 rounded-md border transition-all ${isOverdue ? 'border-destructive/50' : ''}`}
               >
                 <Checkbox
                   id={`task-${task.id}`}
@@ -156,9 +158,12 @@ export function TaskList({ tasks, onUpdateTask, onToggleTask }: TaskListProps) {
                   </p>
                   <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                     <CalendarCheck2 className="h-4 w-4" />
-                    <span>
+                    <span className={isOverdue ? 'text-destructive' : ''}>
                       {formatDistanceToNow(task.deadline, { addSuffix: true })}
                     </span>
+                    {isOverdue && (
+                      <div className="h-2 w-2 rounded-full bg-destructive" title="This task is overdue."></div>
+                    )}
                   </div>
                 </div>
                 {!task.completed && (
@@ -177,7 +182,7 @@ export function TaskList({ tasks, onUpdateTask, onToggleTask }: TaskListProps) {
                   </Button>
                 )}
               </div>
-            ))}
+            )})}
         </div>
       </ScrollArea>
 

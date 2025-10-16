@@ -73,9 +73,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // This prevents content from flashing on protected routes before redirect.
   if (isUserLoading || (isProtectedRoute && !user)) {
     return (
-       <div className="flex h-screen items-center justify-center">
-          {/* You can replace this with a more sophisticated loader/spinner component */}
-          <div className="text-2xl font-semibold">Loading...</div>
+       <div className="flex h-screen items-center justify-center bg-background">
+          <div className="text-2xl font-semibold text-foreground">Loading...</div>
       </div>
     )
   }

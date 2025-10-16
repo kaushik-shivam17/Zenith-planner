@@ -60,7 +60,18 @@ export function useCollection<T = any>(
     setIsLoading(true);
     setError(null);
 
-    // Directly use memoizedTargetRefOrQuery as it's assumed to be the final query
+    // Get the path safely before the snapshot listener
+    let path: string;
+    if ('path' in memoizedTargetRefOrQuery) {
+      // This handles CollectionReference
+      path = memoizedTargetRefOrQuery.path;
+    } else {
+      // This handles Query, by accessing the internal but stable _query property
+      // and then getting its path. This is a workaround as Query API lacks a public path property.
+      path = (memoizedTargetRefOrQuery as any)._query.path.canonicalString();
+    }
+
+
     const unsubscribe = onSnapshot(
       memoizedTargetRefOrQuery,
       (snapshot: QuerySnapshot<DocumentData>) => {
@@ -73,19 +84,9 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        let path: string;
-        
-        if (memoizedTargetRefOrQuery.type === 'collection') {
-          path = (memoizedTargetRefOrQuery as CollectionReference).path;
-        } else {
-          // For queries, attempt to extract path from the error message.
-          const match = error.message.match(/\/databases\/\(default\)\/documents\/([^ ]*)/);
-          path = match ? match[1] : '[unknown query path]';
-        }
-        
         const contextualError = new FirestorePermissionError({
           operation: 'list',
-          path: path, // Ensure path is always a string.
+          path: path, // Use the path determined safely above
         });
 
         setError(contextualError);

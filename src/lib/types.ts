@@ -30,3 +30,13 @@ export type Goal = {
   completed: boolean;
   createdAt: Timestamp;
 };
+
+export type TimetableEvent = {
+  id: string;
+  userId: string;
+  title: string;
+  day: string;
+  startTime: string;
+  endTime: string;
+  type: 'custom' | 'task';
+};

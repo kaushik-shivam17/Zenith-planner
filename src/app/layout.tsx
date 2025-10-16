@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AppShell } from '@/components/app-shell';
 import { TasksProvider } from '@/hooks/use-tasks';
 import { MissionsProvider } from '@/hooks/use-missions';
+import { TimetableProvider } from '@/hooks/use-timetable';
 import { FirebaseClientProvider } from '@/firebase';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -31,7 +32,9 @@ export default function RootLayout({
         <FirebaseClientProvider>
           <MissionsProvider>
             <TasksProvider>
+              <TimetableProvider>
                 <AppShell>{children}</AppShell>
+              </TimetableProvider>
             </TasksProvider>
           </MissionsProvider>
         </FirebaseClientProvider>

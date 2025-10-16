@@ -216,6 +216,51 @@
         "completed",
         "createdAt"
       ]
+    },
+    "TimetableEvent": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Timetable Event",
+      "type": "object",
+      "description": "Represents a single event on the user's timetable.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique identifier for the event."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who owns this event."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the event."
+        },
+        "day": {
+          "type": "string",
+          "description": "The day of the week for the event."
+        },
+        "startTime": {
+          "type": "string",
+          "description": "The start time of the event."
+        },
+        "endTime": {
+          "type": "string",
+          "description": "The end time of the event."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of event ('custom' or 'task')."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "day",
+        "startTime",
+        "endTime",
+        "type"
+      ]
     }
   },
   "auth": {
@@ -281,7 +326,7 @@
           ]
         }
       },
-       {
+      {
         "path": "/users/{userId}/missions/{missionId}",
         "definition": {
           "entityName": "Mission",
@@ -321,6 +366,26 @@
             {
               "name": "goalId",
               "description": "The unique identifier for the goal."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/timetableEvents/{eventId}",
+        "definition": {
+          "entityName": "TimetableEvent",
+          "schema": {
+            "$ref": "#/backend/entities/TimetableEvent"
+          },
+          "description": "Stores timetable events for a specific user. Users can only read/write their own events.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "eventId",
+              "description": "The unique identifier for the timetable event."
             }
           ]
         }

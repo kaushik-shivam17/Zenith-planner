@@ -32,6 +32,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useTasks } from '@/hooks/use-tasks';
 import { generateTimetableAction } from '@/app/actions';
 import { ScrollArea } from './ui/scroll-area';
+import { useTimetable } from '@/hooks/use-timetable';
+import type { TimetableEvent } from '@/lib/types';
+
 
 const timeSlots = [
   '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
@@ -49,19 +52,12 @@ const formSchema = z.object({
   })),
 });
 
-type TimetableEvent = {
-  title: string;
-  day: string;
-  startTime: string;
-  endTime: string;
-  type: 'custom' | 'task';
-};
 
 export function Timetable() {
   const { tasks } = useTasks();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [events, setEvents] = useState<TimetableEvent[]>([]);
+  const { events, setEvents, addCustomEvents, clearEvents, isLoading: isTimetableLoading } = useTimetable();
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -91,30 +87,34 @@ export function Timetable() {
     };
   };
   
-  const handlePreviewCustomEvents = () => {
-    const customEvents = form.getValues('customEvents');
-    const customEventsForState: TimetableEvent[] = customEvents.map(item => ({...item, type: 'custom' as 'custom'}));
+  const handlePreviewCustomEvents = async () => {
+    const customEventValues = form.getValues('customEvents');
+    if (customEventValues.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'No events to add',
+        description: 'Please add at least one custom event before previewing.',
+      });
+      return;
+    }
     
-    // Filter out previous custom events to avoid duplication, keeping task events
-    setEvents(prevEvents => [
-      ...prevEvents.filter(e => e.type === 'task'),
-      ...customEventsForState
-    ]);
+    await clearEvents('custom');
+    await addCustomEvents(customEventValues);
     
     toast({
       title: 'Timetable Updated',
-      description: 'Your custom events have been added to the timetable preview.',
+      description: 'Your custom events have been added to the timetable.',
     });
+    form.reset({ customEvents: [] });
   };
 
   const handleGenerateTimetable = async () => {
-    setIsLoading(true);
-    const customEvents = form.getValues('customEvents');
+    setIsGenerating(true);
+    const customEvents = events.filter(e => e.type === 'custom');
     const result = await generateTimetableAction({ tasks, customEvents });
     if (result.success && result.data) {
-      const taskEvents: TimetableEvent[] = result.data.timetable.map(item => ({...item, type: 'task' as 'task'}));
-      const customEventsForState: TimetableEvent[] = customEvents.map(item => ({...item, type: 'custom' as 'custom'}));
-      setEvents([...taskEvents, ...customEventsForState]);
+      const taskEvents = result.data.timetable.map(item => ({...item, type: 'task' as 'task'}));
+      await setEvents(taskEvents);
       toast({
         title: 'Timetable Generated',
         description: 'Your AI-powered timetable is ready.',
@@ -126,7 +126,7 @@ export function Timetable() {
         description: result.error,
       });
     }
-    setIsLoading(false);
+    setIsGenerating(false);
   };
 
   return (
@@ -134,7 +134,7 @@ export function Timetable() {
       <Card>
         <CardHeader>
           <CardTitle>Custom Schedule</CardTitle>
-          <CardDescription>Add your fixed classes or appointments. Click "Preview" to see them on the grid below.</CardDescription>
+          <CardDescription>Add your fixed classes or appointments. Click "Add to Timetable" to see them on the grid below.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -214,7 +214,7 @@ export function Timetable() {
                 onClick={handlePreviewCustomEvents}
                 disabled={fields.length === 0}
               >
-                <Eye className="mr-2 h-4 w-4" /> Preview on Timetable
+                <Eye className="mr-2 h-4 w-4" /> Add to Timetable
               </Button>
             </div>
           </Form>
@@ -227,52 +227,63 @@ export function Timetable() {
             <CardTitle>Your Weekly Timetable</CardTitle>
             <CardDescription>AI-generated study blocks and your custom events.</CardDescription>
           </div>
-          <Button onClick={handleGenerateTimetable} disabled={isLoading}>
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
-            Generate AI Timetable
-          </Button>
+           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => clearEvents('all')}>
+              <Trash2 className="mr-2 h-4 w-4" /> Clear All
+            </Button>
+            <Button onClick={handleGenerateTimetable} disabled={isGenerating}>
+              {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
+              Generate AI Timetable
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <ScrollArea className="w-full h-[600px]">
-            <div className="grid grid-cols-[auto,repeat(7,1fr)] grid-rows-[auto,repeat(13,1fr)] gap-px bg-border relative">
-              {/* Time slots column */}
-              {timeSlots.map((time, index) => (
-                <div key={time} className="row-start-2 row-span-1 p-2 text-xs text-center bg-card text-muted-foreground" style={{ gridRow: `${index + 2}` }}>
-                  {time}
-                </div>
-              ))}
-              {/* Day headers */}
-              {days.map((day, index) => (
-                <div key={day} className="col-start-2 col-span-1 p-2 text-sm font-semibold text-center bg-card" style={{ gridColumn: `${index + 2}` }}>
-                  {day}
-                </div>
-              ))}
-              
-              {/* Grid cells */}
-              {Array.from({ length: timeSlots.length * days.length }).map((_, index) => {
-                const dayIndex = index % days.length;
-                const timeIndex = Math.floor(index / days.length);
-                return (
+            {isTimetableLoading ? (
+               <div className="flex items-center justify-center h-full">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+               </div>
+            ) : (
+              <div className="grid grid-cols-[auto,repeat(7,1fr)] grid-rows-[auto,repeat(13,1fr)] gap-px bg-border relative">
+                {/* Time slots column */}
+                {timeSlots.map((time, index) => (
+                  <div key={time} className="row-start-2 row-span-1 p-2 text-xs text-center bg-card text-muted-foreground" style={{ gridRow: `${index + 2}` }}>
+                    {time}
+                  </div>
+                ))}
+                {/* Day headers */}
+                {days.map((day, index) => (
+                  <div key={day} className="col-start-2 col-span-1 p-2 text-sm font-semibold text-center bg-card" style={{ gridColumn: `${index + 2}` }}>
+                    {day}
+                  </div>
+                ))}
+                
+                {/* Grid cells */}
+                {Array.from({ length: timeSlots.length * days.length }).map((_, index) => {
+                  const dayIndex = index % days.length;
+                  const timeIndex = Math.floor(index / days.length);
+                  return (
+                    <div
+                      key={`${dayIndex}-${timeIndex}`}
+                      className="bg-card"
+                      style={{ gridColumn: dayIndex + 2, gridRow: timeIndex + 2 }}
+                    />
+                  );
+                })}
+                
+                {/* Events */}
+                {events.map((event, index) => (
                   <div
-                    key={`${dayIndex}-${timeIndex}`}
-                    className="bg-card"
-                    style={{ gridColumn: dayIndex + 2, gridRow: timeIndex + 2 }}
-                  />
-                );
-              })}
-              
-              {/* Events */}
-              {events.map((event, index) => (
-                <div
-                  key={index}
-                  style={getGridPosition(event)}
-                  className={`p-2 rounded-lg text-white text-xs overflow-hidden flex flex-col ${event.type === 'custom' ? 'bg-secondary' : 'bg-primary'}`}
-                >
-                  <span className="font-bold">{event.title}</span>
-                  <span className="opacity-80">{event.startTime} - {event.endTime}</span>
-                </div>
-              ))}
-            </div>
+                    key={index}
+                    style={getGridPosition(event)}
+                    className={`p-2 rounded-lg text-white text-xs overflow-hidden flex flex-col ${event.type === 'custom' ? 'bg-secondary' : 'bg-primary'}`}
+                  >
+                    <span className="font-bold">{event.title}</span>
+                    <span className="opacity-80">{event.startTime} - {event.endTime}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </ScrollArea>
         </CardContent>
       </Card>

@@ -31,7 +31,7 @@ const GoalsContext = createContext<GoalsContextType | undefined>(undefined);
 
 // This is not a real provider. It's a hook that scopes goals to a mission.
 export function useGoals(missionId: string) {
-  const { user, firestore } = useFirebase();
+  const { user, firestore, isUserLoading } = useFirebase();
   const { getMissionById } = useMissions();
 
   const goalsCollectionRef = useMemoFirebase(
@@ -39,12 +39,13 @@ export function useGoals(missionId: string) {
     [user, firestore, missionId]
   );
   
-  const { data: goals, isLoading } = useCollection<Goal>(goalsCollectionRef);
+  const { data: goals, isLoading: areGoalsLoading } = useCollection<Goal>(goalsCollectionRef);
 
   const addGoal = useCallback(
     async (goalData: Pick<Goal, 'title' | 'description'>) => {
-      if (!goalsCollectionRef || !user) return;
+      if (!user || !firestore) return;
       
+      const goalsCollectionRef = collection(firestore, 'users', user.uid, 'missions', missionId, 'goals');
       const missionDocRef = doc(firestore, 'users', user.uid, 'missions', missionId);
       const newGoalRef = doc(goalsCollectionRef);
 
@@ -66,38 +67,39 @@ export function useGoals(missionId: string) {
         console.error("Transaction failed: ", e);
       }
     },
-    [goalsCollectionRef, user, missionId, firestore]
+    [user, firestore, missionId]
   );
 
   const toggleGoalCompletion = useCallback(
     async (goalId: string) => {
-      if (!goalsCollectionRef || !goals) return;
+      if (!user || !firestore || !goals) return;
       const goal = goals.find((g) => g.id === goalId);
-      if (goal && user) {
-        const newCompletedState = !goal.completed;
+      if (goal) {
+        const goalsCollectionRef = collection(firestore, 'users', user.uid, 'missions', missionId, 'goals');
         const goalDocRef = doc(goalsCollectionRef, goalId);
         const missionDocRef = doc(firestore, 'users', user.uid, 'missions', missionId);
         
         try {
            await runTransaction(firestore, async (transaction) => {
-            transaction.update(goalDocRef, { completed: newCompletedState });
-            transaction.update(missionDocRef, { completedGoals: increment(newCompletedState ? 1 : -1) });
+            transaction.update(goalDocRef, { completed: !goal.completed });
+            transaction.update(missionDocRef, { completedGoals: increment(!goal.completed ? 1 : -1) });
           });
         } catch (e) {
           console.error("Transaction failed: ", e);
         }
       }
     },
-    [goalsCollectionRef, goals, user, missionId, firestore]
+    [goals, user, firestore, missionId]
   );
 
   const deleteGoal = useCallback(
     async (goalId: string) => {
-      if (!goalsCollectionRef || !user || !goals) return;
+      if (!user || !firestore || !goals) return;
       
       const goalToDelete = goals.find(g => g.id === goalId);
       if (!goalToDelete) return;
 
+      const goalsCollectionRef = collection(firestore, 'users', user.uid, 'missions', missionId, 'goals');
       const goalDocRef = doc(goalsCollectionRef, goalId);
       const missionDocRef = doc(firestore, 'users', user.uid, 'missions', missionId);
 
@@ -114,8 +116,10 @@ export function useGoals(missionId: string) {
         console.error("Transaction failed: ", e);
       }
     },
-    [goalsCollectionRef, user, missionId, firestore, goals]
+    [user, firestore, missionId, goals]
   );
+
+  const isLoading = isUserLoading || areGoalsLoading;
 
   return {
     goals: goals || [],

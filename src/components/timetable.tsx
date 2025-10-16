@@ -49,7 +49,21 @@ const formSchema = z.object({
     day: z.string().min(1),
     startTime: z.string().min(1),
     endTime: z.string().min(1),
-  })),
+  })).refine(
+    (events) => {
+      for (const event of events) {
+        const startIndex = timeSlots.indexOf(event.startTime);
+        const endIndex = timeSlots.indexOf(event.endTime);
+        if (startIndex !== -1 && endIndex !== -1 && startIndex >= endIndex) {
+          return false;
+        }
+      }
+      return true;
+    },
+    {
+      message: 'End time must be after start time for all events.',
+    }
+  ),
 });
 
 
@@ -111,6 +125,17 @@ export function Timetable() {
   const handleGenerateTimetable = async () => {
     setIsGenerating(true);
     const customEvents = events.filter(e => e.type === 'custom');
+    
+    if (tasks.length === 0) {
+        toast({
+            variant: 'destructive',
+            title: 'No tasks to schedule',
+            description: 'Please add some tasks in the Tasks page before generating a timetable.',
+        });
+        setIsGenerating(false);
+        return;
+    }
+
     const result = await generateTimetableAction({ tasks, customEvents });
     if (result.success && result.data) {
       const taskEvents = result.data.timetable.map(item => ({...item, type: 'task' as 'task'}));
@@ -187,7 +212,7 @@ export function Timetable() {
                         <FormLabel>End Time</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl><SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger></FormControl>
-                          <SelectContent>{timeSlots.map(time => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
+                          <SelectContent>{timeSlots.slice(1).map(time => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
                         </Select>
                       </FormItem>
                     )}
@@ -198,6 +223,11 @@ export function Timetable() {
                 </div>
               ))}
             </div>
+             {form.formState.errors.customEvents && (
+                <p className="text-sm font-medium text-destructive mt-2">
+                    {form.formState.errors.customEvents.message}
+                </p>
+            )}
             <div className="flex items-center gap-2 mt-4">
               <Button
                 type="button"

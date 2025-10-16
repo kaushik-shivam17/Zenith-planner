@@ -93,12 +93,13 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
 
    const deleteMission = useCallback(
     async (missionId: string) => {
-      if (!missionsCollectionRef || !user) return;
+      if (!user || !firestore) return;
       
       const batch = writeBatch(firestore);
-
+      const missionsCollectionRef = collection(firestore, 'users', user.uid, 'missions');
+      
       // Delete goals from the sub-collection
-      const goalsSubCollectionRef = collection(firestore, 'users', user.uid, 'missions', missionId, 'goals');
+      const goalsSubCollectionRef = collection(missionsCollectionRef, missionId, 'goals');
       const goalsSubSnapshot = await getDocs(goalsSubCollectionRef);
       goalsSubSnapshot.forEach(goalDoc => {
         batch.delete(goalDoc.ref);
@@ -111,11 +112,11 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
       // Commit the batch
       await batch.commit();
     },
-    [missionsCollectionRef, user, firestore]
+    [user, firestore]
   );
   
   // The overall loading state depends on both auth and Firestore loading.
-  const isLoading = isUserLoading || isMissionsLoading;
+  const isLoading = isUserLoading || (!!user && isMissionsLoading);
 
   const value: MissionsContextType = {
     missions: missions || [],

@@ -110,7 +110,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     [tasksCollectionRef, tasks]
   );
 
-  const isLoading = isUserLoading || areTasksLoading;
+  const isLoading = isUserLoading || (!!user && areTasksLoading);
 
   const value = {
     tasks: tasks.map(t => ({...t, deadline: t.deadline instanceof Timestamp ? t.deadline.toDate() : t.deadline})),

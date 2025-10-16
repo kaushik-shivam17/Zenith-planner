@@ -86,7 +86,7 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
     }, [timetableCollectionRef, eventsData]);
 
 
-  const isLoading = isUserLoading || areEventsLoading;
+  const isLoading = isUserLoading || (!!user && areEventsLoading);
 
   const value: TimetableContextType = {
     events: eventsData || [],

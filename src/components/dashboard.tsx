@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import type { Task } from '@/lib/types';
@@ -20,11 +20,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from './ui/button';
 
 export function Dashboard() {
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [selectedDateForTask, setSelectedDateForTask] = useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [selectedDateForTask, setSelectedDateForTask] = useState<Date | undefined>(undefined);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const { addTask } = useTasks();
+
+  useEffect(() => {
+    // Set date only on the client-side to avoid hydration errors
+    setDate(new Date());
+    setSelectedDateForTask(new Date());
+  }, []);
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
     if (selectedDate) {
@@ -65,10 +71,10 @@ export function Dashboard() {
           onClick={() => handleDateSelect(new Date())}
         >
           <div className="text-xl md:text-2xl font-semibold text-muted-foreground">
-            {date ? format(date, 'eeee') : ''}
+            {date ? format(date, 'eeee') : 'Loading...'}
           </div>
           <div className="text-6xl md:text-7xl font-bold text-primary">
-            {date ? format(date, 'd') : ''}
+            {date ? format(date, 'd') : '--'}
           </div>
           <div className="text-xl md:text-2xl font-semibold text-muted-foreground">
             {date ? format(date, 'MMMM yyyy') : ''}

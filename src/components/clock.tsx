@@ -6,15 +6,17 @@ export function Clock() {
   const [time, setTime] = useState<Date | null>(null);
 
   useEffect(() => {
+    // This code runs only on the client, after the component has mounted.
     setTime(new Date());
     const timer = setInterval(() => {
       setTime(new Date());
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, []); // The empty dependency array ensures this runs only once on mount.
 
   const formatTime = (date: Date | null) => {
     if (!date) {
+      // Return a placeholder or empty string while waiting for client-side render
       return '--:--:-- --';
     }
     return date.toLocaleTimeString('en-US', {

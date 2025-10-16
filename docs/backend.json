@@ -8,7 +8,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the user."
+          "description": "Unique identifier for the User entity."
         },
         "email": {
           "type": "string",
@@ -25,11 +25,11 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Task",
       "type": "object",
-      "description": "Represents a task or activity that the user needs to complete.",
+      "description": "Represents a task that a user needs to complete.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the task."
+          "description": "Unique identifier for the Task entity."
         },
         "userId": {
           "type": "string",
@@ -61,32 +61,62 @@
         "completed"
       ]
     },
-    "TimetableEvent": {
+    "Subtask": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "TimetableEvent",
+      "title": "Subtask",
       "type": "object",
-      "description": "Represents a scheduled event in the user's timetable.",
+      "description": "Represents a subtask of a larger task.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the timetable event."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N TimetableEvent)"
+          "description": "Unique identifier for the Subtask entity."
         },
         "taskId": {
           "type": "string",
-          "description": "Reference to Task. (Relationship: Task 1:N TimetableEvent)"
+          "description": "Reference to Task. (Relationship: Task 1:N Subtask)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the subtask."
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Indicates whether the subtask is completed or not."
+        }
+      },
+      "required": [
+        "id",
+        "taskId",
+        "description",
+        "completed"
+      ]
+    },
+    "ScheduleEntry": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ScheduleEntry",
+      "type": "object",
+      "description": "Represents a scheduled time slot for a task.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ScheduleEntry entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N ScheduleEntry)"
+        },
+        "taskId": {
+          "type": "string",
+          "description": "Reference to Task. (Relationship: Task 1:N ScheduleEntry)"
         },
         "startTime": {
           "type": "string",
-          "description": "Start time of the event.",
+          "description": "Start time of the scheduled entry.",
           "format": "date-time"
         },
         "endTime": {
           "type": "string",
-          "description": "End time of the event.",
+          "description": "End time of the scheduled entry.",
           "format": "date-time"
         }
       },
@@ -102,11 +132,11 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Reminder",
       "type": "object",
-      "description": "Represents a reminder for the user.",
+      "description": "Represents a reminder for a specific event.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the reminder."
+          "description": "Unique identifier for the Reminder entity."
         },
         "userId": {
           "type": "string",
@@ -118,12 +148,12 @@
         },
         "time": {
           "type": "string",
-          "description": "Time for the reminder.",
+          "description": "Time the reminder should be triggered.",
           "format": "date-time"
         },
         "message": {
           "type": "string",
-          "description": "Message to be displayed for the reminder."
+          "description": "Message displayed in the reminder."
         }
       },
       "required": [
@@ -142,7 +172,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the focus tip."
+          "description": "Unique identifier for the FocusTip entity."
         },
         "text": {
           "type": "string",
@@ -170,7 +200,7 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Stores user profiles.  Allows only authenticated users to read/write their own profile.",
+          "description": "Stores user profiles.  Authorization is based on path-based ownership (request.auth.uid == userId).",
           "params": [
             {
               "name": "userId",
@@ -186,7 +216,7 @@
           "schema": {
             "$ref": "#/backend/entities/Task"
           },
-          "description": "Stores tasks associated with a specific user.  Allows only the authenticated user to read/write their own tasks.",
+          "description": "Stores tasks owned by a specific user. Authorization is based on path-based ownership (request.auth.uid == userId).",
           "params": [
             {
               "name": "userId",
@@ -200,21 +230,45 @@
         }
       },
       {
-        "path": "/users/{userId}/timetableEvents/{timetableEventId}",
+        "path": "/users/{userId}/tasks/{taskId}/subtasks/{subtaskId}",
         "definition": {
-          "entityName": "TimetableEvent",
+          "entityName": "Subtask",
           "schema": {
-            "$ref": "#/backend/entities/TimetableEvent"
+            "$ref": "#/backend/entities/Subtask"
           },
-          "description": "Stores timetable events for a specific user.  Allows only the authenticated user to read/write their own timetable events.",
+          "description": "Stores subtasks belonging to a specific task. Authorization is based on path-based ownership (request.auth.uid == userId).",
           "params": [
             {
               "name": "userId",
               "description": "The unique identifier for the user."
             },
             {
-              "name": "timetableEventId",
-              "description": "The unique identifier for the timetable event."
+              "name": "taskId",
+              "description": "The unique identifier for the task."
+            },
+            {
+              "name": "subtaskId",
+              "description": "The unique identifier for the subtask."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/scheduleEntries/{scheduleEntryId}",
+        "definition": {
+          "entityName": "ScheduleEntry",
+          "schema": {
+            "$ref": "#/backend/entities/ScheduleEntry"
+          },
+          "description": "Stores schedule entries for a specific user. Authorization is based on path-based ownership (request.auth.uid == userId).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "scheduleEntryId",
+              "description": "The unique identifier for the schedule entry."
             }
           ]
         }
@@ -226,7 +280,7 @@
           "schema": {
             "$ref": "#/backend/entities/Reminder"
           },
-          "description": "Stores reminders for a specific user.  Allows only the authenticated user to read/write their own reminders.",
+          "description": "Stores reminders for a specific user. Authorization is based on path-based ownership (request.auth.uid == userId).",
           "params": [
             {
               "name": "userId",
@@ -240,13 +294,13 @@
         }
       },
       {
-        "path": "/focus_tips/{focusTipId}",
+        "path": "/focusTips/{focusTipId}",
         "definition": {
           "entityName": "FocusTip",
           "schema": {
             "$ref": "#/backend/entities/FocusTip"
           },
-          "description": "Stores global focus tips. Public read access.",
+          "description": "Stores global focus tips, accessible to all users.",
           "params": [
             {
               "name": "focusTipId",
@@ -256,6 +310,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to ensure authorization independence, clarity, and scalability. It utilizes path-based ownership for user-specific data and avoids hierarchical authorization dependencies by denormalizing data where necessary. The structure also supports secure `list` operations by segregating data based on access requirements.\n\nThe `users/{userId}` collection stores user profiles.\n\nEach user has their own subcollections for tasks (`users/{userId}/tasks/{taskId}`), timetable events (`users/{userId}/timetableEvents/{timetableEventId}`), and reminders (`users/{userId}/reminders/{reminderId}`). This path-based ownership simplifies security rules and ensures that only the user can access their data. This approach facilitates secure `list` operations because the security rules can simply check if `request.auth.uid == userId`.\n\nFocus tips are stored in a global collection (`focus_tips/{focusTipId}`) since they are not user-specific and are read-only."
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability. User-owned data is stored under `/users/{userId}`. Tasks, subtasks, schedule entries, and reminders are all subcollections of the user, enabling simple path-based security rules. Focus tips are global and public, residing in a separate collection. This structure eliminates the need for `get()` calls in security rules, enabling atomic operations and simplifying debugging. List operations are secured via path-based ownership."
   }
 }

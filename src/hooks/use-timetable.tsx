@@ -14,6 +14,8 @@ import {
   useFirebase,
   useCollection,
   useMemoFirebase,
+  addDocumentNonBlocking,
+  deleteDocumentNonBlocking,
 } from '@/firebase';
 import { collection, writeBatch, doc } from 'firebase/firestore';
 
@@ -66,30 +68,25 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
 
   const addCustomEvents = useCallback(async (customEvents: Omit<TimetableEvent, 'id' | 'userId'>[]) => {
       if (!timetableCollectionRef || !user) return;
-      const batch = writeBatch(firestore);
-
+      
       customEvents.forEach(event => {
-        const newEventRef = doc(timetableCollectionRef);
-        const eventWithUser = { ...event, id: newEventRef.id, userId: user.uid, type: 'custom' as 'custom' };
-        batch.set(newEventRef, eventWithUser);
+        const eventWithUser = { ...event, userId: user.uid, type: 'custom' as 'custom' };
+        addDocumentNonBlocking(timetableCollectionRef, eventWithUser);
       });
       
-      await batch.commit();
-  }, [timetableCollectionRef, user, firestore]);
+  }, [timetableCollectionRef, user]);
 
   const clearEvents = useCallback(async (type: 'task' | 'custom' | 'all') => {
       if (!timetableCollectionRef || !events) return;
-      const batch = writeBatch(firestore);
       
       events.forEach(event => {
         if (type === 'all' || event.type === type) {
           const eventDocRef = doc(timetableCollectionRef, event.id);
-          batch.delete(eventDocRef);
+          deleteDocumentNonBlocking(eventDocRef);
         }
       });
       
-      await batch.commit();
-    }, [timetableCollectionRef, firestore, events]);
+    }, [timetableCollectionRef, events]);
 
 
   const isLoading = !isClient || isUserLoading || areEventsLoading;

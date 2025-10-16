@@ -24,7 +24,7 @@ interface MissionsContextType {
   missions: Mission[];
   getMissionById: (missionId: string) => Mission | undefined;
   addMission: (missionData: Pick<Mission, 'title'>) => void;
-  updateMissionProgress: (missionId: string, progress: number) => void;
+  updateMission: (missionId: string, updates: Partial<Omit<Mission, 'id' | 'userId'>>) => void;
   deleteMission: (missionId: string) => Promise<void>;
   isLoading: boolean;
 }
@@ -81,15 +81,16 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
     },
     [missionsCollectionRef, user]
   );
-
-  const updateMissionProgress = useCallback(
-    (missionId: string, progress: number) => {
-      if (!missionsCollectionRef) return;
-      const missionDocRef = doc(missionsCollectionRef, missionId);
-      updateDocumentNonBlocking(missionDocRef, { progress });
+  
+  const updateMission = useCallback(
+    (missionId: string, updates: Partial<Omit<Mission, 'id' | 'userId'>>) => {
+        if (!missionsCollectionRef) return;
+        const missionDocRef = doc(missionsCollectionRef, missionId);
+        updateDocumentNonBlocking(missionDocRef, updates);
     },
     [missionsCollectionRef]
   );
+
 
    const deleteMission = useCallback(
     async (missionId: string) => {
@@ -120,7 +121,7 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
     missions: missions || [],
     getMissionById,
     addMission,
-    updateMissionProgress,
+    updateMission,
     deleteMission,
     isLoading,
   };

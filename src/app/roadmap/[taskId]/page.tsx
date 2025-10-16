@@ -36,8 +36,8 @@ export default function RoadmapPage() {
 
   const itemType = searchParams.get('type') === 'mission' ? 'mission' : 'task';
 
-  const { getTaskById, isLoading: areTasksLoading } = useTasks();
-  const { getMissionById, isLoading: areMissionsLoading } = useMissions();
+  const { getTaskById, updateTask, isLoading: areTasksLoading } = useTasks();
+  const { getMissionById, updateMission, isLoading: areMissionsLoading } = useMissions();
 
   const [roadmap, setRoadmap] = useState<GenerateTaskRoadmapOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,29 +62,41 @@ export default function RoadmapPage() {
       return;
     }
     if (item) {
-      const fetchRoadmap = async () => {
-        setIsLoading(true);
-        setError(null);
-        const result = await generateTaskRoadmapAction(item.title);
-        if (result.success) {
-          setRoadmap(result.data);
-          setChatHistory([{ role: 'model', content: result.data.introduction }]);
-        } else {
-          setError(result.error);
-          toast({
-            variant: 'destructive',
-            title: 'Error Generating Roadmap',
-            description: result.error,
-          });
-        }
+      if (item.roadmap) {
+        setRoadmap(item.roadmap);
+        setChatHistory([{ role: 'model', content: item.roadmap.introduction }]);
         setIsLoading(false);
-      };
-      fetchRoadmap();
+      } else {
+        const fetchRoadmap = async () => {
+          setIsLoading(true);
+          setError(null);
+          const result = await generateTaskRoadmapAction(item.title);
+          if (result.success) {
+            setRoadmap(result.data);
+            setChatHistory([{ role: 'model', content: result.data.introduction }]);
+            // Save the roadmap to Firestore
+            if (itemType === 'task') {
+                updateTask(item.id, { roadmap: result.data });
+            } else {
+                updateMission(item.id, { roadmap: result.data });
+            }
+          } else {
+            setError(result.error);
+            toast({
+              variant: 'destructive',
+              title: 'Error Generating Roadmap',
+              description: result.error,
+            });
+          }
+          setIsLoading(false);
+        };
+        fetchRoadmap();
+      }
     } else if (!isItemLoading) {
       setError(`The requested ${itemType} could not be found.`);
       setIsLoading(false);
     }
-  }, [item, isItemLoading, toast, itemType]);
+  }, [item, isItemLoading, toast, itemType, updateTask, updateMission]);
 
   useEffect(() => {
     if (chatContainerRef.current) {

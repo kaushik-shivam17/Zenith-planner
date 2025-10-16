@@ -80,6 +80,33 @@
         "weight"
       ]
     },
+    "Roadmap": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Roadmap",
+      "type": "object",
+      "description": "Represents an AI-generated roadmap for a task or mission.",
+      "properties": {
+        "introduction": {
+          "type": "string"
+        },
+        "milestones": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "emoji": { "type": "string" },
+              "steps": { "type": "array", "items": { "type": "string" } }
+            },
+            "required": ["title", "emoji", "steps"]
+          }
+        },
+        "conclusion": {
+          "type": "string"
+        }
+      },
+      "required": ["introduction", "milestones", "conclusion"]
+    },
     "Task": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Task",
@@ -115,6 +142,10 @@
           "type": "string",
           "format": "date-time",
           "description": "The timestamp when the task was created."
+        },
+        "roadmap": {
+          "$ref": "#/backend/entities/Roadmap",
+          "description": "The AI-generated roadmap for this task."
         }
       },
       "required": [
@@ -160,6 +191,10 @@
         "completedGoals": {
           "type": "number",
           "description": "The number of completed goals for this mission."
+        },
+        "roadmap": {
+          "$ref": "#/backend/entities/Roadmap",
+          "description": "The AI-generated roadmap for this mission."
         }
       },
       "required": [

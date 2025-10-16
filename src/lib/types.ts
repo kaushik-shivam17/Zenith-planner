@@ -1,5 +1,6 @@
 
 import type { Timestamp } from 'firebase/firestore';
+import type { GenerateTaskRoadmapOutput } from '@/ai/flows/generate-task-roadmap';
 
 export type Task = {
   id: string;
@@ -9,6 +10,7 @@ export type Task = {
   completed: boolean;
   subtasks?: string[];
   userId: string;
+  roadmap?: GenerateTaskRoadmapOutput;
 };
 
 export type Mission = {
@@ -19,6 +21,7 @@ export type Mission = {
   createdAt: Timestamp;
   totalGoals: number;
   completedGoals: number;
+  roadmap?: GenerateTaskRoadmapOutput;
 };
 
 export type Goal = {

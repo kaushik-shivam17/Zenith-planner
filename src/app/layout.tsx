@@ -30,13 +30,13 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} dark`}>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
-          <MissionsProvider>
-            <TasksProvider>
-              <TimetableProvider>
-                <AppShell>{children}</AppShell>
-              </TimetableProvider>
-            </TasksProvider>
-          </MissionsProvider>
+          <TimetableProvider>
+            <MissionsProvider>
+              <TasksProvider>
+                  <AppShell>{children}</AppShell>
+              </TasksProvider>
+            </MissionsProvider>
+          </TimetableProvider>
         </FirebaseClientProvider>
         <Toaster />
         <Analytics />

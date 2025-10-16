@@ -80,12 +80,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   };
   
-  if (isUserLoading || (isProtectedRoute && !user)) {
+  // Strict loading gate. Do not render anything until auth state is confirmed.
+  if (isUserLoading) {
     return (
        <div className="flex h-screen items-center justify-center bg-background">
           <div className="text-2xl font-semibold text-foreground">Loading...</div>
       </div>
-    )
+    );
   }
 
   // Determine if the current route needs data providers.
@@ -194,4 +195,3 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
-

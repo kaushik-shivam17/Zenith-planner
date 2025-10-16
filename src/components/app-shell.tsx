@@ -29,6 +29,9 @@ import {
 import { Header } from '@/components/header';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useToast } from '@/hooks/use-toast';
+import { MissionsProvider } from '@/hooks/use-missions';
+import { TasksProvider } from '@/hooks/use-tasks';
+import { TimetableProvider } from '@/hooks/use-timetable';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },

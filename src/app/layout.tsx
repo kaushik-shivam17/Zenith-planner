@@ -33,7 +33,7 @@ export default function RootLayout({
           <TimetableProvider>
             <MissionsProvider>
               <TasksProvider>
-                  <AppShell>{children}</AppShell>
+                <AppShell>{children}</AppShell>
               </TasksProvider>
             </MissionsProvider>
           </TimetableProvider>

@@ -43,8 +43,16 @@ const navItems = [
   { href: '/fitness', label: 'Fitness', icon: HeartPulse },
 ];
 
-// Routes that require authentication and data providers
-const protectedAndDataRoutes = new Set(navItems.map(item => item.href).concat(['/', '/profile', '/roadmap', '/missions/[missionId]']));
+// Combine all protected routes into an array first
+const protectedRoutePaths = [
+  ...navItems.map(item => item.href),
+  '/',
+  '/profile',
+  '/roadmap',
+  '/missions/'
+];
+// Then create a Set from the array
+const protectedAndDataRoutes = new Set(protectedRoutePaths);
 
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -52,7 +60,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   
   // A route is "protected" if it requires a user to be logged in.
-  const isProtectedRoute = protectedAndDataRoutes.has(pathname) || pathname.startsWith('/missions/') || pathname.startsWith('/roadmap/');
+  const isProtectedRoute = Array.from(protectedAndDataRoutes).some(route => pathname.startsWith(route));
   
   const { user, isUserLoading } = useUser();
   // useAuthGuard will handle redirection for protected routes
@@ -81,6 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
   
   // Strict loading gate. Do not render anything until auth state is confirmed.
+  // This is the most critical part of the fix for the race condition.
   if (isUserLoading) {
     return (
        <div className="flex h-screen items-center justify-center bg-background">
@@ -104,6 +113,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </main>
   );
   
+  // Conditionally wrap the content with providers only when needed.
   const contentWithProviders = (
     <TimetableProvider>
       <MissionsProvider>
@@ -151,11 +161,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="pt-2">
-            {isUserLoading ? (
-              <div className="p-2">
-                <div className="h-8 bg-gray-700 rounded w-full animate-pulse" />
-              </div>
-            ) : user ? (
+             {/* We don't need a loading skeleton here anymore because the main gate handles it */}
+            {user ? (
               <>
                 <SidebarMenuItem>
                   <Link href="/profile" className="w-full">

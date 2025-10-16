@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -31,6 +32,7 @@ import { useToast } from '@/hooks/use-toast';
 import { MissionsProvider } from '@/hooks/use-missions';
 import { TasksProvider } from '@/hooks/use-tasks';
 import { TimetableProvider } from '@/hooks/use-timetable';
+import { useUser } from '@/firebase';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -41,16 +43,23 @@ const navItems = [
   { href: '/fitness', label: 'Fitness', icon: HeartPulse },
 ];
 
-const protectedRoutes = new Set(navItems.map(item => item.href).concat(['/profile', '/roadmap', '/missions/[missionId]']));
+// Routes that require authentication and data providers
+const protectedAndDataRoutes = new Set(navItems.map(item => item.href).concat(['/', '/profile', '/roadmap', '/missions/[missionId]']));
 
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const isProtectedRoute = protectedRoutes.has(pathname) || pathname.startsWith('/missions/') || pathname.startsWith('/roadmap/');
-  const { user, isUserLoading } = useAuthGuard(isProtectedRoute);
+  
+  // A route is "protected" if it requires a user to be logged in.
+  const isProtectedRoute = protectedAndDataRoutes.has(pathname) || pathname.startsWith('/missions/') || pathname.startsWith('/roadmap/');
+  
+  const { user, isUserLoading } = useUser();
+  // useAuthGuard will handle redirection for protected routes
+  useAuthGuard(isProtectedRoute);
+
   const { toast } = useToast();
-  const isActive = (href: string) => pathname === href;
+  const isActive = (href: string) => pathname === href || (href === '/dashboard' && pathname === '/');
 
   const handleSignOut = async () => {
     try {
@@ -79,9 +88,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     )
   }
 
-  // Wrap the children that need auth with the data providers
+  // Determine if the current route needs data providers.
+  // This is true if the route is protected AND the user is logged in.
+  const needsProviders = isProtectedRoute && user;
+
   const mainContent = (
-    <main className="min-h-screen p-4 sm:p-6 md:p-8">
+    <main className="min-h-screen p-4 sm:p-6 md:p-8 flex-1">
       <div className="max-w-5xl mx-auto">
         <div className="md:hidden mb-4">
           <Header />
@@ -103,80 +115,83 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader>
-          <div className="flex items-center gap-3 p-2">
-            <div className="flex flex-col">
-              <h1 className="text-xl font-bold tracking-tighter font-headline">
-                Zenith Planner
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                Your AI-powered assistant
-              </p>
+       <div className="flex w-full">
+        <Sidebar>
+          <SidebarHeader>
+            <div className="flex items-center gap-3 p-2">
+              <div className="flex flex-col">
+                <h1 className="text-xl font-bold tracking-tighter font-headline">
+                  Zenith Planner
+                </h1>
+                <p className="text-xs text-muted-foreground">
+                  Your AI-powered assistant
+                </p>
+              </div>
             </div>
-          </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <Link href={item.href} className="w-full">
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarMenu>
+              {navItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <Link href={item.href} className="w-full">
+                    <SidebarMenuButton
+                      isActive={isActive(item.href)}
+                      className="w-full"
+                      tooltip={{
+                        children: item.label,
+                      }}
+                    >
+                      <item.icon />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarContent>
+          <SidebarFooter className="pt-2">
+            {isUserLoading ? (
+              <div className="p-2">
+                <div className="h-8 bg-gray-700 rounded w-full animate-pulse" />
+              </div>
+            ) : user ? (
+              <>
+                <SidebarMenuItem>
+                  <Link href="/profile" className="w-full">
+                    <SidebarMenuButton
+                      isActive={isActive('/profile')}
+                      className="w-full"
+                    >
+                      <UserIcon />
+                      <span>Profile</span>
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={handleSignOut} className="w-full">
+                    <LogOut />
+                    <span>Logout</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </>
+            ) : (
+              <SidebarMenuItem>
+                <Link href="/login" className="w-full">
                   <SidebarMenuButton
-                    isActive={isActive(item.href)}
+                    isActive={isActive('/login')}
                     className="w-full"
-                    tooltip={{
-                      children: item.label,
-                    }}
                   >
-                    <item.icon />
-                    <span>{item.label}</span>
+                    <LogIn />
+                    <span>Login</span>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter className="pt-2">
-          {isUserLoading ? (
-            <div className="p-2">
-              <div className="h-8 bg-gray-700 rounded w-full animate-pulse" />
-            </div>
-          ) : user ? (
-            <>
-              <SidebarMenuItem>
-                <Link href="/profile" className="w-full">
-                  <SidebarMenuButton
-                    isActive={isActive('/profile')}
-                    className="w-full"
-                  >
-                    <UserIcon />
-                    <span>Profile</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={handleSignOut} className="w-full">
-                  <LogOut />
-                  <span>Logout</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </>
-          ) : (
-            <SidebarMenuItem>
-              <Link href="/login" className="w-full">
-                <SidebarMenuButton
-                  isActive={isActive('/login')}
-                  className="w-full"
-                >
-                  <LogIn />
-                  <span>Login</span>
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-          )}
-        </SidebarFooter>
-      </Sidebar>
-      {user && isProtectedRoute ? contentWithProviders : mainContent}
+            )}
+          </SidebarFooter>
+        </Sidebar>
+        {needsProviders ? contentWithProviders : mainContent}
+      </div>
     </SidebarProvider>
   );
 }
+

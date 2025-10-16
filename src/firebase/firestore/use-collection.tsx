@@ -74,19 +74,18 @@ export function useCollection<T = any>(
       },
       (error: FirestoreError) => {
         let path: string;
-        // This logic robustly extracts the path from either a ref or a query
+        
         if (memoizedTargetRefOrQuery.type === 'collection') {
           path = (memoizedTargetRefOrQuery as CollectionReference).path;
         } else {
-          // For queries, we can't reliably get the path from public API.
-          // We can try to extract it from the error message as a fallback.
+          // For queries, attempt to extract path from the error message.
           const match = error.message.match(/\/databases\/\(default\)\/documents\/([^ ]*)/);
           path = match ? match[1] : '[unknown query path]';
         }
         
         const contextualError = new FirestorePermissionError({
           operation: 'list',
-          path,
+          path: path, // Ensure path is always a string.
         });
 
         setError(contextualError);
@@ -100,6 +99,7 @@ export function useCollection<T = any>(
 
     return () => unsubscribe();
   }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
+  
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
     throw new Error('useCollection query was not properly memoized using useMemoFirebase. This will cause infinite loops.');
   }

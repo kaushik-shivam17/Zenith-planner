@@ -39,6 +39,10 @@ const profileSchema = z.object({
 
 type UserProfile = z.infer<typeof profileSchema>;
 
+// This is the type that will be stored in Firestore, with height in meters
+type UserProfileFirestore = Omit<UserProfile, 'height'> & { height?: number };
+
+
 export function Profile() {
   const { user } = useAuthGuard(true);
   const { firestore } = useFirebase();
@@ -50,7 +54,8 @@ export function Profile() {
     () => (user ? doc(firestore, 'users', user.uid) : null),
     [user, firestore]
   );
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
+  // We fetch data that has height in meters
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfileFirestore>(userDocRef);
 
   const form = useForm<UserProfile>({
     resolver: zodResolver(profileSchema),
@@ -58,7 +63,7 @@ export function Profile() {
       name: '',
       email: '',
       class: '',
-      height: undefined,
+      height: undefined, // cm
       weight: undefined,
     },
   });
@@ -69,7 +74,8 @@ export function Profile() {
         name: userProfile.name ?? '',
         email: userProfile.email ?? '',
         class: userProfile.class ?? '',
-        height: userProfile.height ?? undefined,
+        // Convert height from meters (Firestore) to cm (UI)
+        height: userProfile.height ? userProfile.height * 100 : undefined,
         weight: userProfile.weight ?? undefined,
       });
     } else if (user) {
@@ -84,8 +90,13 @@ export function Profile() {
       return;
     }
     setIsSubmitting(true);
-    const dataToSave = {
+    
+    // Convert height from cm (UI) to meters for Firestore
+    const heightInMeters = values.height ? values.height / 100 : undefined;
+
+    const dataToSave: UserProfileFirestore & { id: string, updatedAt: any } = {
       ...values,
+      height: heightInMeters,
       id: user.uid,
       updatedAt: serverTimestamp(),
     };
@@ -103,7 +114,8 @@ export function Profile() {
     const { height, weight } = form.getValues();
   
     if (height && weight && height > 0 && weight > 0) {
-      const bmiValue = (weight / (height * height)).toFixed(2);
+      const heightInMeters = height / 100;
+      const bmiValue = (weight / (heightInMeters * heightInMeters)).toFixed(2);
       setBmi(bmiValue);
     } else {
       setBmi(null);
@@ -184,12 +196,12 @@ export function Profile() {
                   name="height"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Height (m)</FormLabel>
+                      <FormLabel>Height (cm)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
-                          step="0.01"
-                          placeholder="e.g., 1.75"
+                          step="1"
+                          placeholder="e.g., 175"
                           {...field}
                           value={field.value ?? ''}
                           onChange={(e) => {

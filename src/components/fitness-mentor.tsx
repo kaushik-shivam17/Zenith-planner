@@ -36,8 +36,9 @@ const formSchema = z.object({
   prompt: z.string().min(10, 'Please enter at least 10 characters.'),
 });
 
+// This is the shape of the data coming from Firestore, with height in meters.
 type UserProfile = {
-  height?: number;
+  height?: number; // meters
   weight?: number;
 };
 
@@ -66,6 +67,7 @@ export function FitnessMentor() {
     setAdvice(null);
     
     let bmi: number | undefined = undefined;
+    // userProfile.height is in meters
     if (userProfile?.height && userProfile?.weight) {
       if (userProfile.height > 0) {
         bmi = userProfile.weight / (userProfile.height * userProfile.height);

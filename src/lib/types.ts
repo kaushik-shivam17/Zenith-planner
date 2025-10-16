@@ -30,5 +30,3 @@ export type Goal = {
   completed: boolean;
   createdAt: Timestamp;
 };
-
-    

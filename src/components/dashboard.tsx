@@ -40,7 +40,7 @@ export function Dashboard() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 fade-in">
       <div className="flex flex-col items-center justify-center space-y-4">
         <Clock />
       </div>

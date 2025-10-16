@@ -216,5 +216,3 @@ export default function MissionDetailPage() {
     </div>
   );
 }
-
-    

@@ -20,7 +20,6 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -30,8 +29,6 @@ import {
 import { Header } from '@/components/header';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState } from 'react';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -51,12 +48,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useAuthGuard(protectedRoutes.has(pathname));
   const { toast } = useToast();
   const isActive = (href: string) => pathname === href;
-  const isMobile = useIsMobile();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -77,26 +68,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   };
 
-  if (!isClient) {
-    return (
-       <div className="flex h-screen w-full items-center justify-center">
-         {/* You can replace this with a more sophisticated skeleton loader */}
-        <p>Loading...</p>
-      </div>
-    )
-  }
-
   return (
     <SidebarProvider>
       <Sidebar>
-        <SidebarHeader className="p-4">
-          <div className="flex items-center gap-3">
+        <SidebarHeader>
+          <div className="flex items-center gap-3 p-2">
             <div className="flex flex-col">
-              <h1 className="text-xl font-bold tracking-tighter font-headline text-foreground">
+              <h1 className="text-xl font-bold tracking-tighter font-headline">
                 Zenith Planner
               </h1>
               <p className="text-xs text-muted-foreground">
-                Become Pro with us
+                Your AI-powered assistant
               </p>
             </div>
           </div>
@@ -121,9 +103,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ))}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter>
+        <SidebarFooter className="pt-2">
           {isUserLoading ? (
-            <div className="p-4">
+            <div className="p-2">
               <div className="h-8 bg-gray-700 rounded w-full animate-pulse" />
             </div>
           ) : user ? (
@@ -161,16 +143,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset>
-        <main className="min-h-screen p-4 sm:p-6 md:p-8">
-          <div className="max-w-5xl mx-auto fade-in">
-            <div className="md:hidden mb-4">
-              <Header />
-            </div>
-            {children}
+      <main className="min-h-screen p-4 sm:p-6 md:p-8">
+        <div className="max-w-5xl mx-auto">
+          <div className="md:hidden mb-4">
+            <Header />
           </div>
-        </main>
-      </SidebarInset>
+          {children}
+        </div>
+      </main>
     </SidebarProvider>
   );
 }

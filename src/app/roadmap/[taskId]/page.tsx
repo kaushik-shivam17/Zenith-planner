@@ -149,7 +149,7 @@ export default function RoadmapPage() {
       <div className="flex flex-col items-center justify-center h-full min-h-[80vh] text-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
         <h2 className="text-2xl font-semibold">Generating Your Roadmap...</h2>
-        <p className="text-muted-foreground">The AI is crafting a personalized plan for your {itemType}.</p>
+        <p className="text-muted-foreground">The AI is crafting a personalized plan for your ${itemType}.</p>
       </div>
     );
   }
@@ -173,7 +173,7 @@ export default function RoadmapPage() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">
       <div className="lg:col-span-2 space-y-6">
         <Button variant="ghost" onClick={() => router.push(backUrl)} className="mb-4">
           <ArrowLeft className="mr-2" />

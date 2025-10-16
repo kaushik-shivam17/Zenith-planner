@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -40,14 +39,14 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
     [isUserLoading, user, firestore]
   );
 
-  const { data: events, isLoading: areEventsLoading } = useCollection<TimetableEvent>(timetableCollectionRef);
+  const { data: eventsData, isLoading: areEventsLoading } = useCollection<TimetableEvent>(timetableCollectionRef);
 
   const setEvents = useCallback(async (newEvents: Omit<TimetableEvent, 'id' | 'userId'>[]) => {
-      if (!timetableCollectionRef || !user || !events) return;
+      if (!timetableCollectionRef || !user || !eventsData) return;
       const batch = writeBatch(firestore);
       
       // Delete all existing 'task' events
-      events.forEach(event => {
+      eventsData.forEach(event => {
         if (event.type === 'task') {
           const eventDocRef = doc(timetableCollectionRef, event.id);
           batch.delete(eventDocRef);
@@ -62,7 +61,7 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
       });
       
       await batch.commit();
-    }, [timetableCollectionRef, user, firestore, events]);
+    }, [timetableCollectionRef, user, firestore, eventsData]);
 
   const addCustomEvents = useCallback(async (customEvents: Omit<TimetableEvent, 'id' | 'userId'>[]) => {
       if (!timetableCollectionRef || !user) return;
@@ -75,22 +74,22 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
   }, [timetableCollectionRef, user]);
 
   const clearEvents = useCallback(async (type: 'task' | 'custom' | 'all') => {
-      if (!timetableCollectionRef || !events) return;
+      if (!timetableCollectionRef || !eventsData) return;
       
-      events.forEach(event => {
+      eventsData.forEach(event => {
         if (type === 'all' || event.type === type) {
           const eventDocRef = doc(timetableCollectionRef, event.id);
           deleteDocumentNonBlocking(eventDocRef);
         }
       });
       
-    }, [timetableCollectionRef, events]);
+    }, [timetableCollectionRef, eventsData]);
 
 
   const isLoading = isUserLoading || areEventsLoading;
 
   const value: TimetableContextType = {
-    events: events || [],
+    events: eventsData || [],
     setEvents,
     addCustomEvents,
     clearEvents,

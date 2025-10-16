@@ -39,13 +39,14 @@ const navItems = [
   { href: '/fitness', label: 'Fitness', icon: HeartPulse },
 ];
 
-const protectedRoutes = new Set(navItems.map(item => item.href));
+const protectedRoutes = new Set(navItems.map(item => item.href).concat(['/profile', '/roadmap', '/missions/[missionId]']));
 
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isUserLoading } = useAuthGuard(protectedRoutes.has(pathname));
+  const isProtectedRoute = protectedRoutes.has(pathname) || pathname.startsWith('/missions/') || pathname.startsWith('/roadmap/');
+  const { user, isUserLoading } = useAuthGuard(isProtectedRoute);
   const { toast } = useToast();
   const isActive = (href: string) => pathname === href;
 
@@ -67,6 +68,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       });
     }
   };
+  
+  // While checking auth, or if we are about to redirect, show a loading state
+  // This prevents content from flashing on protected routes before redirect.
+  if (isUserLoading || (isProtectedRoute && !user)) {
+    return (
+       <div className="flex h-screen items-center justify-center">
+          {/* You can replace this with a more sophisticated loader/spinner component */}
+          <div className="text-2xl font-semibold">Loading...</div>
+      </div>
+    )
+  }
 
   return (
     <SidebarProvider>

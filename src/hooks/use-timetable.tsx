@@ -34,7 +34,8 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
 
   const timetableCollectionRef = useMemoFirebase(
     () => {
-        if(isUserLoading || !user) return null;
+        // Do not create a reference until the user is loaded and exists
+        if (isUserLoading || !user) return null;
         return collection(firestore, 'users', user.uid, 'timetableEvents');
     },
     [isUserLoading, user, firestore]

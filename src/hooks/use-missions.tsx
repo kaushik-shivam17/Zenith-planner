@@ -40,10 +40,17 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
     if (!isUserLoading && user) {
       setIsReady(true);
     }
+    // If the user logs out, we are no longer ready.
+    if (!isUserLoading && !user) {
+      setIsReady(false);
+    }
   }, [isUserLoading, user]);
 
   const missionsCollectionRef = useMemoFirebase(
-    () => (isReady && user ? collection(firestore, 'users', user.uid, 'missions') : null),
+    () => {
+      if (!isReady || !user) return null;
+      return collection(firestore, 'users', user.uid, 'missions');
+    },
     [isReady, user, firestore]
   );
 
@@ -118,7 +125,7 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
     [missionsCollectionRef, user, firestore]
   );
   
-  const isLoading = isUserLoading || isMissionsLoading;
+  const isLoading = isUserLoading || isMissionsLoading || !isReady;
 
   const value: MissionsContextType = {
     missions: missions || [],

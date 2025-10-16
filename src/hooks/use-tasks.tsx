@@ -38,10 +38,16 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     if (!isUserLoading && user) {
       setIsReady(true);
     }
+     if (!isUserLoading && !user) {
+      setIsReady(false);
+    }
   }, [isUserLoading, user]);
 
   const tasksCollectionRef = useMemoFirebase(
-    () => (isReady && user ? collection(firestore, 'users', user.uid, 'tasks') : null),
+    () => {
+        if(!isReady || !user) return null;
+        return collection(firestore, 'users', user.uid, 'tasks');
+    },
     [isReady, user, firestore]
   );
 
@@ -114,7 +120,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     [tasksCollectionRef, tasks]
   );
 
-  const isLoading = !isReady || isUserLoading || areTasksLoading;
+  const isLoading = isUserLoading || areTasksLoading || !isReady;
 
   const value = {
     tasks: tasks.map(t => ({...t, deadline: t.deadline instanceof Timestamp ? t.deadline.toDate() : t.deadline})),

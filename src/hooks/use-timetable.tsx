@@ -37,10 +37,16 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
     if (!isUserLoading && user) {
       setIsReady(true);
     }
+     if (!isUserLoading && !user) {
+      setIsReady(false);
+    }
   }, [isUserLoading, user]);
 
   const timetableCollectionRef = useMemoFirebase(
-    () => (isReady && user ? collection(firestore, 'users', user.uid, 'timetableEvents') : null),
+    () => {
+        if(!isReady || !user) return null;
+        return collection(firestore, 'users', user.uid, 'timetableEvents');
+    },
     [isReady, user, firestore]
   );
 
@@ -91,7 +97,7 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
     }, [timetableCollectionRef, events]);
 
 
-  const isLoading = !isReady || isUserLoading || areEventsLoading;
+  const isLoading = isUserLoading || areEventsLoading || !isReady;
 
   const value: TimetableContextType = {
     events: events || [],

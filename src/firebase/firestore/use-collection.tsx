@@ -25,18 +25,6 @@ export interface UseCollectionResult<T> {
   error: FirestoreError | Error | null; // Error object, or null.
 }
 
-/* Internal implementation of Query:
-  https://github.com/firebase/firebase-js-sdk/blob/c5f08a9bc5da0d2b0207802c972d53724ccef055/packages/firestore/src/lite-api/reference.ts#L143
-*/
-export interface InternalQuery extends Query<DocumentData> {
-  _query: {
-    path: {
-      canonicalString(): string;
-      toString(): string;
-    }
-  }
-}
-
 /**
  * React hook to subscribe to a Firestore collection or query in real-time.
  * Handles nullable references/queries.
@@ -85,20 +73,25 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        // This logic extracts the path from either a ref or a query
-        const path =
-          memoizedTargetRefOrQuery.type === 'collection'
-            ? (memoizedTargetRefOrQuery as CollectionReference).path
-            : (memoizedTargetRefOrQuery as Query)._query.path.toString(); // Fallback for query
-
+        let path: string;
+        // This logic robustly extracts the path from either a ref or a query
+        if (memoizedTargetRefOrQuery.type === 'collection') {
+          path = (memoizedTargetRefOrQuery as CollectionReference).path;
+        } else {
+          // For queries, we can't reliably get the path from public API.
+          // We can try to extract it from the error message as a fallback.
+          const match = error.message.match(/\/databases\/\(default\)\/documents\/([^ ]*)/);
+          path = match ? match[1] : '[unknown query path]';
+        }
+        
         const contextualError = new FirestorePermissionError({
           operation: 'list',
           path,
-        })
+        });
 
-        setError(contextualError)
-        setData(null)
-        setIsLoading(false)
+        setError(contextualError);
+        setData(null);
+        setIsLoading(false);
 
         // trigger global error propagation
         errorEmitter.emit('permission-error', contextualError);
@@ -108,7 +101,7 @@ export function useCollection<T = any>(
     return () => unsubscribe();
   }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
-    throw new Error(memoizedTargetRefOrQuery + ' was not properly memoized using useMemoFirebase');
+    throw new Error('useCollection query was not properly memoized using useMemoFirebase. This will cause infinite loops.');
   }
   return { data, isLoading, error };
 }

@@ -82,6 +82,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     )
   }
 
+  // Wrap the children that need auth with the data providers
+  const MainContent = (
+    <main className="min-h-screen p-4 sm:p-6 md:p-8">
+      <div className="max-w-5xl mx-auto">
+        <div className="md:hidden mb-4">
+          <Header />
+        </div>
+        {children}
+      </div>
+    </main>
+  )
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -157,14 +169,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
         </SidebarFooter>
       </Sidebar>
-      <main className="min-h-screen p-4 sm:p-6 md:p-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="md:hidden mb-4">
-            <Header />
-          </div>
-          {children}
-        </div>
-      </main>
+      {user ? (
+        <TimetableProvider>
+          <MissionsProvider>
+            <TasksProvider>
+              {MainContent}
+            </TasksProvider>
+          </MissionsProvider>
+        </TimetableProvider>
+      ) : (
+        MainContent
+      )}
     </SidebarProvider>
   );
 }

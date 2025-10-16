@@ -31,6 +31,7 @@ import { Header } from '@/components/header';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -50,6 +51,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useAuthGuard(protectedRoutes.has(pathname));
   const { toast } = useToast();
   const isActive = (href: string) => pathname === href;
+  const isMobile = useIsMobile();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -120,7 +122,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
-          <SidebarSeparator />
           {isUserLoading ? (
             <div className="p-4">
               <div className="h-8 bg-gray-700 rounded w-full animate-pulse" />

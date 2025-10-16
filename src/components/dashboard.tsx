@@ -80,10 +80,7 @@ export function Dashboard() {
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-center">
           Welcome to Zenith Planner
         </h1>
-        <p className="text-sm font-semibold text-muted-foreground tracking-wider">
-          ✨ Created by Shivam Kaushik ✨
-        </p>
-        <p className="text-base md:text-lg text-muted-foreground text-center max-w-md">
+        <p className="text-muted-foreground text-center max-w-md">
           Select a date on the calendar to quickly add a new task or choose a tool from the sidebar.
         </p>
       </div>

@@ -37,7 +37,7 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // We are ready to fetch when the user loading is finished and we have a user object.
-    if (!isUserLoading) {
+    if (!isUserLoading && user) {
       setIsReady(true);
     }
   }, [isUserLoading, user]);

@@ -31,15 +31,17 @@ const TimetableContext = createContext<TimetableContextType | undefined>(undefin
 
 export function TimetableProvider({ children }: { children: ReactNode }) {
   const { user, firestore, isUserLoading } = useFirebase();
-  const [isClient, setIsClient] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
-  }, []);
+    if (!isUserLoading && user) {
+      setIsReady(true);
+    }
+  }, [isUserLoading, user]);
 
   const timetableCollectionRef = useMemoFirebase(
-    () => (user ? collection(firestore, 'users', user.uid, 'timetableEvents') : null),
-    [user, firestore]
+    () => (isReady && user ? collection(firestore, 'users', user.uid, 'timetableEvents') : null),
+    [isReady, user, firestore]
   );
 
   const { data: events, isLoading: areEventsLoading } = useCollection<TimetableEvent>(timetableCollectionRef);
@@ -89,7 +91,7 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
     }, [timetableCollectionRef, events]);
 
 
-  const isLoading = !isClient || isUserLoading || areEventsLoading;
+  const isLoading = !isReady || isUserLoading || areEventsLoading;
 
   const value: TimetableContextType = {
     events: events || [],

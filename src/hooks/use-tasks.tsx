@@ -32,15 +32,17 @@ const TasksContext = createContext<TasksContextType | undefined>(undefined);
 
 export function TasksProvider({ children }: { children: ReactNode }) {
   const { user, firestore, isUserLoading } = useFirebase();
-  const [isClient, setIsClient] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
-  }, []);
+    if (!isUserLoading && user) {
+      setIsReady(true);
+    }
+  }, [isUserLoading, user]);
 
   const tasksCollectionRef = useMemoFirebase(
-    () => (user ? collection(firestore, 'users', user.uid, 'tasks') : null),
-    [user, firestore]
+    () => (isReady && user ? collection(firestore, 'users', user.uid, 'tasks') : null),
+    [isReady, user, firestore]
   );
 
   const { data: rawTasks, isLoading: areTasksLoading } = useCollection<Omit<Task, 'id'>>(
@@ -112,7 +114,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     [tasksCollectionRef, tasks]
   );
 
-  const isLoading = !isClient || isUserLoading || areTasksLoading;
+  const isLoading = !isReady || isUserLoading || areTasksLoading;
 
   const value = {
     tasks: tasks.map(t => ({...t, deadline: t.deadline instanceof Timestamp ? t.deadline.toDate() : t.deadline})),

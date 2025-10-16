@@ -176,7 +176,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
         </SidebarFooter>
       </Sidebar>
-      {user ? contentWithProviders : mainContent}
+      {user && isProtectedRoute ? contentWithProviders : mainContent}
     </SidebarProvider>
   );
 }

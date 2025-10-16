@@ -8,112 +8,49 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the user (matches Firebase Auth UID)."
-        },
-        "name": {
-          "type": "string",
-          "description": "The user's full name."
+          "description": "Unique identifier for the user."
         },
         "email": {
           "type": "string",
-          "description": "The user's email address.",
+          "description": "Email address of the user.",
           "format": "email"
-        },
-        "class": {
-          "type": "string",
-          "description": "The user's class or grade (optional)."
-        },
-        "height": {
-          "type": "number",
-          "description": "User's height in meters (optional)."
-        },
-        "weight": {
-          "type": "number",
-          "description": "User's weight in kilograms (optional)."
         }
       },
       "required": [
         "id",
-        "name",
         "email"
-      ]
-    },
-    "BMI": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "BMI",
-      "type": "object",
-      "description": "Represents a user's Body Mass Index (BMI) data at a point in time.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the BMI record."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N BMI)"
-        },
-        "bmiValue": {
-          "type": "number",
-          "description": "The calculated BMI value."
-        },
-        "date": {
-          "type": "string",
-          "description": "The date when the BMI was recorded.",
-          "format": "date-time"
-        },
-        "height": {
-          "type": "number",
-          "description": "User's height in meters at the time of recording."
-        },
-        "weight": {
-          "type": "number",
-          "description": "User's weight in kilograms at the time of recording."
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "bmiValue",
-        "date",
-        "height",
-        "weight"
       ]
     },
     "Task": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Task",
       "type": "object",
-      "description": "Represents a single task for a user.",
+      "description": "Represents a task or activity that the user needs to complete.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "The unique identifier for the task."
+          "description": "Unique identifier for the task."
         },
         "userId": {
           "type": "string",
-          "description": "The UID of the user who owns this task."
+          "description": "Reference to User. (Relationship: User 1:N Task)"
         },
         "title": {
           "type": "string",
-          "description": "The title of the task."
+          "description": "Title of the task."
         },
-        "details": {
+        "description": {
           "type": "string",
-          "description": "Optional details about the task."
+          "description": "Detailed description of the task."
         },
         "deadline": {
           "type": "string",
-          "format": "date-time",
-          "description": "The deadline for the task as a Firestore Timestamp."
+          "description": "Deadline for the task.",
+          "format": "date-time"
         },
         "completed": {
           "type": "boolean",
-          "description": "Whether the task has been completed."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The timestamp when the task was created."
+          "description": "Indicates whether the task is completed or not."
         }
       },
       "required": [
@@ -121,101 +58,107 @@
         "userId",
         "title",
         "deadline",
-        "completed",
-        "createdAt"
+        "completed"
       ]
     },
-    "Mission": {
+    "TimetableEvent": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Mission",
+      "title": "TimetableEvent",
       "type": "object",
-      "description": "Represents a long-term goal or mission for a user.",
+      "description": "Represents a scheduled event in the user's timetable.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "The unique identifier for the mission."
+          "description": "Unique identifier for the timetable event."
         },
         "userId": {
           "type": "string",
-          "description": "The UID of the user who owns this mission."
+          "description": "Reference to User. (Relationship: User 1:N TimetableEvent)"
         },
-        "title": {
+        "taskId": {
           "type": "string",
-          "description": "The title of the mission."
+          "description": "Reference to Task. (Relationship: Task 1:N TimetableEvent)"
         },
-        "progress": {
-          "type": "number",
-          "description": "The user-reported progress of the mission, from 0 to 100."
-        },
-        "createdAt": {
+        "startTime": {
           "type": "string",
-          "format": "date-time",
-          "description": "The timestamp when the mission was created."
+          "description": "Start time of the event.",
+          "format": "date-time"
         },
-        "totalGoals": {
-          "type": "number",
-          "description": "The total number of goals for this mission."
-        },
-        "completedGoals": {
-          "type": "number",
-          "description": "The number of completed goals for this mission."
+        "endTime": {
+          "type": "string",
+          "description": "End time of the event.",
+          "format": "date-time"
         }
       },
       "required": [
         "id",
         "userId",
-        "title",
-        "progress",
-        "createdAt",
-        "totalGoals",
-        "completedGoals"
+        "taskId",
+        "startTime",
+        "endTime"
       ]
     },
-    "Goal": {
+    "Reminder": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Goal",
+      "title": "Reminder",
       "type": "object",
-      "description": "Represents a single goal or sub-task for a mission.",
+      "description": "Represents a reminder for the user.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "The unique identifier for the goal."
+          "description": "Unique identifier for the reminder."
         },
         "userId": {
           "type": "string",
-          "description": "The UID of the user who owns this goal."
+          "description": "Reference to User. (Relationship: User 1:N Reminder)"
         },
-        "missionId": {
+        "type": {
           "type": "string",
-          "description": "The ID of the mission this goal belongs to."
+          "description": "Type of reminder (e.g., break, sleep, hydration)."
         },
-        "title": {
+        "time": {
           "type": "string",
-          "description": "The title of the goal."
+          "description": "Time for the reminder.",
+          "format": "date-time"
         },
-        "completed": {
-          "type": "boolean",
-          "description": "Whether the goal has been completed."
-        },
-        "createdAt": {
+        "message": {
           "type": "string",
-          "format": "date-time",
-          "description": "The timestamp when the goal was created."
+          "description": "Message to be displayed for the reminder."
         }
       },
       "required": [
         "id",
         "userId",
-        "missionId",
-        "title",
-        "completed",
-        "createdAt"
+        "type",
+        "time",
+        "message"
+      ]
+    },
+    "FocusTip": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FocusTip",
+      "type": "object",
+      "description": "Represents a tip to improve focus and productivity.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the focus tip."
+        },
+        "text": {
+          "type": "string",
+          "description": "The text content of the focus tip."
+        }
+      },
+      "required": [
+        "id",
+        "text"
       ]
     }
   },
   "auth": {
     "providers": [
-      "password"
+      "password",
+      "anonymous"
     ]
   },
   "firestore": {
@@ -227,31 +170,11 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Stores user profile information, including BMI-related data. Users can only read/write their own document.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user. This is the Firebase Auth UID."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/bmiHistory/{bmiId}",
-        "definition": {
-          "entityName": "BMI",
-          "schema": {
-            "$ref": "#/backend/entities/BMI"
-          },
-          "description": "Stores historical BMI data for a specific user. Users can only read/write their own BMI records.",
+          "description": "Stores user profiles.  Allows only authenticated users to read/write their own profile.",
           "params": [
             {
               "name": "userId",
               "description": "The unique identifier for the user."
-            },
-            {
-              "name": "bmiId",
-              "description": "The unique identifier for the BMI record."
             }
           ]
         }
@@ -263,7 +186,7 @@
           "schema": {
             "$ref": "#/backend/entities/Task"
           },
-          "description": "Stores tasks for a specific user. Users can only read/write their own tasks.",
+          "description": "Stores tasks associated with a specific user.  Allows only the authenticated user to read/write their own tasks.",
           "params": [
             {
               "name": "userId",
@@ -276,50 +199,63 @@
           ]
         }
       },
-       {
-        "path": "/users/{userId}/missions/{missionId}",
+      {
+        "path": "/users/{userId}/timetableEvents/{timetableEventId}",
         "definition": {
-          "entityName": "Mission",
+          "entityName": "TimetableEvent",
           "schema": {
-            "$ref": "#/backend/entities/Mission"
+            "$ref": "#/backend/entities/TimetableEvent"
           },
-          "description": "Stores long-term missions for a specific user. Users can only read/write their own missions.",
+          "description": "Stores timetable events for a specific user.  Allows only the authenticated user to read/write their own timetable events.",
           "params": [
             {
               "name": "userId",
               "description": "The unique identifier for the user."
             },
             {
-              "name": "missionId",
-              "description": "The unique identifier for the mission."
+              "name": "timetableEventId",
+              "description": "The unique identifier for the timetable event."
             }
           ]
         }
       },
       {
-        "path": "/users/{userId}/missions/{missionId}/goals/{goalId}",
+        "path": "/users/{userId}/reminders/{reminderId}",
         "definition": {
-          "entityName": "Goal",
+          "entityName": "Reminder",
           "schema": {
-            "$ref": "#/backend/entities/Goal"
+            "$ref": "#/backend/entities/Reminder"
           },
-          "description": "Stores goals for a specific mission. Users can only read/write their own goals.",
+          "description": "Stores reminders for a specific user.  Allows only the authenticated user to read/write their own reminders.",
           "params": [
             {
               "name": "userId",
               "description": "The unique identifier for the user."
             },
             {
-              "name": "missionId",
-              "description": "The unique identifier for the mission."
-            },
+              "name": "reminderId",
+              "description": "The unique identifier for the reminder."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/focus_tips/{focusTipId}",
+        "definition": {
+          "entityName": "FocusTip",
+          "schema": {
+            "$ref": "#/backend/entities/FocusTip"
+          },
+          "description": "Stores global focus tips. Public read access.",
+          "params": [
             {
-              "name": "goalId",
-              "description": "The unique identifier for the goal."
+              "name": "focusTipId",
+              "description": "The unique identifier for the focus tip."
             }
           ]
         }
       }
-    ]
+    ],
+    "reasoning": "The Firestore data structure is designed to ensure authorization independence, clarity, and scalability. It utilizes path-based ownership for user-specific data and avoids hierarchical authorization dependencies by denormalizing data where necessary. The structure also supports secure `list` operations by segregating data based on access requirements.\n\nThe `users/{userId}` collection stores user profiles.\n\nEach user has their own subcollections for tasks (`users/{userId}/tasks/{taskId}`), timetable events (`users/{userId}/timetableEvents/{timetableEventId}`), and reminders (`users/{userId}/reminders/{reminderId}`). This path-based ownership simplifies security rules and ensures that only the user can access their data. This approach facilitates secure `list` operations because the security rules can simply check if `request.auth.uid == userId`.\n\nFocus tips are stored in a global collection (`focus_tips/{focusTipId}`) since they are not user-specific and are read-only."
   }
 }

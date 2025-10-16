@@ -1,175 +1,121 @@
 /**
- * @file Firestore Security Rules for Zenith Planner
- * @version Prototyping
+ * @fileoverview Firestore Security Rules for Zenith Planner.
  *
- * @Core Philosophy:
- * This ruleset enforces a strict user-ownership model.  Each user has exclusive access to their own data,
- * including profile information, BMI history, tasks, missions, and goals.
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for user-specific data
+ * (tasks, timetable events, reminders) nested under `/users/{userId}`.
+ * Global data (focus tips) are publicly readable.
  *
- * @Data Structure:
- * All data is nested under /users/{userId}, ensuring clear ownership.  Subcollections organize specific
- * data types (bmiHistory, tasks, missions).  Goals are further nested under missions.
+ * Data Structure:
+ * - /users/{userId}: Stores user profiles.
+ * - /users/{userId}/tasks/{taskId}: Stores tasks for each user.
+ * - /users/{userId}/timetableEvents/{timetableEventId}: Stores timetable events for each user.
+ * - /users/{userId}/reminders/{reminderId}: Stores reminders for each user.
+ * - /focus_tips/{focusTipId}: Stores global, publicly readable focus tips.
  *
- * @Key Security Decisions:
- * - Users can only read and write their own data.
- * - Listing other users' data is disallowed.
- * - Schema validation is relaxed for rapid prototyping but critical relational fields are validated.
+ * Key Security Decisions:
+ * - User data is strictly controlled by the user's ID in the path.
+ * - Focus tips are publicly readable.
+ * - No complex role-based access control is implemented in this prototype.
+ * - Data validation is minimal in this prototyping phase, focusing on authorization.
  *
- * @Denormalization for Authorization:
- *  - User IDs are embedded within documents to simplify ownership checks, avoiding costly `get()` calls.
+ * Denormalization for Authorization:
+ * - The `userId` is embedded within the document path itself, enabling secure path-based authorization.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows users to read and write their own profile data.
+     * @description Controls access to user profiles.
      * @path /users/{userId}
-     * @allow (create, update, delete) User with matching UID can create, update, or delete their own profile.
-     * @allow (get) User with matching UID can read their profile.
-     * @deny (create, update, delete) User with mismatched UID cannot create, update, or delete this profile.
-     * @deny (get) User with mismatched UID cannot read this profile.
-     * @principle Enforces document ownership for all operations.  Validates relational integrity on create and update.
+     * @allow (create) Authenticated user can create their own profile.
+     * @allow (get, update, delete) Authenticated user can access their own profile.
+     * @deny (create) Authenticated user cannot create a profile with a different userId.
+     * @deny (get, update, delete) Authenticated user cannot access another user's profile.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
       allow get: if isOwner(userId);
-      allow list: if false;
-
-      allow create: if isOwner(userId) && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == request.auth.uid;
+      allow list: if false; // User listing is not permitted.
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && (request.resource.data.id == resource.data.id); // enforce immutability of user id
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Allows users to read and write their own BMI history records.
-     * @path /users/{userId}/bmiHistory/{bmiId}
-     * @allow (create, update, delete) User with matching UID can create, update, or delete their own BMI records.
-     * @allow (get, list) User with matching UID can read and list their own BMI records.
-     * @deny (create, update, delete) User with mismatched UID cannot create, update, or delete this BMI record.
-     * @deny (get, list) User with mismatched UID cannot read or list these BMI records.
-     * @principle Enforces document ownership for all operations.
-     */
-    match /users/{userId}/bmiHistory/{bmiId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-
-      allow create: if isOwner(userId) && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == request.auth.uid;
-      allow delete: if isExistingOwner(userId);
-    }
-
-    /**
-     * @description Allows users to read and write their own tasks.
+     * @description Controls access to tasks for a specific user.
      * @path /users/{userId}/tasks/{taskId}
-     * @allow (create, update, delete) User with matching UID can create, update, or delete their own tasks.
-     * @allow (get, list) User with matching UID can read and list their own tasks.
-     * @deny (create, update, delete) User with mismatched UID cannot create, update, or delete this task.
-     * @deny (get, list) User with mismatched UID cannot read or list these tasks.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) Authenticated user can create tasks under their own user ID.
+     * @allow (get, list, update, delete) Authenticated user can access their own tasks.
+     * @deny (create) Authenticated user cannot create tasks under another user ID.
+     * @deny (get, list, update, delete) Authenticated user cannot access another user's tasks.
+     * @principle Enforces document ownership for all operations on tasks.
      */
     match /users/{userId}/tasks/{taskId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-
-      allow create: if isOwner(userId) && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == request.auth.uid;
-      allow delete: if isExistingOwner(userId);
-    }
-
-     /**
-      * @description Allows users to read and write their own missions.
-      * @path /users/{userId}/missions/{missionId}
-      * @allow (create, update, delete) User with matching UID can create, update, or delete their own missions.
-      * @allow (get, list) User with matching UID can read and list their own missions.
-      * @deny (create, update, delete) User with mismatched UID cannot create, update, or delete this mission.
-      * @deny (get, list) User with mismatched UID cannot read or list these missions.
-      * @principle Enforces document ownership for all operations.
-      */
-    match /users/{userId}/missions/{missionId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-
-      allow create: if isOwner(userId) && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == request.auth.uid;
+      allow create: if isOwner(userId) && (request.resource.data.userId == userId);
+      allow update: if isExistingOwner(userId) && (request.resource.data.userId == resource.data.userId); // enforce immutability of user id
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Allows users to read and write their own goals within their missions.
-     * @path /users/{userId}/missions/{missionId}/goals/{goalId}
-     * @allow (create, update, delete) User with matching UID can create, update, or delete their own goals.
-     * @allow (get, list) User with matching UID can read and list their own goals.
-     * @deny (create, update, delete) User with mismatched UID cannot create, update, or delete this goal.
-     * @deny (get, list) User with mismatched UID cannot read or list these goals.
-     * @principle Enforces document ownership for all operations.
+     * @description Controls access to timetable events for a specific user.
+     * @path /users/{userId}/timetableEvents/{timetableEventId}
+     * @allow (create) Authenticated user can create timetable events under their own user ID.
+     * @allow (get, list, update, delete) Authenticated user can access their own timetable events.
+     * @deny (create) Authenticated user cannot create timetable events under another user ID.
+     * @deny (get, list, update, delete) Authenticated user cannot access another user's timetable events.
+     * @principle Enforces document ownership for all operations on timetable events.
      */
-    match /users/{userId}/missions/{missionId}/goals/{goalId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
+    match /users/{userId}/timetableEvents/{timetableEventId} {
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-
-      allow create: if isOwner(userId) && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == request.auth.uid;
+      allow create: if isOwner(userId) && (request.resource.data.userId == userId);
+      allow update: if isExistingOwner(userId) && (request.resource.data.userId == resource.data.userId); // enforce immutability of user id
       allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to reminders for a specific user.
+     * @path /users/{userId}/reminders/{reminderId}
+     * @allow (create) Authenticated user can create reminders under their own user ID.
+     * @allow (get, list, update, delete) Authenticated user can access their own reminders.
+     * @deny (create) Authenticated user cannot create reminders under another user ID.
+     * @deny (get, list, update, delete) Authenticated user cannot access another user's reminders.
+     * @principle Enforces document ownership for all operations on reminders.
+     */
+    match /users/{userId}/reminders/{reminderId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && (request.resource.data.userId == userId);
+      allow update: if isExistingOwner(userId) && (request.resource.data.userId == resource.data.userId); // enforce immutability of user id
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to global focus tips.
+     * @path /focus_tips/{focusTipId}
+     * @allow (get, list) Public read access for all focus tips.
+     * @deny (create, update, delete) Only admin users can create, update, or delete focus tips (not implemented in this prototype).
+     * @principle Public read access with restricted write access (admin only, not implemented).
+     */
+    match /focus_tips/{focusTipId} {
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Add admin role check
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
     }
   }
 }

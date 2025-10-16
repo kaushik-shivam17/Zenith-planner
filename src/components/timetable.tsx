@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { BrainCircuit, Loader2, Plus, Trash2 } from 'lucide-react';
+import { BrainCircuit, Loader2, Plus, Trash2, Eye } from 'lucide-react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -90,6 +90,22 @@ export function Timetable() {
       gridRowEnd: endTimeIndex + 2,
     };
   };
+  
+  const handlePreviewCustomEvents = () => {
+    const customEvents = form.getValues('customEvents');
+    const customEventsForState: TimetableEvent[] = customEvents.map(item => ({...item, type: 'custom' as 'custom'}));
+    
+    // Filter out previous custom events to avoid duplication, keeping task events
+    setEvents(prevEvents => [
+      ...prevEvents.filter(e => e.type === 'task'),
+      ...customEventsForState
+    ]);
+    
+    toast({
+      title: 'Timetable Updated',
+      description: 'Your custom events have been added to the timetable preview.',
+    });
+  };
 
   const handleGenerateTimetable = async () => {
     setIsLoading(true);
@@ -118,7 +134,7 @@ export function Timetable() {
       <Card>
         <CardHeader>
           <CardTitle>Custom Schedule</CardTitle>
-          <CardDescription>Add your fixed classes or appointments before generating your AI study schedule.</CardDescription>
+          <CardDescription>Add your fixed classes or appointments. Click "Preview" to see them on the grid below.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -182,15 +198,25 @@ export function Timetable() {
                 </div>
               ))}
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="mt-4"
-              onClick={() => append({ title: '', day: '', startTime: '', endTime: '' })}
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add Event
-            </Button>
+            <div className="flex items-center gap-2 mt-4">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => append({ title: '', day: '', startTime: '', endTime: '' })}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add Event
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handlePreviewCustomEvents}
+                disabled={fields.length === 0}
+              >
+                <Eye className="mr-2 h-4 w-4" /> Preview on Timetable
+              </Button>
+            </div>
           </Form>
         </CardContent>
       </Card>

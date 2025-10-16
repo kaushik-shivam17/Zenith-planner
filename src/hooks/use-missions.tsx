@@ -32,15 +32,15 @@ interface MissionsContextType {
 const MissionsContext = createContext<MissionsContextType | undefined>(undefined);
 
 export function MissionsProvider({ children }: { children: ReactNode }) {
-  const { user, firestore, isUserLoading } = useFirebase();
+  const { user, firestore, isUserLoading, areServicesAvailable } = useFirebase();
 
   const missionsCollectionRef = useMemoFirebase(
     () => {
-      // Do not create a reference until the user is loaded and exists
-      if (isUserLoading || !user) return null;
+      // Do not create a reference until services are available and user is loaded and exists
+      if (!areServicesAvailable || isUserLoading || !user || !firestore) return null;
       return collection(firestore, 'users', user.uid, 'missions');
     },
-    [isUserLoading, user, firestore]
+    [areServicesAvailable, isUserLoading, user, firestore]
   );
 
   const { data: missionsData, isLoading: isMissionsLoading } = useCollection<Omit<Mission, 'id'|'progress'>>(missionsCollectionRef);

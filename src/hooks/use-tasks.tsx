@@ -31,15 +31,15 @@ interface TasksContextType {
 const TasksContext = createContext<TasksContextType | undefined>(undefined);
 
 export function TasksProvider({ children }: { children: ReactNode }) {
-  const { user, firestore, isUserLoading } = useFirebase();
+  const { user, firestore, isUserLoading, areServicesAvailable } = useFirebase();
 
   const tasksCollectionRef = useMemoFirebase(
     () => {
-        // Do not create a reference until the user is loaded and exists
-        if (isUserLoading || !user) return null;
+        // Do not create a reference until services are available and user is loaded and exists
+        if (!areServicesAvailable || isUserLoading || !user || !firestore) return null;
         return collection(firestore, 'users', user.uid, 'tasks');
     },
-    [isUserLoading, user, firestore]
+    [areServicesAvailable, isUserLoading, user, firestore]
   );
 
   const { data: rawTasks, isLoading: areTasksLoading } = useCollection<Omit<Task, 'id'>>(

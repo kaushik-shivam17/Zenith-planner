@@ -28,21 +28,21 @@ interface TimetableContextType {
 const TimetableContext = createContext<TimetableContextType | undefined>(undefined);
 
 export function TimetableProvider({ children }: { children: ReactNode }) {
-  const { user, firestore, isUserLoading } = useFirebase();
+  const { user, firestore, isUserLoading, areServicesAvailable } = useFirebase();
 
   const timetableCollectionRef = useMemoFirebase(
     () => {
-        // Do not create a reference until the user is loaded and exists
-        if (isUserLoading || !user) return null;
+        // Do not create a reference until services are available and user is loaded and exists
+        if (!areServicesAvailable || isUserLoading || !user || !firestore) return null;
         return collection(firestore, 'users', user.uid, 'timetableEvents');
     },
-    [isUserLoading, user, firestore]
+    [areServicesAvailable, isUserLoading, user, firestore]
   );
 
   const { data: eventsData, isLoading: areEventsLoading } = useCollection<TimetableEvent>(timetableCollectionRef);
 
   const setEvents = useCallback(async (newEvents: Omit<TimetableEvent, 'id' | 'userId'>[]) => {
-      if (!timetableCollectionRef || !user || !eventsData) return;
+      if (!timetableCollectionRef || !user || !eventsData || !firestore) return;
       const batch = writeBatch(firestore);
       
       // Delete all existing 'task' events

@@ -33,25 +33,14 @@ const MissionsContext = createContext<MissionsContextType | undefined>(undefined
 
 export function MissionsProvider({ children }: { children: ReactNode }) {
   const { user, firestore, isUserLoading } = useFirebase();
-  const [isReady, setIsReady] = useState(false);
-
-  useEffect(() => {
-    // We are ready to fetch only when user loading is complete AND we have a user.
-    if (!isUserLoading && user) {
-      setIsReady(true);
-    }
-    // If the user logs out, we are no longer ready.
-    if (!isUserLoading && !user) {
-      setIsReady(false);
-    }
-  }, [isUserLoading, user]);
 
   const missionsCollectionRef = useMemoFirebase(
     () => {
-      if (!isReady || !user) return null;
+      // Do not create a reference until the user is loaded and exists
+      if (isUserLoading || !user) return null;
       return collection(firestore, 'users', user.uid, 'missions');
     },
-    [isReady, user, firestore]
+    [isUserLoading, user, firestore]
   );
 
   const { data: missionsData, isLoading: isMissionsLoading } = useCollection<Omit<Mission, 'id'|'progress'>>(missionsCollectionRef);
@@ -125,7 +114,8 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
     [missionsCollectionRef, user, firestore]
   );
   
-  const isLoading = isUserLoading || isMissionsLoading || !isReady;
+  // The overall loading state depends on both auth and Firestore loading.
+  const isLoading = isUserLoading || isMissionsLoading;
 
   const value: MissionsContextType = {
     missions: missions || [],

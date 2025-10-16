@@ -27,7 +27,7 @@ import { TaskList } from '@/components/task-list';
 type Task = {
   id: string;
   title: string;
-  details?: string;
+  description?: string;
   deadline: Date; 
   completed: boolean;
   subtasks?: string[];

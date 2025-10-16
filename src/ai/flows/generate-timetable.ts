@@ -10,7 +10,7 @@ import {z} from 'genkit';
 const TaskSchema = z.object({
   id: z.string(),
   title: z.string(),
-  details: z.string().optional(),
+  description: z.string().optional(),
   deadline: z.string(), // Using string for date
   completed: z.boolean(),
 });

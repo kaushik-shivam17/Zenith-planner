@@ -34,7 +34,7 @@ export function Dashboard() {
     }
   };
 
-  const handleAddTask = (taskData: Omit<Task, 'id' | 'completed'>) => {
+  const handleAddTask = (taskData: Omit<Task, 'id' | 'completed' | 'userId'>) => {
     addTask(taskData);
     setIsAddOpen(false);
   };
@@ -46,12 +46,12 @@ export function Dashboard() {
       </div>
 
       <Card
-        className="cursor-pointer hover:bg-secondary/50 transition-colors relative"
+        className="cursor-pointer hover:bg-secondary/50 transition-colors relative group"
       >
         <Button 
           variant="ghost" 
           size="icon" 
-          className="absolute top-4 right-4"
+          className="absolute top-4 right-4 opacity-50 group-hover:opacity-100 transition-opacity"
           onClick={(e) => {
             e.stopPropagation();
             setIsCalendarOpen(true);

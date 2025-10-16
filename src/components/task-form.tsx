@@ -29,7 +29,7 @@ import { useEffect } from 'react';
 
 const formSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters.'),
-  details: z.string().optional(),
+  description: z.string().optional(),
   deadline: z.date({
     required_error: 'A deadline is required.',
   }),
@@ -47,7 +47,7 @@ export function TaskForm({ onAddTask, selectedDate }: TaskFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
-      details: '',
+      description: '',
       deadline: selectedDate,
     },
   });
@@ -60,7 +60,7 @@ export function TaskForm({ onAddTask, selectedDate }: TaskFormProps) {
 
   function onSubmit(values: TaskFormValues) {
     onAddTask(values);
-    form.reset({ title: '', details: '', deadline: selectedDate });
+    form.reset({ title: '', description: '', deadline: selectedDate });
   }
 
   return (
@@ -81,10 +81,10 @@ export function TaskForm({ onAddTask, selectedDate }: TaskFormProps) {
         />
         <FormField
           control={form.control}
-          name="details"
+          name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Details (Optional)</FormLabel>
+              <FormLabel>Description (Optional)</FormLabel>
               <FormControl>
                 <Textarea
                   placeholder="Add any relevant details or sub-points."

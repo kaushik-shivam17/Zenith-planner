@@ -4,7 +4,7 @@ import type { Timestamp } from 'firebase/firestore';
 export type Task = {
   id: string;
   title: string;
-  details?: string;
+  description?: string;
   deadline: Timestamp;
   completed: boolean;
   subtasks?: string[];

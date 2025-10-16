@@ -70,7 +70,7 @@ export const suggestTimesAction = async (
 type ClientTimetableInputTask = {
   id: string;
   title: string;
-  details?: string;
+  description?: string;
   deadline: Date | string; // Client might send Date or ISO string
   completed: boolean;
 };

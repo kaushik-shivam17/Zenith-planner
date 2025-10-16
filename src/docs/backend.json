@@ -98,7 +98,7 @@
           "type": "string",
           "description": "The title of the task."
         },
-        "details": {
+        "description": {
           "type": "string",
           "description": "Optional details about the task."
         },
@@ -328,5 +328,3 @@
     ]
   }
 }
-
-    

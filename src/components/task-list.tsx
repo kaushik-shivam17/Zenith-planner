@@ -32,7 +32,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 type Task = {
   id: string;
   title: string;
-  details?: string;
+  description?: string;
   deadline: Date; // JS Date
   completed: boolean;
   subtasks?: string[];
@@ -69,7 +69,7 @@ export function TaskList({ tasks, onUpdateTask, onToggleTask }: TaskListProps) {
           `${t.title} (Deadline: ${format(
             t.deadline,
             'PPP'
-          )}, Details: ${t.details || 'N/A'})`
+          )}, Description: ${t.description || 'N/A'})`
       )
       .join('; ');
 
@@ -152,7 +152,7 @@ export function TaskList({ tasks, onUpdateTask, onToggleTask }: TaskListProps) {
                     {task.title}
                   </label>
                   <p className="text-sm text-muted-foreground">
-                    {task.details}
+                    {task.description}
                   </p>
                   <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                     <CalendarCheck2 className="h-4 w-4" />

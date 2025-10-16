@@ -1,173 +1,127 @@
 /**
- * @fileoverview Firestore Security Rules for Zenith Planner.
+ * @file Zenith Planner Firestore Security Rules
+ * @version Prototyping
  *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for most data, ensuring
- * that users can only access data explicitly associated with their user ID.
- * Global focus tips are publicly readable.
+ * @description
+ * This ruleset enforces a strict user-ownership model for most data, with publicly readable focus tips.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles, secured by ownership.
- * - /users/{userId}/tasks/{taskId}: Stores tasks for a user, secured by ownership.
- * - /users/{userId}/tasks/{taskId}/subtasks/{subtaskId}: Stores subtasks, secured by ownership.
- * - /users/{userId}/scheduleEntries/{scheduleEntryId}: Stores schedule entries, secured by ownership.
- * - /users/{userId}/reminders/{reminderId}: Stores reminders, secured by ownership.
- * - /focusTips/{focusTipId}: Stores global focus tips, publicly readable.
+ * - /users/{userId}: User profiles, owned by the user.
+ * - /users/{userId}/tasks/{taskId}: Tasks owned by the user.
+ * - /users/{userId}/tasks/{taskId}/subtasks/{subtaskId}: Subtasks owned by the user.
+ * - /users/{userId}/scheduleEntries/{scheduleEntryId}: Schedule entries owned by the user.
+ * - /users/{userId}/reminders/{reminderId}: Reminders owned by the user.
+ * - /focusTips/{focusTipId}: Publicly accessible focus tips.
  *
  * Key Security Decisions:
- * - No user listing is allowed.
+ * - User data and associated subcollections (tasks, subtasks, schedule entries, reminders) are strictly controlled by the owning user.
  * - Focus tips are publicly readable.
- * - Write access is strictly controlled via ownership.
+ * - List operations are generally allowed for owners of user subcollections.
  *
  * Denormalization for Authorization:
- *  - The rules rely on path-based ownership, avoiding `get()` calls by nesting all user-specific data under the `/users/{userId}` path.
+ *  - User ownership is determined by the document path, eliminating the need for `get()` calls to verify ownership.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Manages user profile access.
+     * @description Controls access to user profiles.
      * @path /users/{userId}
-     * @allow (create) User with ID 'user123' can create their own profile.
-     * @deny (create) User with ID 'user123' cannot create a profile with ID 'user456'.
-     * @allow (get) User with ID 'user123' can retrieve their own profile.
-     * @deny (get) User with ID 'user123' cannot retrieve profile with ID 'user456'.
-     * @allow (update) User with ID 'user123' can update their own profile.
-     * @deny (update) User with ID 'user123' cannot update profile with ID 'user456'.
-     * @allow (delete) User with ID 'user123' can delete their own profile.
-     * @deny (delete) User with ID 'user123' cannot delete profile with ID 'user456'.
-     * @principle Enforces document ownership for writes and reads.
      */
     match /users/{userId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
       allow get: if isOwner(userId);
       allow list: if false;
       allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
 
     /**
-     * @description Manages tasks for a specific user.
+     * @description Controls access to tasks owned by a specific user.
      * @path /users/{userId}/tasks/{taskId}
-     * @allow (create) User with ID 'user123' can create a task in their own tasks collection.
-     * @deny (create) User with ID 'user123' cannot create a task in 'user456' tasks collection.
-     * @allow (get) User with ID 'user123' can retrieve a task from their own tasks collection.
-     * @deny (get) User with ID 'user123' cannot retrieve a task from 'user456' tasks collection.
-     * @allow (list) User with ID 'user123' can list tasks in their own tasks collection.
-     * @deny (list) User with ID 'user123' cannot list tasks in 'user456' tasks collection.
-     * @allow (update) User with ID 'user123' can update a task in their own tasks collection.
-     * @deny (update) User with ID 'user123' cannot update a task in 'user456' tasks collection.
-     * @allow (delete) User with ID 'user123' can delete a task from their own tasks collection.
-     * @deny (delete) User with ID 'user123' cannot delete a task from 'user456' tasks collection.
-     * @principle Restricts access to a user's own data tree.
      */
     match /users/{userId}/tasks/{taskId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
       allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      allow list: if request.auth.uid == userId;
       allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
 
     /**
-     * @description Manages subtasks for a specific task of a specific user.
+     * @description Controls access to subtasks belonging to a specific task of a specific user.
      * @path /users/{userId}/tasks/{taskId}/subtasks/{subtaskId}
-     * @allow (create) User with ID 'user123' can create a subtask for their own task.
-     * @deny (create) User with ID 'user123' cannot create a subtask for a task they don't own.
-     * @allow (get) User with ID 'user123' can retrieve a subtask from their own task.
-     * @deny (get) User with ID 'user123' cannot retrieve a subtask from a task they don't own.
-     * @allow (list) User with ID 'user123' can list subtasks for their own task.
-     * @deny (list) User with ID 'user123' cannot list subtasks for a task they don't own.
-     * @allow (update) User with ID 'user123' can update a subtask for their own task.
-     * @deny (update) User with ID 'user123' cannot update a subtask for a task they don't own.
-     * @allow (delete) User with ID 'user123' can delete a subtask from their own task.
-     * @deny (delete) User with ID 'user123' cannot delete a subtask from a task they don't own.
-     * @principle Restricts access to a user's own data tree.
      */
     match /users/{userId}/tasks/{taskId}/subtasks/{subtaskId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
       allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      allow list: if request.auth.uid == userId;
       allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
 
     /**
-     * @description Manages schedule entries for a specific user.
+     * @description Controls access to schedule entries for a specific user.
      * @path /users/{userId}/scheduleEntries/{scheduleEntryId}
-     * @allow (create) User with ID 'user123' can create a schedule entry for themselves.
-     * @deny (create) User with ID 'user123' cannot create a schedule entry for another user.
-     * @allow (get) User with ID 'user123' can retrieve a schedule entry from their own.
-     * @deny (get) User with ID 'user123' cannot retrieve a schedule entry from another user.
-     * @allow (list) User with ID 'user123' can list schedule entries for themselves.
-     * @deny (list) User with ID 'user123' cannot list schedule entries for another user.
-     * @allow (update) User with ID 'user123' can update a schedule entry for themselves.
-     * @deny (update) User with ID 'user123' cannot update a schedule entry for another user.
-     * @allow (delete) User with ID 'user123' can delete a schedule entry for themselves.
-     * @deny (delete) User with ID 'user123' cannot delete a schedule entry for another user.
-     * @principle Restricts access to a user's own data tree.
      */
     match /users/{userId}/scheduleEntries/{scheduleEntryId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
       allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      allow list: if request.auth.uid == userId;
       allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
 
     /**
-     * @description Manages reminders for a specific user.
+     * @description Controls access to reminders for a specific user.
      * @path /users/{userId}/reminders/{reminderId}
-     * @allow (create) User with ID 'user123' can create a reminder for themselves.
-     * @deny (create) User with ID 'user123' cannot create a reminder for another user.
-     * @allow (get) User with ID 'user123' can retrieve a reminder from their own reminders.
-     * @deny (get) User with ID 'user123' cannot retrieve a reminder from another user.
-     * @allow (list) User with ID 'user123' can list reminders for themselves.
-     * @deny (list) User with ID 'user123' cannot list reminders for another user.
-     * @allow (update) User with ID 'user123' can update a reminder for themselves.
-     * @deny (update) User with ID 'user123' cannot update a reminder for another user.
-     * @allow (delete) User with ID 'user123' can delete a reminder for themselves.
-     * @deny (delete) User with ID 'user123' cannot delete a reminder for another user.
-     * @principle Restricts access to a user's own data tree.
      */
     match /users/{userId}/reminders/{reminderId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
       allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      allow list: if request.auth.uid == userId;
       allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
+
+     /**
+     * @description Controls access to timetable events for a specific user.  This addresses the original error.
+     * @path /users/{userId}/timetableEvents/{eventId}
+     */
+    match /users/{userId}/timetableEvents/{eventId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      allow get: if isOwner(userId);
+      allow list: if request.auth.uid == userId;
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
 
     /**
-     * @description Manages global focus tips, accessible to all users.
+     * @description Controls access to focus tips.
      * @path /focusTips/{focusTipId}
-     * @allow (get) Any user can retrieve a focus tip.
-     * @allow (list) Any user can list focus tips.
-     * @deny (create) No user can create focus tips.
-     * @deny (update) No user can update focus tips.
-     * @deny (delete) No user can delete focus tips.
-     * @principle Allows public read access to focus tips.
      */
     match /focusTips/{focusTipId} {
       allow get: if true;
       allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
     }
-  }
-
-  // Helper functions
-  function isSignedIn() {
-    return request.auth != null;
-  }
-
-  function isOwner(userId) {
-    return isSignedIn() && request.auth.uid == userId;
-  }
-
-  function isExistingOwner(userId) {
-    return isOwner(userId) && resource != null;
   }
 }

@@ -83,7 +83,7 @@ export function Dashboard() {
         <p className="text-muted-foreground text-center max-w-md">
           Select a date on the calendar to quickly add a new task or choose a tool from the sidebar.
         </p>
-        <p className="text-sm text-muted-foreground mt-2">Created By Shivam Kauhik ✨</p>
+        <p className="text-sm text-muted-foreground mt-2">✨ Created By Shivam Kauhik ✨</p>
       </div>
 
       <Dialog open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>

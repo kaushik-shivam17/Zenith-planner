@@ -96,17 +96,19 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
       if (!user || !firestore) return;
       
       const batch = writeBatch(firestore);
-      const missionsCollectionRef = collection(firestore, 'users', user.uid, 'missions');
+      
+      // Get a reference to the missions collection for the current user
+      const userMissionsCollectionRef = collection(firestore, 'users', user.uid, 'missions');
       
       // Delete goals from the sub-collection
-      const goalsSubCollectionRef = collection(missionsCollectionRef, missionId, 'goals');
+      const goalsSubCollectionRef = collection(userMissionsCollectionRef, missionId, 'goals');
       const goalsSubSnapshot = await getDocs(goalsSubCollectionRef);
       goalsSubSnapshot.forEach(goalDoc => {
         batch.delete(goalDoc.ref);
       });
       
       // Delete the mission document itself
-      const missionDocRef = doc(missionsCollectionRef, missionId);
+      const missionDocRef = doc(userMissionsCollectionRef, missionId);
       batch.delete(missionDocRef);
 
       // Commit the batch

@@ -24,7 +24,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { Header } from '@/components/header';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
@@ -72,8 +71,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   };
   
-  // While checking auth, or if we are about to redirect, show a loading state
-  // This prevents content from flashing on protected routes before redirect.
   if (isUserLoading || (isProtectedRoute && !user)) {
     return (
        <div className="flex h-screen items-center justify-center bg-background">
@@ -83,7 +80,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   // Wrap the children that need auth with the data providers
-  const MainContent = (
+  const mainContent = (
     <main className="min-h-screen p-4 sm:p-6 md:p-8">
       <div className="max-w-5xl mx-auto">
         <div className="md:hidden mb-4">
@@ -92,7 +89,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {children}
       </div>
     </main>
-  )
+  );
+  
+  const contentWithProviders = (
+    <TimetableProvider>
+      <MissionsProvider>
+        <TasksProvider>
+          {mainContent}
+        </TasksProvider>
+      </MissionsProvider>
+    </TimetableProvider>
+  );
 
   return (
     <SidebarProvider>
@@ -169,17 +176,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
         </SidebarFooter>
       </Sidebar>
-      {user ? (
-        <TimetableProvider>
-          <MissionsProvider>
-            <TasksProvider>
-              {MainContent}
-            </TasksProvider>
-          </MissionsProvider>
-        </TimetableProvider>
-      ) : (
-        MainContent
-      )}
+      {user ? contentWithProviders : mainContent}
     </SidebarProvider>
   );
 }

@@ -36,7 +36,7 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // We are ready to fetch when the user loading is finished and we have a user object.
+    // We are ready to fetch only when user loading is complete AND we have a user.
     if (!isUserLoading && user) {
       setIsReady(true);
     }
@@ -118,7 +118,7 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
     [missionsCollectionRef, user, firestore]
   );
   
-  const isLoading = !isReady || isMissionsLoading;
+  const isLoading = isUserLoading || isMissionsLoading;
 
   const value: MissionsContextType = {
     missions: missions || [],

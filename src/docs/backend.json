@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -151,6 +152,14 @@
           "type": "string",
           "format": "date-time",
           "description": "The timestamp when the mission was created."
+        },
+        "totalGoals": {
+          "type": "number",
+          "description": "The total number of goals for this mission."
+        },
+        "completedGoals": {
+          "type": "number",
+          "description": "The number of completed goals for this mission."
         }
       },
       "required": [
@@ -158,7 +167,9 @@
         "userId",
         "title",
         "progress",
-        "createdAt"
+        "createdAt",
+        "totalGoals",
+        "completedGoals"
       ]
     },
     "Goal": {
@@ -182,6 +193,10 @@
         "title": {
           "type": "string",
           "description": "The title of the goal."
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional details about the goal."
         },
         "completed": {
           "type": "boolean",
@@ -309,27 +324,9 @@
             }
           ]
         }
-      },
-      {
-        "path": "/users/{userId}/goals/{goalId}",
-        "definition": {
-          "entityName": "Goal",
-          "schema": {
-            "$ref": "#/backend/entities/Goal"
-          },
-          "description": "A denormalized, flat collection of all goals for a user, to simplify progress calculation across all missions.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            },
-            {
-              "name": "goalId",
-              "description": "The unique identifier for the goal."
-            }
-          ]
-        }
       }
     ]
   }
 }
+
+    

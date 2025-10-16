@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
@@ -12,6 +13,13 @@ import { useState } from 'react';
 import { suggestGoalsForMissionAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+
+type GoalFormData = {
+  title: string;
+  description: string;
+}
 
 export default function MissionDetailPage() {
   const router = useRouter();
@@ -20,17 +28,19 @@ export default function MissionDetailPage() {
   const { getMissionById, isLoading: isMissionsLoading, deleteMission } = useMissions();
   const { goals, addGoal, toggleGoalCompletion, deleteGoal, isLoading: areGoalsLoading } = useGoals(missionId as string);
 
-  const [newGoalTitle, setNewGoalTitle] = useState('');
+  const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
+  const [newGoal, setNewGoal] = useState<GoalFormData>({ title: '', description: '' });
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [suggestedGoals, setSuggestedGoals] = useState<string[]>([]);
   
   const mission = getMissionById(missionId as string);
   const isLoading = isMissionsLoading || areGoalsLoading;
 
-  const handleAddGoal = (title: string) => {
-    if (title.trim()) {
-      addGoal({ title });
-      setNewGoalTitle('');
+  const handleAddGoal = () => {
+    if (newGoal.title.trim()) {
+      addGoal(newGoal);
+      setNewGoal({ title: '', description: '' });
+      setIsAddGoalOpen(false);
     }
   };
 
@@ -52,7 +62,7 @@ export default function MissionDetailPage() {
   };
   
   const handleAddSuggestedGoal = (title: string) => {
-    addGoal({ title });
+    addGoal({ title, description: '' });
     setSuggestedGoals(prev => prev.filter(g => g !== title));
   };
   
@@ -105,22 +115,43 @@ export default function MissionDetailPage() {
           <CardDescription>Manage the goals for your mission.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-           <div className="flex gap-2">
-            <Input
-              value={newGoalTitle}
-              onChange={(e) => setNewGoalTitle(e.target.value)}
-              placeholder="Add a new goal manually..."
-              onKeyDown={(e) => e.key === 'Enter' && handleAddGoal(newGoalTitle)}
-            />
-            <Button onClick={() => handleAddGoal(newGoalTitle)} disabled={!newGoalTitle.trim()}>
-              <Plus className="mr-2" /> Add Goal
+          <div className="flex gap-2">
+            <Dialog open={isAddGoalOpen} onOpenChange={setIsAddGoalOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full">
+                  <Plus className="mr-2 h-4 w-4" /> Add New Goal
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add a New Goal</DialogTitle>
+                  <DialogDescription>
+                    What's the next step for your mission?
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <Input
+                    value={newGoal.title}
+                    onChange={(e) => setNewGoal(prev => ({...prev, title: e.target.value}))}
+                    placeholder="Goal title"
+                  />
+                  <Textarea
+                    value={newGoal.description}
+                    onChange={(e) => setNewGoal(prev => ({...prev, description: e.target.value}))}
+                    placeholder="Goal description (optional)"
+                    className="resize-none"
+                  />
+                  <Button onClick={handleAddGoal} disabled={!newGoal.title.trim()} className="w-full">
+                    Save Goal
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button className="w-full" onClick={handleSuggestGoals} disabled={isAiLoading}>
+              {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+              Suggest with AI
             </Button>
           </div>
-          
-          <Button variant="outline" className="w-full" onClick={handleSuggestGoals} disabled={isAiLoading}>
-            {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-            Suggest Goals with AI
-          </Button>
 
           {suggestedGoals.length > 0 && (
             <Alert>
@@ -148,18 +179,26 @@ export default function MissionDetailPage() {
               <p className="text-muted-foreground text-sm">No goals yet. Add one manually or use the AI to suggest some!</p>
             ) : (
               goals.map(goal => (
-                <div key={goal.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-secondary group">
-                  <Checkbox 
+                <div key={goal.id} className="flex items-start gap-3 p-3 rounded-md hover:bg-secondary/50 group border">
+                   <Checkbox 
                     id={`goal-${goal.id}`}
                     checked={goal.completed}
                     onCheckedChange={() => toggleGoalCompletion(goal.id)}
+                    className="mt-1"
                   />
-                  <label 
-                    htmlFor={`goal-${goal.id}`} 
-                    className={`flex-1 text-sm ${goal.completed ? 'line-through text-muted-foreground' : ''}`}
-                  >
-                    {goal.title}
-                  </label>
+                  <div className="flex-1">
+                    <label 
+                      htmlFor={`goal-${goal.id}`} 
+                      className={`font-medium text-sm ${goal.completed ? 'line-through text-muted-foreground' : ''}`}
+                    >
+                      {goal.title}
+                    </label>
+                    {goal.description && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {goal.description}
+                      </p>
+                    )}
+                  </div>
                   <Button 
                     variant="ghost" 
                     size="icon" 
@@ -177,3 +216,5 @@ export default function MissionDetailPage() {
     </div>
   );
 }
+
+    

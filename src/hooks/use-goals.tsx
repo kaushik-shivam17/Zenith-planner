@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -20,7 +21,7 @@ import { useMissions } from './use-missions';
 
 interface GoalsContextType {
   goals: Goal[];
-  addGoal: (goalData: Pick<Goal, 'title'>) => void;
+  addGoal: (goalData: Pick<Goal, 'title' | 'description'>) => void;
   toggleGoalCompletion: (goalId: string) => void;
   deleteGoal: (goalId: string) => void;
   isLoading: boolean;
@@ -41,7 +42,7 @@ export function useGoals(missionId: string) {
   const { data: goals, isLoading } = useCollection<Goal>(goalsCollectionRef);
 
   const addGoal = useCallback(
-    async (goalData: Pick<Goal, 'title'>) => {
+    async (goalData: Pick<Goal, 'title' | 'description'>) => {
       if (!goalsCollectionRef || !user) return;
       
       const missionDocRef = doc(firestore, 'users', user.uid, 'missions', missionId);
@@ -124,3 +125,5 @@ export function useGoals(missionId: string) {
     isLoading,
   };
 }
+
+    

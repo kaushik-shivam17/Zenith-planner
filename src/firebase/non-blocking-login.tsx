@@ -16,14 +16,14 @@ export function initiateAnonymousSignIn(authInstance: Auth): void {
 
 /** Initiate email/password sign-up (non-blocking). */
 export function initiateEmailSignUp(authInstance: Auth, email: string, password: string): void {
-  // CRITICAL: Call createUserWithEmailAndPassword directly. Do NOT use 'await createUserWithEmailAndPassword(...)'.
-  createUserWithEmailAndPassword(authInstance, email, password);
-  // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
+  // This non-blocking approach can lead to race conditions.
+  // It is recommended to use the standard `await createUserWithEmailAndPassword(...)` instead.
+  throw new Error('initiateEmailSignUp is deprecated due to race conditions. Use `await createUserWithEmailAndPassword` instead.');
 }
 
 /** Initiate email/password sign-in (non-blocking). */
 export function initiateEmailSignIn(authInstance: Auth, email: string, password: string): void {
-  // CRITICAL: Call signInWithEmailAndPassword directly. Do NOT use 'await signInWithEmailAndPassword(...)'.
-  signInWithEmailAndPassword(authInstance, email, password);
-  // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
+  // This non-blocking approach can lead to race conditions.
+  // It is recommended to use the standard `await signInWithEmailAndPassword(...)` instead.
+  throw new Error('initiateEmailSignIn is deprecated due to race conditions. Use `await signInWithEmailAndPassword` instead.');
 }

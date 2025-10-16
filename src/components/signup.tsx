@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import { getAuth } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -26,9 +26,11 @@ import {
   CardHeader,
   CardTitle,
 } from './ui/card';
-import { initiateEmailSignUp } from '@/firebase';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { doc, setDoc } from 'firebase/firestore';
+import { useFirebase } from '@/firebase';
+import { FirebaseError } from 'firebase/app';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address.'),
@@ -39,6 +41,8 @@ export function Signup() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const { firestore } = useFirebase();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -51,23 +55,43 @@ export function Signup() {
     setIsLoading(true);
     try {
       const auth = getAuth();
-      // Using the non-blocking version
-      initiateEmailSignUp(auth, values.email, values.password);
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
 
-      // Optimistic feedback
+      // Create a user document in Firestore
+      await setDoc(doc(firestore, "users", user.uid), {
+        id: user.uid,
+        email: user.email,
+        name: user.email?.split('@')[0] || 'New User', // Default name
+      });
+      
       toast({
-        title: 'Account created!',
-        description: "We're setting things up for you.",
+        title: 'Account Created!',
+        description: 'Welcome! Please complete your profile.',
       });
       router.push('/profile'); // Redirect to profile to complete setup
     } catch (error: any) {
       console.error('Signup error', error);
+       let description = 'An unexpected error occurred.';
+      if (error instanceof FirebaseError) {
+        switch (error.code) {
+          case 'auth/email-already-in-use':
+            description = 'This email is already in use. Please log in instead.';
+            break;
+          case 'auth/weak-password':
+            description = 'The password is too weak. Please use at least 6 characters.';
+            break;
+          default:
+            description = error.message;
+        }
+      }
       toast({
         variant: 'destructive',
         title: 'Sign-up Failed',
-        description: error.message || 'An unexpected error occurred.',
+        description,
       });
-      setIsLoading(false);
+    } finally {
+        setIsLoading(false);
     }
   }
 

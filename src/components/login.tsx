@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import { getAuth } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -26,9 +26,9 @@ import {
   CardHeader,
   CardTitle,
 } from './ui/card';
-import { initiateEmailSignIn } from '@/firebase';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { FirebaseError } from 'firebase/app';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address.'),
@@ -51,24 +51,34 @@ export function Login() {
     setIsLoading(true);
     try {
       const auth = getAuth();
-      // Using the non-blocking version
-      initiateEmailSignIn(auth, values.email, values.password);
-      
-      // Since sign-in is asynchronous and handled by onAuthStateChanged,
-      // we can give feedback and redirect optimistically.
-      // The AuthProvider will handle the actual redirect on successful login.
+      await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
-        title: 'Logging in...',
-        description: 'You will be redirected shortly.',
+        title: 'Login Successful',
+        description: 'Welcome back!',
       });
       router.push('/dashboard');
     } catch (error: any) {
       console.error('Login error', error);
+      let description = 'An unexpected error occurred.';
+      if (error instanceof FirebaseError) {
+        switch (error.code) {
+          case 'auth/user-not-found':
+          case 'auth/wrong-password':
+            description = 'Invalid email or password. Please try again.';
+            break;
+          case 'auth/invalid-credential':
+            description = 'Invalid credentials. Please check your email and password.';
+            break;
+          default:
+            description = error.message;
+        }
+      }
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: error.message || 'An unexpected error occurred.',
+        description,
       });
+    } finally {
       setIsLoading(false);
     }
   }

@@ -35,7 +35,8 @@ export function TasksProvider({ children }: { children: ReactNode }) {
 
   const tasksCollectionRef = useMemoFirebase(
     () => {
-        if(isUserLoading || !user) return null;
+        // Do not create a reference until the user is loaded and exists
+        if (isUserLoading || !user) return null;
         return collection(firestore, 'users', user.uid, 'tasks');
     },
     [isUserLoading, user, firestore]

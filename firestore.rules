@@ -1,69 +1,41 @@
 /**
  * @fileoverview Firestore Security Rules for Zenith Planner.
  *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for personal data
- * (tasks, timetable events, reminders) and allows public read access to
- * global focus tips.
+ * Core Philosophy: This ruleset enforces a strict user-ownership model for user-specific data
+ * and provides public read access for global focus tips.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles, accessible only by the user themselves.
- * - /users/{userId}/tasks/{taskId}: Stores tasks, accessible only by the user.
- * - /users/{userId}/timetableEvents/{timetableEventId}: Stores timetable events, accessible only by the user.
- * - /users/{userId}/reminders/{reminderId}: Stores reminders, accessible only by the user.
- * - /focus_tips/{focusTipId}: Stores focus tips, publicly readable. Write access is not granted.
+ * - /users/{userId}: Stores user profiles.
+ * - /users/{userId}/tasks/{taskId}: Stores tasks associated with a specific user.
+ * - /users/{userId}/timetableEvents/{timetableEventId}: Stores timetable events for a specific user.
+ * - /users/{userId}/reminders/{reminderId}: Stores reminders for a specific user.
+ * - /focus_tips/{focusTipId}: Stores global focus tips.
  *
  * Key Security Decisions:
- * - User data is strictly segregated and accessible only to the owning user.
- * - Focus tips are publicly readable but not writable.
- * - Listing all users is not permitted.
- *
- * Denormalization for Authorization:
- *  - User-specific data (tasks, timetable events, reminders) includes the userId
- *    in the path, allowing direct enforcement of ownership without additional
- *    `get()` calls.
- *
- * Structural Segregation:
- *  - Private user data is stored under the /users/{userId} path, while public
- *    focus tips are stored in the top-level /focus_tips collection. This
- *    segregation simplifies access control and improves list operation performance.
+ * - Users can only access their own data under the /users/{userId} collection and its subcollections.
+ * - Public read access is granted to the /focus_tips collection.
+ * - Listing of user subcollections (tasks, timetableEvents, reminders) is allowed only for the owner.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Secure root access.  No direct reads or writes to the root of the database are allowed.
-     * @path /databases/{database}/documents
-     * @allow (get) An attempt to get a document at the root should return a "Not Found" error, not a permissions error.
-     * @deny (list) Listing the entire database is never allowed.
-     * @deny (create) Deny any attempt to create a root document.
-     * @deny (update) Deny any attempt to update the root document.
-     * @deny (delete) Deny any attempt to delete the root document.
-     * @principle Protects the root of the database from unauthorized access.
-     */
-    match /{document=**} {
-      allow get: if false;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
-    }
-
-    /**
-     * @description Manages user profiles. Only authenticated users can read/write their own profile.
+     * @description Enforces that only the authenticated user can read and write their own profile.
      * @path /users/{userId}
-     * @allow (create) User 'bob' with ID 'bob' can create their own profile.
-     * @allow (get) User 'bob' with ID 'bob' can read their own profile.
-     * @allow (update) User 'bob' with ID 'bob' can update their own profile.
-     * @allow (delete) User 'bob' with ID 'bob' can delete their own profile.
-     * @deny (create) User 'bob' cannot create a profile for user 'alice'.
-     * @deny (get) User 'bob' cannot read the profile of user 'alice'.
-     * @deny (update) User 'bob' cannot update the profile of user 'alice'.
-     * @deny (delete) User 'bob' cannot delete the profile of user 'alice'.
-     * @principle Enforces document ownership for user profiles.
+     * @allow (get, create, update, delete) - User with UID 'user123' can read, create, update, and delete their own profile at /users/user123.
+     * @deny (get, create, update, delete) - User with UID 'user456' cannot read, create, update, or delete the profile at /users/user123.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if false;
       allow create: if isOwner(userId);
@@ -72,21 +44,20 @@ service cloud.firestore {
     }
 
     /**
-     * @description Manages tasks for a specific user. Only the authenticated user can read/write their own tasks.
+     * @description Enforces that only the authenticated user can read and write their own tasks.
      * @path /users/{userId}/tasks/{taskId}
-     * @allow (create) User 'bob' with ID 'bob' can create a task under their profile.
-     * @allow (get) User 'bob' with ID 'bob' can read a task under their profile.
-     * @allow (list) User 'bob' with ID 'bob' can list tasks under their profile.
-     * @allow (update) User 'bob' with ID 'bob' can update a task under their profile.
-     * @allow (delete) User 'bob' with ID 'bob' can delete a task under their profile.
-     * @deny (create) User 'bob' cannot create a task under the profile of user 'alice'.
-     * @deny (get) User 'bob' cannot read a task under the profile of user 'alice'.
-     * @deny (list) User 'bob' cannot list tasks under the profile of user 'alice'.
-     * @deny (update) User 'bob' cannot update a task under the profile of user 'alice'.
-     * @deny (delete) User 'bob' cannot delete a task under the profile of user 'alice'.
-     * @principle Enforces document ownership for tasks.
+     * @allow (get, list, create, update, delete) - User with UID 'user123' can read, list, create, update, and delete their own tasks under /users/user123/tasks.
+     * @deny (get, list, create, update, delete) - User with UID 'user456' cannot read, list, create, update, or delete tasks under /users/user123/tasks.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/tasks/{taskId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId);
@@ -95,21 +66,20 @@ service cloud.firestore {
     }
 
     /**
-     * @description Manages timetable events for a specific user. Only the authenticated user can read/write their own timetable events.
+     * @description Enforces that only the authenticated user can read and write their own timetable events.
      * @path /users/{userId}/timetableEvents/{timetableEventId}
-     * @allow (create) User 'bob' with ID 'bob' can create a timetable event under their profile.
-     * @allow (get) User 'bob' with ID 'bob' can read a timetable event under their profile.
-     * @allow (list) User 'bob' with ID 'bob' can list timetable events under their profile.
-     * @allow (update) User 'bob' with ID 'bob' can update a timetable event under their profile.
-     * @allow (delete) User 'bob' with ID 'bob' can delete a timetable event under their profile.
-     * @deny (create) User 'bob' cannot create a timetable event under the profile of user 'alice'.
-     * @deny (get) User 'bob' cannot read a timetable event under the profile of user 'alice'.
-     * @deny (list) User 'bob' cannot list timetable events under the profile of user 'alice'.
-     * @deny (update) User 'bob' cannot update a timetable event under the profile of user 'alice'.
-     * @deny (delete) User 'bob' cannot delete a timetable event under the profile of user 'alice'.
-     * @principle Enforces document ownership for timetable events.
+     * @allow (get, list, create, update, delete) - User with UID 'user123' can read, list, create, update, and delete their own timetable events under /users/user123/timetableEvents.
+     * @deny (get, list, create, update, delete) - User with UID 'user456' cannot read, list, create, update, or delete timetable events under /users/user123/timetableEvents.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/timetableEvents/{timetableEventId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId);
@@ -118,21 +88,20 @@ service cloud.firestore {
     }
 
     /**
-     * @description Manages reminders for a specific user. Only the authenticated user can read/write their own reminders.
+     * @description Enforces that only the authenticated user can read and write their own reminders.
      * @path /users/{userId}/reminders/{reminderId}
-     * @allow (create) User 'bob' with ID 'bob' can create a reminder under their profile.
-     * @allow (get) User 'bob' with ID 'bob' can read a reminder under their profile.
-     * @allow (list) User 'bob' with ID 'bob' can list reminders under their profile.
-     * @allow (update) User 'bob' with ID 'bob' can update a reminder under their profile.
-     * @allow (delete) User 'bob' with ID 'bob' can delete a reminder under their profile.
-     * @deny (create) User 'bob' cannot create a reminder under the profile of user 'alice'.
-     * @deny (get) User 'bob' cannot read a reminder under the profile of user 'alice'.
-     * @deny (list) User 'bob' cannot list reminders under the profile of user 'alice'.
-     * @deny (update) User 'bob' cannot update a reminder under the profile of user 'alice'.
-     * @deny (delete) User 'bob' cannot delete a reminder under the profile of user 'alice'.
-     * @principle Enforces document ownership for reminders.
+     * @allow (get, list, create, update, delete) - User with UID 'user123' can read, list, create, update, and delete their own reminders under /users/user123/reminders.
+     * @deny (get, list, create, update, delete) - User with UID 'user456' cannot read, list, create, update, or delete reminders under /users/user123/reminders.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/reminders/{reminderId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId);
@@ -141,14 +110,11 @@ service cloud.firestore {
     }
 
     /**
-     * @description Manages global focus tips. Public read access.
+     * @description Allows public read access to focus tips.
      * @path /focus_tips/{focusTipId}
-     * @allow (get) Any user can read a focus tip.
-     * @allow (list) Any user can list focus tips.
-     * @deny (create) No user can create a focus tip.
-     * @deny (update) No user can update a focus tip.
-     * @deny (delete) No user can delete a focus tip.
-     * @principle Provides public read access to focus tips.
+     * @allow (get, list) - Any user can read focus tips.
+     * @deny (create, update, delete) - Only admin users can create, update, or delete focus tips.
+     * @principle Provides public read access with restricted write access.
      */
     match /focus_tips/{focusTipId} {
       allow get: if true;
@@ -157,18 +123,5 @@ service cloud.firestore {
       allow update: if false;
       allow delete: if false;
     }
-  }
-
-  // Helper functions
-  function isSignedIn() {
-    return request.auth != null;
-  }
-
-  function isOwner(userId) {
-    return isSignedIn() && request.auth.uid == userId;
-  }
-
-  function isExistingOwner(userId) {
-    return isOwner(userId) && resource != null;
   }
 }

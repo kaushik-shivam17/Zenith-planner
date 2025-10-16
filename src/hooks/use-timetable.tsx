@@ -6,8 +6,7 @@ import {
   useContext,
   ReactNode,
   useCallback,
-  useState,
-  useEffect,
+  useMemo,
 } from 'react';
 import type { TimetableEvent } from '@/lib/types';
 import {

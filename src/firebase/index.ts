@@ -1,7 +1,7 @@
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { initializeApp, getApp, FirebaseApp, getApps } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 
@@ -12,28 +12,13 @@ let firebaseServices: {
   firestore: Firestore;
 } | null = null;
 
-// This function initializes Firebase and returns the SDKs.
-// It ensures that initialization only happens once.
+/**
+ * Initializes Firebase and returns the SDK services.
+ * This function ensures that Firebase is initialized only once.
+ */
 export function initializeFirebase() {
   if (!firebaseServices) {
-    let app;
-    if (!getApps().length) {
-      // If no app is initialized, initialize one.
-      try {
-        // First, try to initialize with App Hosting's automatic configuration.
-        app = initializeApp();
-      } catch (e) {
-        // If that fails, fall back to the explicit config (for local dev).
-        if (process.env.NODE_ENV === "production") {
-          console.warn('Automatic Firebase initialization failed. Falling back to firebaseConfig.', e);
-        }
-        app = initializeApp(firebaseConfig);
-      }
-    } else {
-      // If apps are already initialized, get the default one.
-      app = getApp();
-    }
-
+    const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     firebaseServices = {
       firebaseApp: app,
       auth: getAuth(app),
@@ -42,6 +27,7 @@ export function initializeFirebase() {
   }
   return firebaseServices;
 }
+
 
 export * from './provider';
 export * from './client-provider';

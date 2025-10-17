@@ -1,14 +1,16 @@
 'use client';
 
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useFirebase, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useDoc } from '@/firebase/firestore/use-doc';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { updateProfile } from 'firebase/auth';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -27,9 +29,11 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Loader2, User } from 'lucide-react';
+import { Loader2, User as UserIcon } from 'lucide-react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -37,6 +41,7 @@ const profileSchema = z.object({
   class: z.string().optional(),
   height: z.coerce.number().positive('Height must be positive.').optional(),
   weight: z.coerce.number().positive('Weight must be positive.').optional(),
+  photoURL: z.string().url().optional(),
 });
 
 type UserProfile = z.infer<typeof profileSchema>;
@@ -46,11 +51,13 @@ type UserProfileFirestore = Omit<UserProfile, 'height'> & { height?: number };
 
 
 export function Profile() {
-  const { user } = useAuthGuard(true);
+  const { user, auth } = useAuthGuard(true);
   const { firestore } = useFirebase();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bmi, setBmi] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const userDocRef = useMemoFirebase(
     () => (user ? doc(firestore, 'users', user.uid) : null),
@@ -67,8 +74,12 @@ export function Profile() {
       class: '',
       height: undefined, // cm
       weight: undefined,
+      photoURL: '',
     },
   });
+  
+  const currentPhotoURL = form.watch('photoURL');
+
 
   useEffect(() => {
     if (userProfile) {
@@ -79,12 +90,57 @@ export function Profile() {
         // Convert height from meters (Firestore) to cm (UI)
         height: userProfile.height ? userProfile.height * 100 : undefined,
         weight: userProfile.weight ?? undefined,
+        photoURL: userProfile.photoURL ?? user?.photoURL ?? '',
       });
     } else if (user) {
       form.setValue('name', user.displayName || '');
       form.setValue('email', user.email || '');
+      form.setValue('photoURL', user.photoURL || '');
     }
   }, [userProfile, user, form]);
+
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0 || !user || !auth) {
+      return;
+    }
+
+    const file = event.target.files[0];
+    const storage = getStorage();
+    const storageRef = ref(storage, `profile-pictures/${user.uid}`);
+
+    setIsUploading(true);
+
+    try {
+      // Upload file
+      const snapshot = await uploadBytes(storageRef, file);
+      // Get download URL
+      const downloadURL = await getDownloadURL(snapshot.ref);
+
+      // Update Firebase Auth user profile
+      await updateProfile(auth.currentUser!, { photoURL: downloadURL });
+      
+      // Update photoURL in the form
+      form.setValue('photoURL', downloadURL, { shouldDirty: true });
+
+      // Save to Firestore
+      const userDocRef = doc(firestore, 'users', user.uid);
+      await setDoc(userDocRef, { photoURL: downloadURL }, { merge: true });
+
+      toast({
+        title: 'Photo updated!',
+        description: 'Your new profile picture has been saved.',
+      });
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Upload Failed',
+        description: 'Could not upload your profile picture. Please try again.',
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   async function onSubmit(values: UserProfile) {
     if (!user || !firestore) {
@@ -158,7 +214,7 @@ export function Profile() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <User className="text-primary" />
+            <UserIcon className="text-primary" />
             <span>My Profile</span>
           </CardTitle>
           <CardDescription>View and edit your personal information.</CardDescription>
@@ -166,6 +222,46 @@ export function Profile() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+               <FormField
+                control={form.control}
+                name="photoURL"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col items-center text-center space-y-4">
+                    <FormLabel>Profile Photo</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Avatar className="w-24 h-24 border">
+                          <AvatarImage src={currentPhotoURL || undefined} alt="Profile Photo" />
+                          <AvatarFallback>
+                            <UserIcon className="w-12 h-12 text-muted-foreground" />
+                          </AvatarFallback>
+                        </Avatar>
+                        {isUploading && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                            <Loader2 className="w-8 h-8 animate-spin text-white" />
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                    >
+                      {isUploading ? 'Uploading...' : 'Upload Photo'}
+                    </Button>
+                    <Input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/png, image/jpeg"
+                      onChange={handlePhotoUpload}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <FormField
                   control={form.control}
@@ -244,7 +340,7 @@ export function Profile() {
                           {...field}
                           value={field.value ?? ''}
                           onChange={(e) => {
-                            const value = e.target.value;
+                            const value = e.g. target.value;
                             field.onChange(value === '' ? undefined : parseFloat(value));
                             setBmi(null);
                           }}
@@ -263,8 +359,8 @@ export function Profile() {
                 )}
               </div>
               <div className="flex items-center gap-4">
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" disabled={isSubmitting || isUploading}>
+                  {(isSubmitting || isUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Save Changes
                 </Button>
                  <Button type="button" variant="outline" onClick={handleCalculateBmi}>
@@ -278,3 +374,5 @@ export function Profile() {
     </div>
   );
 }
+
+    

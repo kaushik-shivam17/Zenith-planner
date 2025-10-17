@@ -32,6 +32,11 @@
           "type": "number",
           "description": "User's weight in kilograms (optional)."
         },
+        "photoURL": {
+          "type": "string",
+          "description": "URL of the user's profile picture.",
+          "format": "uri"
+        },
         "updatedAt": {
           "type": "string",
           "format": "date-time"
@@ -427,3 +432,5 @@
     ]
   }
 }
+
+    

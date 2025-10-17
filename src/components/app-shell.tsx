@@ -30,6 +30,7 @@ import { Header } from '@/components/header';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -144,9 +145,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <Link href="/profile" className="w-full">
                     <SidebarMenuButton
                       isActive={isActive('/profile')}
-                      className="w-full"
+                      className="w-full flex items-center gap-2"
                     >
-                      <UserIcon />
+                      <Avatar className="w-6 h-6">
+                        <AvatarImage src={user.photoURL || undefined} />
+                        <AvatarFallback>
+                          <UserIcon className="w-4 h-4" />
+                        </AvatarFallback>
+                      </Avatar>
                       <span>Profile</span>
                     </SidebarMenuButton>
                   </Link>
@@ -178,3 +184,5 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+
+    

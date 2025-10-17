@@ -35,9 +35,9 @@ type Task = {
 
 type TaskManagerProps = {
   tasks: Task[];
-  onAddTask: (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => void;
-  onUpdateTask: (updatedTask: Task) => void;
-  onToggleTask: (taskId: string) => void;
+  onAddTask: (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => Promise<void>;
+  onUpdateTask: (updatedTask: Task) => Promise<void>;
+  onToggleTask: (taskId: string) => Promise<void>;
 };
 
 export function TaskManager({
@@ -48,8 +48,8 @@ export function TaskManager({
 }: TaskManagerProps) {
   const [isAddOpen, setIsAddOpen] = useState(false);
 
-  const handleTaskAdded = (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => {
-    onAddTask(taskData);
+  const handleTaskAdded = async (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => {
+    await onAddTask(taskData);
     setIsAddOpen(false);
   };
 

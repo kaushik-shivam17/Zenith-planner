@@ -2,9 +2,6 @@
 'use client';
 
 import {
-  createContext,
-  useContext,
-  ReactNode,
   useCallback,
 } from 'react';
 import type { Goal } from '@/lib/types';
@@ -12,24 +9,22 @@ import {
   useFirebase,
   useCollection,
   useMemoFirebase,
+  errorEmitter,
+  FirestorePermissionError,
 } from '@/firebase';
 import { collection, doc, serverTimestamp, runTransaction, increment } from 'firebase/firestore';
-import { useMissions } from './use-missions';
 
 interface GoalsContextType {
   goals: Goal[];
-  addGoal: (goalData: Pick<Goal, 'title' | 'description'>) => void;
-  toggleGoalCompletion: (goalId: string) => void;
-  deleteGoal: (goalId: string) => void;
+  addGoal: (goalData: Pick<Goal, 'title' | 'description'>) => Promise<void>;
+  toggleGoalCompletion: (goalId: string) => Promise<void>;
+  deleteGoal: (goalId: string) => Promise<void>;
   isLoading: boolean;
 }
 
-const GoalsContext = createContext<GoalsContextType | undefined>(undefined);
-
 // This is not a real provider. It's a hook that scopes goals to a mission.
-export function useGoals(missionId: string) {
+export function useGoals(missionId: string): GoalsContextType {
   const { user, firestore, isUserLoading } = useFirebase();
-  const { getMissionById } = useMissions();
 
   const goalsCollectionRef = useMemoFirebase(
     () => (user ? collection(firestore, 'users', user.uid, 'missions', missionId, 'goals') : null),
@@ -62,6 +57,11 @@ export function useGoals(missionId: string) {
         });
       } catch (e) {
         console.error("Transaction failed: ", e);
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: newGoalRef.path,
+          operation: 'create',
+          requestResourceData: newGoal
+        }));
       }
     },
     [user, firestore, missionId]
@@ -82,6 +82,11 @@ export function useGoals(missionId: string) {
           });
         } catch (e) {
           console.error("Transaction failed: ", e);
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: goalDocRef.path,
+            operation: 'update',
+            requestResourceData: { completed: !goal.completed }
+          }));
         }
       }
     },
@@ -109,6 +114,10 @@ export function useGoals(missionId: string) {
         });
       } catch (e) {
         console.error("Transaction failed: ", e);
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: goalDocRef.path,
+          operation: 'delete',
+        }));
       }
     },
     [user, firestore, missionId, goals]

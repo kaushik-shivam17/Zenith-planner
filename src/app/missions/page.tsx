@@ -29,9 +29,9 @@ export default function MissionsPage() {
   const [newMissionTitle, setNewMissionTitle] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   
-  const handleAddMission = () => {
+  const handleAddMission = async () => {
     if (newMissionTitle.trim()) {
-      addMission({ title: newMissionTitle });
+      await addMission({ title: newMissionTitle });
       setNewMissionTitle('');
       setIsAddOpen(false);
     }

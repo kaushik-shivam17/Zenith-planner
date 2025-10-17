@@ -100,7 +100,7 @@ export function Profile() {
   }, [userProfile, user, form]);
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || event.target.files.length === 0 || !user || !auth) {
+    if (!event.target.files || event.target.files.length === 0 || !user || !auth || !auth.currentUser) {
       return;
     }
 
@@ -117,7 +117,7 @@ export function Profile() {
       const downloadURL = await getDownloadURL(snapshot.ref);
 
       // Update Firebase Auth user profile
-      await updateProfile(auth.currentUser!, { photoURL: downloadURL });
+      await updateProfile(auth.currentUser, { photoURL: downloadURL });
       
       // Update photoURL in the form
       form.setValue('photoURL', downloadURL, { shouldDirty: true });
@@ -172,7 +172,7 @@ export function Profile() {
         'permission-error',
         new FirestorePermissionError({
           path: docRef.path,
-          operation: 'write',
+          operation: 'update',
           requestResourceData: dataToSave,
         })
       )
@@ -340,7 +340,7 @@ export function Profile() {
                           {...field}
                           value={field.value ?? ''}
                           onChange={(e) => {
-                            const value = e.g. target.value;
+                            const value = e.target.value;
                             field.onChange(value === '' ? undefined : parseFloat(value));
                             setBmi(null);
                           }}
@@ -374,5 +374,3 @@ export function Profile() {
     </div>
   );
 }
-
-    

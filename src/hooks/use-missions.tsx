@@ -12,13 +12,13 @@ import {
   errorEmitter,
   FirestorePermissionError,
 } from '@/firebase';
-import { collection, doc, serverTimestamp, query, where, getDocs, writeBatch, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, getDocs, writeBatch, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 interface MissionsHook {
   missions: Mission[];
   getMissionById: (missionId: string) => Mission | undefined;
-  addMission: (missionData: Pick<Mission, 'title'>) => void;
-  updateMission: (missionId: string, updates: Partial<Omit<Mission, 'id' | 'userId'>>) => void;
+  addMission: (missionData: Pick<Mission, 'title'>) => Promise<void>;
+  updateMission: (missionId: string, updates: Partial<Omit<Mission, 'id' | 'userId'>>) => Promise<void>;
   deleteMission: (missionId: string) => Promise<void>;
   isLoading: boolean;
 }

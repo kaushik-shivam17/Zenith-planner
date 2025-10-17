@@ -38,7 +38,7 @@ const formSchema = z.object({
 type TaskFormValues = z.infer<typeof formSchema>;
 
 type TaskFormProps = {
-  onAddTask: (taskData: TaskFormValues) => void;
+  onAddTask: (taskData: TaskFormValues) => Promise<void>;
   selectedDate?: Date;
 };
 
@@ -58,8 +58,8 @@ export function TaskForm({ onAddTask, selectedDate }: TaskFormProps) {
     }
   }, [selectedDate, form]);
 
-  function onSubmit(values: TaskFormValues) {
-    onAddTask(values);
+  async function onSubmit(values: TaskFormValues) {
+    await onAddTask(values);
     form.reset({ title: '', description: '', deadline: selectedDate });
   }
 

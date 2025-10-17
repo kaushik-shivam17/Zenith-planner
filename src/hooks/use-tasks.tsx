@@ -24,9 +24,9 @@ import {
 interface TasksHook {
   tasks: Task[];
   getTaskById: (taskId: string) => Task | undefined;
-  addTask: (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => void;
-  updateTask: (taskId: string, updates: Partial<Omit<Task, 'id' | 'userId'>>) => void;
-  toggleTaskCompletion: (taskId: string) => void;
+  addTask: (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => Promise<void>;
+  updateTask: (taskId: string, updates: Partial<Omit<Task, 'id' | 'userId'>>) => Promise<void>;
+  toggleTaskCompletion: (taskId: string) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -119,13 +119,15 @@ export function useTasks(): TasksHook {
   );
 
   const toggleTaskCompletion = useCallback(
-    (taskId: string) => {
+    async (taskId: string) => {
       if (!tasksCollectionRef) return;
       const task = tasks.find((t) => t.id === taskId);
       if (task) {
         const taskDocRef = doc(tasksCollectionRef, taskId);
         const newCompletedStatus = !task.completed;
-        updateDoc(taskDocRef, { completed: newCompletedStatus }).catch((error) => {
+        try {
+          await updateDoc(taskDocRef, { completed: newCompletedStatus });
+        } catch (error) {
           errorEmitter.emit(
             'permission-error',
             new FirestorePermissionError({
@@ -134,7 +136,7 @@ export function useTasks(): TasksHook {
               requestResourceData: { completed: newCompletedStatus },
             })
           );
-        });
+        }
       }
     },
     [tasksCollectionRef, tasks]

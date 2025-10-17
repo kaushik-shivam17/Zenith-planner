@@ -41,8 +41,8 @@ type Task = {
 
 type TaskListProps = {
   tasks: Task[];
-  onUpdateTask: (updatedTask: Task) => void;
-  onToggleTask: (taskId: string) => void;
+  onUpdateTask: (updatedTask: Task) => Promise<void>;
+  onToggleTask: (taskId: string) => Promise<void>;
 };
 
 export function TaskList({ tasks, onUpdateTask, onToggleTask }: TaskListProps) {

@@ -36,9 +36,9 @@ export default function MissionDetailPage() {
   const mission = getMissionById(missionId as string);
   const isLoading = isMissionsLoading || areGoalsLoading;
 
-  const handleAddGoal = () => {
+  const handleAddGoal = async () => {
     if (newGoal.title.trim()) {
-      addGoal(newGoal);
+      await addGoal(newGoal);
       setNewGoal({ title: '', description: '' });
       setIsAddGoalOpen(false);
     }
@@ -61,8 +61,8 @@ export default function MissionDetailPage() {
     setIsAiLoading(false);
   };
   
-  const handleAddSuggestedGoal = (title: string) => {
-    addGoal({ title, description: '' });
+  const handleAddSuggestedGoal = async (title: string) => {
+    await addGoal({ title, description: '' });
     setSuggestedGoals(prev => prev.filter(g => g !== title));
   };
   

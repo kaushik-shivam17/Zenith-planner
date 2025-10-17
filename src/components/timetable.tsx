@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { BrainCircuit, Loader2, Trash2 } from 'lucide-react';
+import { BrainCircuit, ListTodo, Loader2, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -136,98 +136,101 @@ export function Timetable() {
   return (
     <div className="space-y-6 fade-in">
        <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <div>
-            <CardTitle>Your Weekly Timetable</CardTitle>
-            <CardDescription>
-              AI-generated study blocks and your custom events. Manage your fixed events from the{' '}
-              <Button variant="link" className="p-0 h-auto" onClick={() => router.push('/schedule')}>Schedule</Button> page.
-            </CardDescription>
-          </div>
-           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleClearTasks}>
-              <Trash2 className="mr-2 h-4 w-4" /> Clear Study Blocks
-            </Button>
-            
-            <Dialog open={isPrefsOpen} onOpenChange={setIsPrefsOpen}>
-              <DialogTrigger asChild>
-                 <Button disabled={isGenerating}>
-                  {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
-                  Generate AI Timetable
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Personalize Your Timetable</DialogTitle>
-                  <DialogDescription>
-                    Answer a few questions to help the AI create the best schedule for you.
-                  </DialogDescription>
-                </DialogHeader>
-                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleGenerateTimetable)} className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="studyTime"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>When do you prefer to study?</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              <SelectItem value="morning">Morning</SelectItem>
-                              <SelectItem value="afternoon">Afternoon</SelectItem>
-                              <SelectItem value="evening">Evening</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                     <FormField
-                      control={form.control}
-                      name="energyLevel"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>What are your energy levels like?</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              <SelectItem value="high-in-morning">Highest in the morning</SelectItem>
-                              <SelectItem value="energized-after-lunch">I get a boost after lunch</SelectItem>
-                              <SelectItem value="night-owl">I'm most focused at night</SelectItem>
-                              <SelectItem value="consistent">Pretty consistent all day</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="sessionLength"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>How long do you like your study sessions?</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              <SelectItem value="30-min">Short and focused (30 min)</SelectItem>
-                              <SelectItem value="60-min">Standard (1 hour)</SelectItem>
-                              <SelectItem value="90-min">Long and deep (90 min+)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="w-full">
-                      Generate My Timetable
+        <CardHeader>
+            <div className='flex items-center justify-between'>
+                <div>
+                    <CardTitle>Your Weekly Timetable</CardTitle>
+                    <CardDescription>
+                    AI-generated study blocks and your custom events.
+                    </CardDescription>
+                </div>
+                <div className="flex flex-wrap gap-2 justify-end">
+                    <Button variant="outline" onClick={() => router.push('/schedule')}>
+                        <ListTodo className="mr-2 h-4 w-4" /> Manage Schedule
                     </Button>
-                  </form>
-                 </Form>
-              </DialogContent>
-            </Dialog>
-          </div>
+                    <Button variant="outline" onClick={handleClearTasks}>
+                        <Trash2 className="mr-2 h-4 w-4" /> Clear Study Blocks
+                    </Button>
+                    <Dialog open={isPrefsOpen} onOpenChange={setIsPrefsOpen}>
+                    <DialogTrigger asChild>
+                        <Button disabled={isGenerating}>
+                        {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
+                        Generate AI Timetable
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                        <DialogTitle>Personalize Your Timetable</DialogTitle>
+                        <DialogDescription>
+                            Answer a few questions to help the AI create the best schedule for you.
+                        </DialogDescription>
+                        </DialogHeader>
+                        <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleGenerateTimetable)} className="space-y-4">
+                            <FormField
+                            control={form.control}
+                            name="studyTime"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>When do you prefer to study?</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                    <SelectItem value="morning">Morning</SelectItem>
+                                    <SelectItem value="afternoon">Afternoon</SelectItem>
+                                    <SelectItem value="evening">Evening</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                            <FormField
+                            control={form.control}
+                            name="energyLevel"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>What are your energy levels like?</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                    <SelectItem value="high-in-morning">Highest in the morning</SelectItem>
+                                    <SelectItem value="energized-after-lunch">I get a boost after lunch</SelectItem>
+                                    <SelectItem value="night-owl">I'm most focused at night</SelectItem>
+                                    <SelectItem value="consistent">Pretty consistent all day</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                            <FormField
+                            control={form.control}
+                            name="sessionLength"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>How long do you like your study sessions?</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                    <SelectItem value="30-min">Short and focused (30 min)</SelectItem>
+                                    <SelectItem value="60-min">Standard (1 hour)</SelectItem>
+                                    <SelectItem value="90-min">Long and deep (90 min+)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                            <Button type="submit" className="w-full">
+                            Generate My Timetable
+                            </Button>
+                        </form>
+                        </Form>
+                    </DialogContent>
+                    </Dialog>
+                </div>
+            </div>
         </CardHeader>
         <CardContent>
           <ScrollArea className="w-full h-[600px]">

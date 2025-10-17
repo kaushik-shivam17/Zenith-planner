@@ -1,6 +1,10 @@
 'use client';
 import { useState } from 'react';
 import { BrainCircuit, Loader2, Trash2 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -16,8 +20,29 @@ import { generateTimetableAction } from '@/app/actions';
 import { ScrollArea } from './ui/scroll-area';
 import { useTimetable } from '@/hooks/use-timetable';
 import type { TimetableEvent } from '@/lib/types';
-import { useRouter } from 'next/navigation';
-
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const timeSlots = [
   '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
@@ -26,6 +51,11 @@ const timeSlots = [
 ];
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+const preferencesSchema = z.object({
+  studyTime: z.string().min(1, "Please select your preferred study time."),
+  energyLevel: z.string().min(1, "Please select your typical energy level pattern."),
+  sessionLength: z.string().min(1, "Please select your preferred session length."),
+});
 
 export function Timetable() {
   const router = useRouter();
@@ -33,6 +63,16 @@ export function Timetable() {
   const { toast } = useToast();
   const { events, setEvents, isLoading: isTimetableLoading, clearEvents } = useTimetable();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isPrefsOpen, setIsPrefsOpen] = useState(false);
+
+  const form = useForm<z.infer<typeof preferencesSchema>>({
+    resolver: zodResolver(preferencesSchema),
+    defaultValues: {
+      studyTime: 'afternoon',
+      energyLevel: 'consistent',
+      sessionLength: '60-min',
+    },
+  });
 
   const getGridPosition = (event: TimetableEvent) => {
     const dayIndex = days.indexOf(event.day);
@@ -50,8 +90,9 @@ export function Timetable() {
     };
   };
 
-  const handleGenerateTimetable = async () => {
+  const handleGenerateTimetable = async (preferences: z.infer<typeof preferencesSchema>) => {
     setIsGenerating(true);
+    setIsPrefsOpen(false);
     const customEvents = events.filter(e => e.type === 'custom');
     
     if (tasks.length === 0) {
@@ -64,15 +105,12 @@ export function Timetable() {
         return;
     }
 
-    const result = await generateTimetableAction({ tasks, customEvents });
+    const result = await generateTimetableAction({ tasks, customEvents, preferences });
     if (result.success && result.data) {
       const taskEvents = result.data.timetable.map(item => ({...item, type: 'task' as 'task'}));
-      
-      // We want to replace only the task events, not the custom ones
       const customEventsToKeep = events.filter(e => e.type === 'custom');
       const newEventList = [...customEventsToKeep, ...taskEvents];
       
-      // The setEvents function in the hook should be able to handle this logic
       await setEvents(newEventList);
 
       toast({
@@ -110,10 +148,85 @@ export function Timetable() {
             <Button variant="outline" onClick={handleClearTasks}>
               <Trash2 className="mr-2 h-4 w-4" /> Clear Study Blocks
             </Button>
-            <Button onClick={handleGenerateTimetable} disabled={isGenerating}>
-              {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
-              Generate AI Timetable
-            </Button>
+            
+            <Dialog open={isPrefsOpen} onOpenChange={setIsPrefsOpen}>
+              <DialogTrigger asChild>
+                 <Button disabled={isGenerating}>
+                  {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
+                  Generate AI Timetable
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Personalize Your Timetable</DialogTitle>
+                  <DialogDescription>
+                    Answer a few questions to help the AI create the best schedule for you.
+                  </DialogDescription>
+                </DialogHeader>
+                 <Form {...form}>
+                  <form onSubmit={form.handleSubmit(handleGenerateTimetable)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="studyTime"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>When do you prefer to study?</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              <SelectItem value="morning">Morning</SelectItem>
+                              <SelectItem value="afternoon">Afternoon</SelectItem>
+                              <SelectItem value="evening">Evening</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="energyLevel"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>What are your energy levels like?</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              <SelectItem value="high-in-morning">Highest in the morning</SelectItem>
+                              <SelectItem value="energized-after-lunch">I get a boost after lunch</SelectItem>
+                              <SelectItem value="night-owl">I'm most focused at night</SelectItem>
+                              <SelectItem value="consistent">Pretty consistent all day</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="sessionLength"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>How long do you like your study sessions?</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              <SelectItem value="30-min">Short and focused (30 min)</SelectItem>
+                              <SelectItem value="60-min">Standard (1 hour)</SelectItem>
+                              <SelectItem value="90-min">Long and deep (90 min+)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="submit" className="w-full">
+                      Generate My Timetable
+                    </Button>
+                  </form>
+                 </Form>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardHeader>
         <CardContent>

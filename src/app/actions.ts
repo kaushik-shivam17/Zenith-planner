@@ -15,6 +15,7 @@ import {
 } from '@/ai/flows/suggest-optimal-study-times';
 import {
   generateTimetable,
+  type GenerateTimetableInput,
   type GenerateTimetableOutput,
 } from '@/ai/flows/generate-timetable';
 import {
@@ -75,7 +76,7 @@ type ClientTimetableInputTask = {
   completed: boolean;
 };
 
-
+// The input for the generateTimetableAction now includes preferences.
 type GenerateTimetableActionInput = {
   tasks: ClientTimetableInputTask[];
   customEvents: {
@@ -84,6 +85,7 @@ type GenerateTimetableActionInput = {
     startTime: string;
     endTime: string;
   }[];
+  preferences: GenerateTimetableInput['preferences'];
 };
 
 export const generateTimetableAction = async (

@@ -15,7 +15,7 @@ import {
   errorEmitter,
   FirestorePermissionError,
 } from '@/firebase';
-import { collection, writeBatch, doc, addDoc, deleteDoc } from 'firebase/firestore';
+import { collection, writeBatch, doc, addDoc, deleteDoc, getDocs } from 'firebase/firestore';
 
 interface TimetableContextType {
   events: TimetableEvent[];
@@ -48,7 +48,7 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
       
       try {
         // Delete all existing events first. This is simpler than diffing.
-        const snapshot = await timetableCollectionRef.get();
+        const snapshot = await getDocs(timetableCollectionRef);
         snapshot.docs.forEach(doc => {
           batch.delete(doc.ref);
         });

@@ -57,7 +57,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   
   const isProtectedRoute = Array.from(protectedAndDataRoutes).some(route => pathname.startsWith(route));
   
-  const { user, isUserLoading } = useUser();
+  const { user } = useUser();
   useAuthGuard(isProtectedRoute);
 
   const { toast } = useToast();
@@ -93,17 +93,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </main>
   );
   
-  // The main loading gate is now in FirebaseClientProvider.
-  // We only render the shell if the user is authenticated for a protected route, or for any public route.
-  // useAuthGuard handles the redirection logic.
-  if (isUserLoading && isProtectedRoute) {
-     return null; // Render nothing while waiting for auth state on protected routes
-  }
-  
+  // The rendering is now gated by FirebaseClientProvider.
+  // The AppShell only renders when it's supposed to, and useAuthGuard handles redirection.
   if (!user && isProtectedRoute) {
-    return null; // Don't render the shell if user is not logged in on a protected route
+    return null; // Return null to prevent rendering the shell on protected routes without a user.
   }
-
 
   return (
     <SidebarProvider>

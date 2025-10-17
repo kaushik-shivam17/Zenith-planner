@@ -37,7 +37,6 @@ const navItems = [
   { href: '/tasks', label: 'Tasks', icon: BadgeCheck },
   { href: '/missions', label: 'Missions', icon: Rocket },
   { href: '/timetable', label: 'Timetable', icon: Calendar },
-  { href: '/schedule', label: 'Schedule', icon: ListTodo },
   { href: '/focus', label: 'Focus AI', icon: BrainCircuit },
   { href: '/fitness', label: 'Fitness', icon: HeartPulse },
 ];

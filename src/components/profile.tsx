@@ -296,7 +296,7 @@ export function Profile() {
                     <FormItem>
                       <FormLabel>Class (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Grade 12" {...field} value={field.value ?? ''} />
+                        <Input placeholder="e.g., class 11th" {...field} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

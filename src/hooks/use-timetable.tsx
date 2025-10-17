@@ -15,12 +15,13 @@ import {
   errorEmitter,
   FirestorePermissionError,
 } from '@/firebase';
-import { collection, writeBatch, doc, addDoc } from 'firebase/firestore';
+import { collection, writeBatch, doc, addDoc, deleteDoc } from 'firebase/firestore';
 
 interface TimetableContextType {
   events: TimetableEvent[];
   setEvents: (events: Omit<TimetableEvent, 'id' | 'userId'>[]) => Promise<void>;
   addCustomEvents: (events: Omit<TimetableEvent, 'id' | 'userId' | 'type'>[]) => Promise<void>;
+  deleteCustomEvent: (eventId: string) => Promise<void>;
   clearEvents: (type: 'task' | 'custom' | 'all') => Promise<void>;
   isLoading: boolean;
 }
@@ -88,6 +89,21 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
       
   }, [timetableCollectionRef, user]);
 
+  const deleteCustomEvent = useCallback(async (eventId: string) => {
+    if (!timetableCollectionRef) return;
+    const eventDocRef = doc(timetableCollectionRef, eventId);
+    try {
+      await deleteDoc(eventDocRef);
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: eventDocRef.path,
+        operation: 'delete',
+      }));
+    }
+  }, [timetableCollectionRef]);
+
+
   const clearEvents = useCallback(async (type: 'task' | 'custom' | 'all') => {
       if (!timetableCollectionRef || !eventsData || !firestore) return;
 
@@ -118,6 +134,7 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
     events: eventsData || [],
     setEvents,
     addCustomEvents,
+    deleteCustomEvent,
     clearEvents,
     isLoading,
   };

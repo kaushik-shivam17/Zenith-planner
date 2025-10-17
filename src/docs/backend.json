@@ -43,47 +43,6 @@
         "email"
       ]
     },
-    "BMI": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "BMI",
-      "type": "object",
-      "description": "Represents a user's Body Mass Index (BMI) data at a point in time.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the BMI record."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N BMI)"
-        },
-        "bmiValue": {
-          "type": "number",
-          "description": "The calculated BMI value."
-        },
-        "date": {
-          "type": "string",
-          "description": "The date when the BMI was recorded.",
-          "format": "date-time"
-        },
-        "height": {
-          "type": "number",
-          "description": "User's height in meters at the time of recording."
-        },
-        "weight": {
-          "type": "number",
-          "description": "User's weight in kilograms at the time of recording."
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "bmiValue",
-        "date",
-        "height",
-        "weight"
-      ]
-    },
     "Roadmap": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Roadmap",
@@ -316,26 +275,6 @@
             {
               "name": "userId",
               "description": "The unique identifier for the user. This is the Firebase Auth UID."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/bmiHistory/{bmiId}",
-        "definition": {
-          "entityName": "BMI",
-          "schema": {
-            "$ref": "#/backend/entities/BMI"
-          },
-          "description": "Stores historical BMI data for a specific user. Users can only read/write their own BMI records.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            },
-            {
-              "name": "bmiId",
-              "description": "The unique identifier for the BMI record."
             }
           ]
         }

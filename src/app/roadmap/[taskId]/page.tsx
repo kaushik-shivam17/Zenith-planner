@@ -72,13 +72,22 @@ export default function RoadmapPage() {
           setError(null);
           const result = await generateTaskRoadmapAction(item.title);
           if (result.success) {
-            setRoadmap(result.data);
-            setChatHistory([{ role: 'model', content: result.data.introduction }]);
+            const newRoadmap = result.data;
+            setRoadmap(newRoadmap);
+            setChatHistory([{ role: 'model', content: newRoadmap.introduction }]);
             // Save the roadmap to Firestore
-            if (itemType === 'task') {
-                updateTask(item.id, { roadmap: result.data });
-            } else {
-                updateMission(item.id, { roadmap: result.data });
+            try {
+                if (itemType === 'task') {
+                    await updateTask(item.id, { roadmap: newRoadmap });
+                } else {
+                    await updateMission(item.id, { roadmap: newRoadmap });
+                }
+            } catch (e) {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Error Saving Roadmap',
+                    description: 'Could not save the generated roadmap. Please try again.',
+                });
             }
           } else {
             setError(result.error);
@@ -161,7 +170,7 @@ export default function RoadmapPage() {
       <div className="flex flex-col items-center justify-center h-full min-h-[80vh] text-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
         <h2 className="text-2xl font-semibold">Generating Your Roadmap...</h2>
-        <p className="text-muted-foreground">The AI is crafting a personalized plan for your ${itemType}.</p>
+        <p className="text-muted-foreground">The AI is crafting a personalized plan for your {itemType}.</p>
       </div>
     );
   }

@@ -49,6 +49,7 @@ export function useTasks(): TasksHook {
     if (!rawTasks) return [];
     return rawTasks.map((task) => ({
       ...task,
+      // Ensure deadline is always a JS Date object for consistent use in components
       deadline: task.deadline instanceof Timestamp ? task.deadline.toDate() : new Date(),
     })).sort((a, b) => a.deadline.getTime() - b.deadline.getTime());
   }, [rawTasks]);

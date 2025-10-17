@@ -2,7 +2,6 @@
 
 import {
   useCallback,
-  useMemo,
 } from 'react';
 import type { TimetableEvent } from '@/lib/types';
 import {
@@ -67,18 +66,21 @@ export function useTimetable(): TimetableHook {
   const addCustomEvents = useCallback(async (customEvents: Omit<TimetableEvent, 'id' | 'userId' | 'type'>[]) => {
       if (!timetableCollectionRef || !user) return;
       
-      for (const event of customEvents) {
-        const eventWithUser = { ...event, userId: user.uid, type: 'custom' as 'custom' };
-        try {
-          await addDoc(timetableCollectionRef, eventWithUser);
-        } catch (error) {
+      try {
+        const batch = writeBatch(timetableCollectionRef.firestore);
+        for (const event of customEvents) {
+          const newEventRef = doc(timetableCollectionRef);
+          const eventWithUser = { ...event, id: newEventRef.id, userId: user.uid, type: 'custom' as 'custom' };
+          batch.set(newEventRef, eventWithUser);
+        }
+        await batch.commit();
+      } catch (error) {
           console.error('Error adding custom event:', error);
           errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: timetableCollectionRef.path,
             operation: 'create',
-            requestResourceData: eventWithUser,
+            // Note: can't provide specific data for batch writes easily
           }));
-        }
       }
       
   }, [timetableCollectionRef, user]);

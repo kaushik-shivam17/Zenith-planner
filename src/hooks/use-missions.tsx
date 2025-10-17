@@ -108,20 +108,19 @@ export function useMissions(): MissionsHook {
     async (missionId: string) => {
       if (!user || !firestore) return;
       
-      const batch = writeBatch(firestore);
+      const missionDocRef = doc(firestore, 'users', user.uid, 'missions', missionId);
+      const goalsCollectionRef = collection(missionDocRef, 'goals');
       
-      const userMissionsCollectionRef = collection(firestore, 'users', user.uid, 'missions');
-      
-      // Delete goals from the sub-collection
-      const goalsSubCollectionRef = collection(userMissionsCollectionRef, missionId, 'goals');
       try {
-        const goalsSubSnapshot = await getDocs(goalsSubCollectionRef);
-        goalsSubSnapshot.forEach(goalDoc => {
+        const batch = writeBatch(firestore);
+        
+        // Delete goals subcollection
+        const goalsSnapshot = await getDocs(goalsCollectionRef);
+        goalsSnapshot.forEach(goalDoc => {
           batch.delete(goalDoc.ref);
         });
       
         // Delete the mission document itself
-        const missionDocRef = doc(userMissionsCollectionRef, missionId);
         batch.delete(missionDocRef);
 
         await batch.commit();
@@ -130,7 +129,7 @@ export function useMissions(): MissionsHook {
          errorEmitter.emit(
             'permission-error',
             new FirestorePermissionError({
-              path: goalsSubCollectionRef.path, // or missionDocRef.path
+              path: missionDocRef.path, // or goalsCollectionRef.path
               operation: 'delete',
             })
         );

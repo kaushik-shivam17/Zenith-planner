@@ -100,7 +100,7 @@ export function Profile() {
     if (userProfile) {
       form.reset({
         name: userProfile.name ?? '',
-        email: userProfile.email ?? '',
+        email: userProfile.email ?? user?.email ?? '',
         class: userProfile.class ?? '',
         // Convert height from meters (Firestore) to cm (UI)
         height: userProfile.height ? userProfile.height * 100 : undefined,
@@ -122,17 +122,30 @@ export function Profile() {
     // Convert height from cm (UI) to meters for Firestore
     const heightInMeters = values.height ? values.height / 100 : undefined;
 
-    const dataToSave: UserProfileFirestore & { id: string, updatedAt: any } = {
+    const dataToSave: UserProfileFirestore & { updatedAt: any } = {
       ...values,
       height: heightInMeters,
-      id: user.uid,
       updatedAt: serverTimestamp(),
     };
+    
+    // We don't want to save the user's ID or email as part of the document fields
+    // if we can help it, as it's redundant. The document ID is the user ID.
+    // However, the schema might require it. Let's align with the hook which
+    // omits it.
+    const finalData = {
+      name: values.name,
+      class: values.class,
+      height: heightInMeters,
+      weight: values.weight,
+      email: values.email,
+      updatedAt: serverTimestamp(),
+    }
+
 
     const docRef = doc(firestore, 'users', user.uid);
     
     try {
-      await setDoc(docRef, dataToSave, { merge: true });
+      await setDoc(docRef, finalData, { merge: true });
       toast({
         title: 'Profile Updated',
         description: 'Your changes have been saved.',
@@ -143,7 +156,7 @@ export function Profile() {
         new FirestorePermissionError({
           path: docRef.path,
           operation: 'update',
-          requestResourceData: dataToSave,
+          requestResourceData: finalData,
         })
       )
     } finally {
@@ -152,7 +165,7 @@ export function Profile() {
   }
 
   async function onPasswordSubmit(values: PasswordFormValues) {
-    if (!user || !auth.currentUser) return;
+    if (!user || !auth?.currentUser) return;
     setIsPasswordSubmitting(true);
     try {
       await updatePassword(auth.currentUser, values.newPassword);
@@ -332,7 +345,7 @@ export function Profile() {
                     <DialogHeader>
                       <DialogTitle>Change Your Password</DialogTitle>
                       <DialogDescription>
-                        Enter a new password below. After confirming, you will be logged out and can log in with the new password.
+                        Enter a new password below.
                       </DialogDescription>
                     </DialogHeader>
                     <Form {...passwordForm}>

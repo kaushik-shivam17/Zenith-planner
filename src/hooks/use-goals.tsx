@@ -27,7 +27,7 @@ export function useGoals(missionId: string): GoalsContextType {
   const { user, firestore, isUserLoading } = useFirebase();
 
   const goalsCollectionRef = useMemoFirebase(
-    () => (user ? collection(firestore, 'users', user.uid, 'missions', missionId, 'goals') : null),
+    () => (user && firestore ? collection(firestore, 'users', user.uid, 'missions', missionId, 'goals') : null),
     [user, firestore, missionId]
   );
   

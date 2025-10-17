@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -76,10 +77,8 @@ export function Login() {
         switch (error.code) {
           case 'auth/user-not-found':
           case 'auth/wrong-password':
-            description = 'Invalid email or password. Please try again.';
-            break;
           case 'auth/invalid-credential':
-            description = 'Invalid credentials. Please check your email and password.';
+            description = 'Invalid email or password. Please try again.';
             break;
           default:
             description = error.message;

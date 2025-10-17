@@ -7,7 +7,6 @@ import {
   Calendar,
   HeartPulse,
   LayoutDashboard,
-  ListTodo,
   LogIn,
   LogOut,
   Rocket,
@@ -41,23 +40,14 @@ const navItems = [
   { href: '/fitness', label: 'Fitness', icon: HeartPulse },
 ];
 
-const protectedRoutePrefixes = [
-  ...navItems.map(item => item.href),
-  '/',
-  '/profile',
-  '/roadmap',
-  '/missions/',
-];
-
+const protectedRoutes = ['/dashboard', '/tasks', '/missions', '/timetable', '/focus', '/fitness', '/profile', '/roadmap'];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   
-  const isAuthPage = pathname === '/login' || pathname === '/signup';
-  // A route is protected if it's not an auth page.
-  const isProtectedRoute = !isAuthPage;
-
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route)) || pathname === '/';
+  
   useAuthGuard(isProtectedRoute);
   const { user } = useUser();
 

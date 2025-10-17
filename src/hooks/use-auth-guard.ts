@@ -30,7 +30,5 @@ export function useAuthGuard(isProtectedRoute: boolean) {
 
   }, [user, isUserLoading, isProtectedRoute, router, pathname]);
 
-  // This hook doesn't need to return anything as its job is side-effects (redirects)
-  // But we can return the user state if components need it, though they can get it from useUser()
   return { user, isUserLoading };
 }

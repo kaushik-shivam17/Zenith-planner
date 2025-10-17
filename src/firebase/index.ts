@@ -22,9 +22,9 @@ export function initializeFirebase() {
   }
 
   // Guard against missing API key.
-  if (!firebaseConfig.apiKey) {
+  if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'YOUR_API_KEY') {
     console.error(
-      'Firebase API key is missing. Please add your Firebase project config to .env.local'
+      'Firebase API key is missing. Please add your Firebase project config to the .env file and restart the server.'
     );
     // Return null services if config is invalid to prevent crash.
     return { firebaseApp: null, auth: null, firestore: null };

@@ -5,7 +5,6 @@ import React, { DependencyList, createContext, useContext, ReactNode, useMemo, u
 import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
-import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -59,10 +58,10 @@ const MissingFirebaseConfigError = () => (
     <div className="max-w-lg rounded-lg border border-destructive bg-card p-6 text-center shadow-lg">
       <h1 className="text-2xl font-bold text-destructive">Firebase Not Configured</h1>
       <p className="mt-4 text-card-foreground">
-        Your Firebase API key is missing. The application cannot connect to Firebase services.
+        Your Firebase API key is missing or invalid. The application cannot connect to Firebase services.
       </p>
       <p className="mt-2 text-sm text-muted-foreground">
-        Please copy the web app configuration from your Firebase project settings and paste it into the <strong>.env</strong> file in your project. Then, restart the development server.
+        Please copy the web app configuration from your Firebase project settings and paste the values into the <strong>.env</strong> file in your project. Then, restart the development server.
       </p>
     </div>
   </div>
@@ -130,7 +129,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
   return (
     <FirebaseContext.Provider value={contextValue}>
-       <FirebaseErrorListener />
       {children}
     </FirebaseContext.Provider>
   );

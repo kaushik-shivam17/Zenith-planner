@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,7 @@ import {
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { FirebaseError } from 'firebase/app';
+import { useFirebase } from '@/firebase';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address.'),
@@ -39,6 +40,8 @@ export function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const { auth } = useFirebase();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -49,8 +52,17 @@ export function Login() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    if (!auth) {
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'Authentication service is not available. Please try again later.',
+      });
+      setIsLoading(false);
+      return;
+    }
+    
     try {
-      const auth = getAuth();
       await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
         title: 'Login Successful',

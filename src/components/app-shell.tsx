@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -30,7 +31,6 @@ import { Header } from '@/components/header';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -41,23 +41,25 @@ const navItems = [
   { href: '/fitness', label: 'Fitness', icon: HeartPulse },
 ];
 
-const protectedRoutePaths = [
+const protectedRoutePrefixes = [
   ...navItems.map(item => item.href),
   '/',
   '/profile',
   '/roadmap',
   '/missions/',
 ];
-const protectedAndDataRoutes = new Set(protectedRoutePaths);
 
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   
-  const isProtectedRoute = Array.from(protectedAndDataRoutes).some(route => pathname.startsWith(route));
-  
-  const { user, isUserLoading } = useAuthGuard(isProtectedRoute);
+  const isAuthPage = pathname === '/login' || pathname === '/signup';
+  // A route is protected if it's not an auth page.
+  const isProtectedRoute = !isAuthPage;
+
+  useAuthGuard(isProtectedRoute);
+  const { user } = useUser();
 
   const { toast } = useToast();
   const isActive = (href: string) => pathname === href || (href === '/dashboard' && pathname === '/');
@@ -91,17 +93,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
     </main>
   );
-  
-  if (isUserLoading && isProtectedRoute) {
-    return null;
-  }
-
-  const shouldShowSidebar = user || !isProtectedRoute;
 
   return (
     <SidebarProvider>
        <div className="flex w-full">
-        {shouldShowSidebar && (
           <Sidebar>
             <SidebarHeader>
               <div className="flex items-center gap-3 p-2">
@@ -171,7 +166,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               )}
             </SidebarFooter>
           </Sidebar>
-        )}
         {mainContent}
       </div>
     </SidebarProvider>

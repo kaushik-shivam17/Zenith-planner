@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -17,14 +18,19 @@ export function useAuthGuard(isProtectedRoute: boolean) {
 
     const isAuthPage = pathname === '/login' || pathname === '/signup';
 
+    // If it's a protected route and the user is not logged in, redirect to login
     if (isProtectedRoute && !user) {
-      // If it's a protected route and the user is not logged in, redirect to login
       router.replace('/login');
-    } else if (user && isAuthPage) {
-      // If user is logged in and on a login/signup page, redirect to dashboard
+    }
+    
+    // If the user is logged in and trying to access a login/signup page, redirect to dashboard
+    if (user && isAuthPage) {
       router.replace('/dashboard');
     }
+
   }, [user, isUserLoading, isProtectedRoute, router, pathname]);
 
+  // This hook doesn't need to return anything as its job is side-effects (redirects)
+  // But we can return the user state if components need it, though they can get it from useUser()
   return { user, isUserLoading };
 }

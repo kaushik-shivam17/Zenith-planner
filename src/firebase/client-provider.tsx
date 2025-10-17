@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo, type ReactNode } from 'react';
@@ -9,9 +10,10 @@ import { usePathname } from 'next/navigation';
 function AuthLoadingGate({ children }: { children: ReactNode }) {
   const { isUserLoading } = useUser();
   const pathname = usePathname();
-
+  const isAuthPage = pathname === '/login' || pathname === '/signup';
+  
   // Show loading screen only on protected routes
-  const isProtectedRoute = !['/login', '/signup'].includes(pathname);
+  const isProtectedRoute = !isAuthPage;
 
   if (isUserLoading && isProtectedRoute) {
     return (
@@ -28,7 +30,7 @@ function AuthLoadingGate({ children }: { children: ReactNode }) {
 }
 
 
-export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
+export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   const firebaseServices = useMemo(() => {
     // Initialize Firebase on the client side, once per component mount.
     return initializeFirebase();

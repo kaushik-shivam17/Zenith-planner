@@ -105,6 +105,7 @@ export default function MissionsPage() {
                 </span>
               </div>
               <Progress value={mission.progress} />
+              <p className="text-xs text-muted-foreground text-center pt-2">click on me to more</p>
             </Card>
           ))
           )}

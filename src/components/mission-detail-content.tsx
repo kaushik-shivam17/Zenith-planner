@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useContext, useState } from 'react';
+import { useState } from 'react';
 import { suggestGoalsForMissionAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { DataContext } from '@/context/data-provider';
 import { useGoals } from '@/hooks/use-goals';
+import { useMissions } from '@/hooks/use-missions';
 
 type GoalFormData = {
   title: string;
@@ -24,7 +24,7 @@ export function MissionDetailContent({ missionId }: { missionId: string }) {
   const router = useRouter();
   const { toast } = useToast();
   
-  const { getMissionById, isLoading: isMissionsLoading, deleteMission } = useContext(DataContext);
+  const { getMissionById, isLoading: isMissionsLoading, deleteMission } = useMissions();
   const { goals, addGoal, toggleGoalCompletion, deleteGoal, isLoading: areGoalsLoading } = useGoals(missionId);
 
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);

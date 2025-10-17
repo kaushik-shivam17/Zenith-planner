@@ -1,6 +1,6 @@
 'use client';
 
-import { useContext, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Plus, Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,11 +21,11 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { DataContext } from '@/context/data-provider';
+import { useMissions } from '@/hooks/use-missions';
 
 export function MissionsPageContent() {
   const router = useRouter();
-  const { missions, addMission, isLoading } = useContext(DataContext);
+  const { missions, addMission, isLoading } = useMissions();
   const [newMissionTitle, setNewMissionTitle] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   

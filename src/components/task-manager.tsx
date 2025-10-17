@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useContext } from 'react';
+import { useState } from 'react';
 import { Loader2, PlusCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -22,16 +22,16 @@ import {
 import { TaskForm } from '@/components/task-form';
 import { TaskList } from '@/components/task-list';
 import type { Task } from '@/lib/types';
-import { DataContext } from '@/context/data-provider';
+import { useTasks } from '@/hooks/use-tasks';
 
 
 export function TaskManager() {
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const { tasks, addTask, updateTask, toggleTaskCompletion, isLoading } = useContext(DataContext);
+  const { tasks, addTask, updateTask, toggleTaskCompletion, isLoading } = useTasks();
 
 
   const handleTaskAdded = async (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => {
-    await onAddTask(taskData);
+    await addTask(taskData);
     setIsAddOpen(false);
   };
   

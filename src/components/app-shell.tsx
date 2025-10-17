@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -29,7 +28,6 @@ import {
 import { Header } from '@/components/header';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
-import { DataProvider } from '@/context/data-provider';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 
 const navItems = [
@@ -69,25 +67,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       });
     }
   };
-
-  const mainContent = (
-     <main className="min-h-screen p-4 sm:p-6 md:p-8 flex-1">
-      <div className="max-w-5xl mx-auto">
-        <div className="md:hidden mb-4">
-          <Header />
-        </div>
-        {children}
-      </div>
-    </main>
-  );
-
-  const renderContent = () => {
-    if (isAuthPage || !user) {
-        return mainContent;
-    }
-    return <DataProvider>{mainContent}</DataProvider>;
-  };
-  
 
   return (
     <SidebarProvider>
@@ -161,7 +140,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               )}
             </SidebarFooter>
           </Sidebar>
-          {renderContent()}
+          <main className="min-h-screen p-4 sm:p-6 md:p-8 flex-1">
+            <div className="max-w-5xl mx-auto">
+              <div className="md:hidden mb-4">
+                <Header />
+              </div>
+              {children}
+            </div>
+          </main>
       </div>
     </SidebarProvider>
   );

@@ -4,7 +4,6 @@ import { BrainCircuit, ListTodo, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -17,7 +16,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { generateTimetableAction } from '@/app/actions';
 import { ScrollArea } from './ui/scroll-area';
-import type { TimetableEvent, Task } from '@/lib/types';
+import type { TimetableEvent } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -43,6 +42,8 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
+import { useTimetable } from '@/hooks/use-timetable';
+import { useTasks } from '@/hooks/use-tasks';
 
 
 const timeSlots = [
@@ -246,16 +247,9 @@ function ScheduleManagerDialog({ events, addCustomEvents, deleteCustomEvent, isL
   )
 }
 
-type TimetableComponentProps = {
-    events: TimetableEvent[];
-    tasks: Task[];
-    setEvents: (events: Omit<TimetableEvent, 'id' | 'userId'>[]) => Promise<void>;
-    addCustomEvents: (events: Omit<TimetableEvent, 'id' | 'userId' | 'type'>[]) => Promise<void>;
-    deleteCustomEvent: (eventId: string) => Promise<void>;
-    clearEvents: (type: 'task' | 'custom' | 'all') => Promise<void>;
-}
-
-export function Timetable({ events, tasks, setEvents, addCustomEvents, deleteCustomEvent, clearEvents }: TimetableComponentProps) {
+export function Timetable() {
+  const { events, setEvents, addCustomEvents, deleteCustomEvent, clearEvents, isLoading: isTimetableLoading } = useTimetable();
+  const { tasks, isLoading: areTasksLoading } = useTasks();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPrefsOpen, setIsPrefsOpen] = useState(false);
@@ -328,6 +322,16 @@ export function Timetable({ events, tasks, setEvents, addCustomEvents, deleteCus
     toast({ title: 'Study blocks cleared from timetable.' });
   }
 
+  const isLoading = isTimetableLoading || areTasksLoading;
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 fade-in">
        <Card>
@@ -340,7 +344,7 @@ export function Timetable({ events, tasks, setEvents, addCustomEvents, deleteCus
                     </CardDescription>
                 </div>
                 <div className="flex flex-wrap gap-2 justify-end">
-                    <ScheduleManagerDialog events={events} addCustomEvents={addCustomEvents} deleteCustomEvent={deleteCustomEvent} isLoading={false} />
+                    <ScheduleManagerDialog events={events} addCustomEvents={addCustomEvents} deleteCustomEvent={deleteCustomEvent} isLoading={isLoading} />
                     <Button variant="outline" onClick={handleClearTasks}>
                         <Trash2 className="mr-2 h-4 w-4" /> Clear Study Blocks
                     </Button>

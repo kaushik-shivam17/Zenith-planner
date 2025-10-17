@@ -41,7 +41,7 @@ export function Signup() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { firestore } = useFirebase();
+  const { firestore, auth } = useFirebase();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -53,8 +53,17 @@ export function Signup() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    if (!auth || !firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Initialization Error',
+        description: 'Firebase is not ready. Please try again in a moment.',
+      });
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const auth = getAuth();
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 

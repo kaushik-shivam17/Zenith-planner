@@ -4,15 +4,16 @@ import React, { useMemo, type ReactNode } from 'react';
 import { FirebaseProvider, useUser } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase';
 import { Loader2 } from 'lucide-react';
-
-interface FirebaseClientProviderProps {
-  children: ReactNode;
-}
+import { usePathname } from 'next/navigation';
 
 function AuthLoadingGate({ children }: { children: ReactNode }) {
   const { isUserLoading } = useUser();
+  const pathname = usePathname();
 
-  if (isUserLoading) {
+  // Show loading screen only on protected routes
+  const isProtectedRoute = !['/login', '/signup'].includes(pathname);
+
+  if (isUserLoading && isProtectedRoute) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="flex items-center gap-2 text-lg font-semibold text-foreground">

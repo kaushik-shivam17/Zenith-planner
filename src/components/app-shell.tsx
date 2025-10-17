@@ -57,8 +57,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   
   const isProtectedRoute = Array.from(protectedAndDataRoutes).some(route => pathname.startsWith(route));
   
-  const { user } = useUser();
-  useAuthGuard(isProtectedRoute);
+  const { user, isUserLoading } = useAuthGuard(isProtectedRoute);
 
   const { toast } = useToast();
   const isActive = (href: string) => pathname === href || (href === '/dashboard' && pathname === '/');
@@ -93,84 +92,86 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </main>
   );
   
-  // The rendering is now gated by FirebaseClientProvider.
-  // The AppShell only renders when it's supposed to, and useAuthGuard handles redirection.
-  if (!user && isProtectedRoute) {
-    return null; // Return null to prevent rendering the shell on protected routes without a user.
+  if (isUserLoading && isProtectedRoute) {
+    return null;
   }
+
+  const shouldShowSidebar = user || !isProtectedRoute;
 
   return (
     <SidebarProvider>
        <div className="flex w-full">
-        <Sidebar>
-          <SidebarHeader>
-            <div className="flex items-center gap-3 p-2">
-              <div className="flex flex-col">
-                <h1 className="text-xl font-bold tracking-tighter font-headline">
-                  Zenith Planner
-                </h1>
-                <p className="text-xs text-muted-foreground">
-                  Your AI-powered assistant
-                </p>
+        {shouldShowSidebar && (
+          <Sidebar>
+            <SidebarHeader>
+              <div className="flex items-center gap-3 p-2">
+                <div className="flex flex-col">
+                  <h1 className="text-xl font-bold tracking-tighter font-headline">
+                    Zenith Planner
+                  </h1>
+                  <p className="text-xs text-muted-foreground">
+                    Your AI-powered assistant
+                  </p>
+                </div>
               </div>
-            </div>
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <Link href={item.href} className="w-full">
+            </SidebarHeader>
+            <SidebarContent>
+              <SidebarMenu>
+                {navItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <Link href={item.href} className="w-full">
+                      <SidebarMenuButton
+                        isActive={isActive(item.href)}
+                        className="w-full"
+                        tooltip={{
+                          children: item.label,
+                        }}
+                      >
+                        <item.icon />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </Link>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarContent>
+            <SidebarFooter className="pt-2">
+              {user ? (
+                <>
+                  <SidebarMenuItem>
+                    <Link href="/profile" className="w-full">
+                      <SidebarMenuButton
+                        isActive={isActive('/profile')}
+                        className="w-full flex items-center gap-2"
+                      >
+                        <UserIcon />
+                        <span>Profile</span>
+                      </SidebarMenuButton>
+                    </Link>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton onClick={handleSignOut} className="w-full">
+                      <LogOut />
+                      <span>Logout</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
+              ) : (
+                <SidebarMenuItem>
+                  <Link href="/login" className="w-full">
                     <SidebarMenuButton
-                      isActive={isActive(item.href)}
+                      isActive={isActive('/login')}
                       className="w-full"
-                      tooltip={{
-                        children: item.label,
-                      }}
                     >
-                      <item.icon />
-                      <span>{item.label}</span>
+                      <LogIn />
+                      <span>Login</span>
                     </SidebarMenuButton>
                   </Link>
                 </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarContent>
-          <SidebarFooter className="pt-2">
-            {user ? (
-              <>
-                <SidebarMenuItem>
-                  <Link href="/profile" className="w-full">
-                    <SidebarMenuButton
-                      isActive={isActive('/profile')}
-                      className="w-full flex items-center gap-2"
-                    >
-                      <UserIcon />
-                      <span>Profile</span>
-                    </SidebarMenuButton>
-                  </Link>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton onClick={handleSignOut} className="w-full">
-                    <LogOut />
-                    <span>Logout</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </>
-            ) : (
-              <SidebarMenuItem>
-                <Link href="/login" className="w-full">
-                  <SidebarMenuButton
-                    isActive={isActive('/login')}
-                    className="w-full"
-                  >
-                    <LogIn />
-                    <span>Login</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            )}
-          </SidebarFooter>
-        </Sidebar>
+              )}
+            </SidebarFooter>
+          </Sidebar>
+        )}
         {mainContent}
       </div>
     </SidebarProvider>

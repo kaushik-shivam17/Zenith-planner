@@ -10,14 +10,19 @@ export function useAuthGuard(isProtectedRoute: boolean) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!isUserLoading) {
-      if (isProtectedRoute && !user) {
-        // If it's a protected route and the user is not logged in, redirect to login
-        router.replace('/login');
-      } else if (user && (pathname === '/login' || pathname === '/signup')) {
-        // If user is logged in and on a login/signup page, redirect to dashboard
-        router.replace('/dashboard');
-      }
+    // Wait until the initial loading is complete
+    if (isUserLoading) {
+      return;
+    }
+
+    const isAuthPage = pathname === '/login' || pathname === '/signup';
+
+    if (isProtectedRoute && !user) {
+      // If it's a protected route and the user is not logged in, redirect to login
+      router.replace('/login');
+    } else if (user && isAuthPage) {
+      // If user is logged in and on a login/signup page, redirect to dashboard
+      router.replace('/dashboard');
     }
   }, [user, isUserLoading, isProtectedRoute, router, pathname]);
 

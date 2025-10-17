@@ -43,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from './ui/textarea';
 
 const timeSlots = [
   '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
@@ -55,6 +56,7 @@ const preferencesSchema = z.object({
   studyTime: z.string().min(1, "Please select your preferred study time."),
   energyLevel: z.string().min(1, "Please select your typical energy level pattern."),
   sessionLength: z.string().min(1, "Please select your preferred session length."),
+  extraInfo: z.string().optional(),
 });
 
 export function Timetable() {
@@ -71,6 +73,7 @@ export function Timetable() {
       studyTime: 'afternoon',
       energyLevel: 'consistent',
       sessionLength: '60-min',
+      extraInfo: '',
     },
   });
 
@@ -158,7 +161,7 @@ export function Timetable() {
                         Generate AI Timetable
                         </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-[425px]">
                         <DialogHeader>
                         <DialogTitle>Personalize Your Timetable</DialogTitle>
                         <DialogDescription>
@@ -221,6 +224,23 @@ export function Timetable() {
                                 <FormMessage />
                                 </FormItem>
                             )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="extraInfo"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Additional Information (Optional)</FormLabel>
+                                  <FormControl>
+                                    <Textarea
+                                      placeholder="e.g., 'I have a big exam for Math on Friday' or 'Don't schedule anything on Saturday evening.'"
+                                      className="resize-none"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
                             />
                             <Button type="submit" className="w-full">
                             Generate My Timetable

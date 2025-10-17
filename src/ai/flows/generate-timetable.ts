@@ -29,6 +29,7 @@ const GenerateTimetableInputSchema = z.object({
     studyTime: z.string().describe("User's preferred study time (e.g., 'morning', 'evening')."),
     energyLevel: z.string().describe("User's energy level pattern (e.g., 'high in morning', 'energized after lunch')."),
     sessionLength: z.string().describe("User's preferred study session length (e.g., 'short 30-min bursts', 'long 90-min blocks')."),
+    extraInfo: z.string().optional().describe("Any additional information or constraints the user wants to provide."),
   }).describe("User's study preferences.")
 });
 export type GenerateTimetableInput = z.infer<typeof GenerateTimetableInputSchema>;
@@ -78,6 +79,9 @@ Here are the user's details:
   - Preferred Study Time: {{{preferences.studyTime}}}
   - Energy Levels: {{{preferences.energyLevel}}}
   - Preferred Session Length: {{{preferences.sessionLength}}}
+  {{#if preferences.extraInfo}}
+  - Additional Information: {{{preferences.extraInfo}}}
+  {{/if}}
 
 Generate a timetable by filling in the 'timetable' array. Ensure that the start and end times are exactly one hour apart and align with the provided time slots (e.g., '9:00 AM' to '10:00 AM'). Do not schedule tasks overlapping with custom events. Prioritize scheduling based on deadlines and user preferences. For example, if the user has high energy in the morning, schedule more demanding tasks then.
 `,

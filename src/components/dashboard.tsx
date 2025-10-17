@@ -1,12 +1,8 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
-import type { Task } from '@/lib/types';
-import { Clock } from '@/components/clock';
-import { Calendar } from '@/components/ui/calendar';
 import {
   Dialog,
   DialogContent,
@@ -18,19 +14,15 @@ import { TaskForm } from '@/components/task-form';
 import { useTasks } from '@/hooks/use-tasks';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from './ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import type { Task } from '@/lib/types';
 
-export function Dashboard() {
-  const [date, setDate] = useState<Date | undefined>(undefined);
-  const [selectedDateForTask, setSelectedDateForTask] = useState<Date | undefined>(undefined);
+function InteractiveDateCard() {
+  const [date] = useState(new Date());
+  const [selectedDateForTask, setSelectedDateForTask] = useState<Date | undefined>(new Date());
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const { addTask } = useTasks();
-
-  useEffect(() => {
-    // Set date only on the client-side to avoid hydration errors
-    setDate(new Date());
-    setSelectedDateForTask(new Date());
-  }, []);
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
     if (selectedDate) {
@@ -46,11 +38,7 @@ export function Dashboard() {
   };
 
   return (
-    <div className="space-y-8 fade-in">
-      <div className="flex flex-col items-center justify-center space-y-4">
-        <Clock />
-      </div>
-
+    <>
       <Card
         className="cursor-pointer hover:bg-secondary/50 transition-colors relative group"
       >
@@ -71,26 +59,16 @@ export function Dashboard() {
           onClick={() => handleDateSelect(new Date())}
         >
           <div className="text-xl md:text-2xl font-semibold text-muted-foreground">
-            {date ? format(date, 'eeee') : 'Loading...'}
+            {format(date, 'eeee')}
           </div>
           <div className="text-6xl md:text-7xl font-bold text-primary">
-            {date ? format(date, 'd') : '--'}
+            {format(date, 'd')}
           </div>
           <div className="text-xl md:text-2xl font-semibold text-muted-foreground">
-            {date ? format(date, 'MMMM yyyy') : ''}
+            {format(date, 'MMMM yyyy')}
           </div>
         </CardContent>
       </Card>
-      
-      <div className="flex flex-col items-center justify-center space-y-4 pt-4">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-center">
-          Welcome to Zenith Planner
-        </h1>
-        <p className="text-muted-foreground text-center max-w-md">
-          Select a date on the calendar to quickly add a new task or choose a tool from the sidebar.
-        </p>
-        <p className="text-sm text-muted-foreground mt-2">✨ Created By Shivam Kauhik ✨</p>
-      </div>
 
       <Dialog open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
         <DialogContent className="sm:max-w-auto p-0 w-min">
@@ -99,13 +77,10 @@ export function Dashboard() {
               selected={selectedDateForTask}
               onSelect={handleDateSelect}
               className="p-0"
-              classNames={{
-                months: "p-4"
-              }}
+              classNames={{ months: "p-4" }}
             />
         </DialogContent>
       </Dialog>
-
 
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent className="sm:max-w-[425px]">
@@ -119,6 +94,31 @@ export function Dashboard() {
           <TaskForm onAddTask={handleAddTask} selectedDate={selectedDateForTask} />
         </DialogContent>
       </Dialog>
+    </>
+  );
+}
+
+
+import { Clock } from '@/components/clock';
+
+export function Dashboard() {
+  return (
+    <div className="space-y-8 fade-in">
+      <div className="flex flex-col items-center justify-center space-y-4">
+        <Clock />
+      </div>
+
+      <InteractiveDateCard />
+      
+      <div className="flex flex-col items-center justify-center space-y-4 pt-4">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-center">
+          Welcome to Zenith Planner
+        </h1>
+        <p className="text-muted-foreground text-center max-w-md">
+          Select a date on the calendar to quickly add a new task or choose a tool from the sidebar.
+        </p>
+         <p className="text-sm text-muted-foreground mt-2">✨ Created By Shivam Kauhik ✨</p>
+      </div>
     </div>
   );
 }

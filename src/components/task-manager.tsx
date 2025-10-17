@@ -1,9 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { PlusCircle } from 'lucide-react';
-import type { Timestamp } from 'firebase/firestore';
-
+import { useState, useContext } from 'react';
+import { Loader2, PlusCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -23,35 +21,28 @@ import {
 } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/task-form';
 import { TaskList } from '@/components/task-list';
+import type { Task } from '@/lib/types';
+import { DataContext } from '@/context/data-provider';
 
-type Task = {
-  id: string;
-  title: string;
-  description?: string;
-  deadline: Date; 
-  completed: boolean;
-  subtasks?: string[];
-};
 
-type TaskManagerProps = {
-  tasks: Task[];
-  onAddTask: (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => Promise<void>;
-  onUpdateTask: (updatedTask: Task) => Promise<void>;
-  onToggleTask: (taskId: string) => Promise<void>;
-};
-
-export function TaskManager({
-  tasks,
-  onAddTask,
-  onUpdateTask,
-  onToggleTask,
-}: TaskManagerProps) {
+export function TaskManager() {
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const { tasks, addTask, updateTask, toggleTaskCompletion, isLoading } = useContext(DataContext);
+
 
   const handleTaskAdded = async (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => {
     await onAddTask(taskData);
     setIsAddOpen(false);
   };
+  
+    if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
 
   return (
     <Card>
@@ -77,15 +68,18 @@ export function TaskManager({
                 you're done.
               </DialogDescription>
             </DialogHeader>
-            <TaskForm onAddTask={handleTaskAdded} />
+            <TaskForm onAddTask={(data) => {
+                addTask(data);
+                setIsAddOpen(false);
+            }} />
           </DialogContent>
         </Dialog>
       </CardHeader>
       <CardContent>
         <TaskList
           tasks={tasks}
-          onUpdateTask={onUpdateTask}
-          onToggleTask={onToggleTask}
+          onUpdateTask={(updatedTask) => updateTask(updatedTask.id, updatedTask)}
+          onToggleTask={toggleTaskCompletion}
         />
       </CardContent>
     </Card>

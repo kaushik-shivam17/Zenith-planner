@@ -27,9 +27,10 @@ import {
   SidebarProvider,
 } from '@/components/ui/sidebar';
 import { Header } from '@/components/header';
-import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
+import { DataProvider } from '@/context/data-provider';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -40,16 +41,12 @@ const navItems = [
   { href: '/fitness', label: 'Fitness', icon: HeartPulse },
 ];
 
-const protectedRoutes = ['/dashboard', '/tasks', '/missions', '/timetable', '/focus', '/fitness', '/profile', '/roadmap'];
-
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route)) || pathname === '/';
-  
-  useAuthGuard(isProtectedRoute);
-  const { user } = useUser();
+
+  const isAuthPage = pathname === '/login' || pathname === '/signup';
+  const { user } = useAuthGuard(!isAuthPage);
 
   const { toast } = useToast();
   const isActive = (href: string) => pathname === href || (href === '/dashboard' && pathname === '/');
@@ -83,6 +80,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
     </main>
   );
+
+  const renderContent = () => {
+    if (isAuthPage || !user) {
+        return mainContent;
+    }
+    return <DataProvider>{mainContent}</DataProvider>;
+  };
+  
 
   return (
     <SidebarProvider>
@@ -156,7 +161,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               )}
             </SidebarFooter>
           </Sidebar>
-        {mainContent}
+          {renderContent()}
       </div>
     </SidebarProvider>
   );

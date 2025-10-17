@@ -6,7 +6,6 @@ import { AppShell } from '@/components/app-shell';
 import { FirebaseClientProvider } from '@/firebase';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { DataProvider } from '@/context/data-provider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -28,9 +27,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} dark`}>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
-          <DataProvider>
-            <AppShell>{children}</AppShell>
-          </DataProvider>
+          <AppShell>{children}</AppShell>
         </FirebaseClientProvider>
         <Toaster />
         <Analytics />

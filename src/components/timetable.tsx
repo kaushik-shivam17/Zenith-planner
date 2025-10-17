@@ -15,11 +15,9 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useTasks } from '@/hooks/use-tasks';
 import { generateTimetableAction } from '@/app/actions';
 import { ScrollArea } from './ui/scroll-area';
-import { useTimetable } from '@/hooks/use-timetable';
-import type { TimetableEvent } from '@/lib/types';
+import type { TimetableEvent, Task } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -79,9 +77,14 @@ const eventSchema = z.object({
     }
   );
 
+type ScheduleManagerDialogProps = {
+    events: TimetableEvent[];
+    addCustomEvents: (events: Omit<TimetableEvent, 'id' | 'userId' | 'type'>[]) => Promise<void>;
+    deleteCustomEvent: (eventId: string) => Promise<void>;
+    isLoading: boolean;
+}
 
-function ScheduleManagerDialog() {
-  const { events, addCustomEvents, deleteCustomEvent, isLoading } = useTimetable();
+function ScheduleManagerDialog({ events, addCustomEvents, deleteCustomEvent, isLoading}: ScheduleManagerDialogProps) {
   const { toast } = useToast();
   const [isAddOpen, setIsAddOpen] = useState(false);
 
@@ -243,12 +246,17 @@ function ScheduleManagerDialog() {
   )
 }
 
+type TimetableComponentProps = {
+    events: TimetableEvent[];
+    tasks: Task[];
+    setEvents: (events: Omit<TimetableEvent, 'id' | 'userId'>[]) => Promise<void>;
+    addCustomEvents: (events: Omit<TimetableEvent, 'id' | 'userId' | 'type'>[]) => Promise<void>;
+    deleteCustomEvent: (eventId: string) => Promise<void>;
+    clearEvents: (type: 'task' | 'custom' | 'all') => Promise<void>;
+}
 
-export function Timetable() {
-  const router = useRouter();
-  const { tasks } = useTasks();
+export function Timetable({ events, tasks, setEvents, addCustomEvents, deleteCustomEvent, clearEvents }: TimetableComponentProps) {
   const { toast } = useToast();
-  const { events, setEvents, isLoading: isTimetableLoading, clearEvents } = useTimetable();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPrefsOpen, setIsPrefsOpen] = useState(false);
 
@@ -332,7 +340,7 @@ export function Timetable() {
                     </CardDescription>
                 </div>
                 <div className="flex flex-wrap gap-2 justify-end">
-                    <ScheduleManagerDialog />
+                    <ScheduleManagerDialog events={events} addCustomEvents={addCustomEvents} deleteCustomEvent={deleteCustomEvent} isLoading={false} />
                     <Button variant="outline" onClick={handleClearTasks}>
                         <Trash2 className="mr-2 h-4 w-4" /> Clear Study Blocks
                     </Button>
@@ -436,51 +444,45 @@ export function Timetable() {
         </CardHeader>
         <CardContent>
           <ScrollArea className="w-full h-[600px]">
-            {isTimetableLoading ? (
-               <div className="flex items-center justify-center h-full">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
-               </div>
-            ) : (
-              <div className="grid grid-cols-[auto,repeat(7,1fr)] grid-rows-[auto,repeat(13,1fr)] gap-px bg-border relative">
-                {/* Time slots column */}
-                {timeSlots.map((time, index) => (
-                  <div key={time} className="row-start-2 row-span-1 p-2 text-xs text-center bg-card text-muted-foreground" style={{ gridRow: `${index + 2}` }}>
-                    {time}
-                  </div>
-                ))}
-                {/* Day headers */}
-                {days.map((day, index) => (
-                  <div key={day} className="col-start-2 col-span-1 p-2 text-sm font-semibold text-center bg-card" style={{ gridColumn: `${index + 2}` }}>
-                    {day}
-                  </div>
-                ))}
-                
-                {/* Grid cells */}
-                {Array.from({ length: timeSlots.length * days.length }).map((_, index) => {
-                  const dayIndex = index % days.length;
-                  const timeIndex = Math.floor(index / days.length);
-                  return (
-                    <div
-                      key={`${dayIndex}-${timeIndex}`}
-                      className="bg-card"
-                      style={{ gridColumn: dayIndex + 2, gridRow: timeIndex + 2 }}
-                    />
-                  );
-                })}
-                
-                {/* Events */}
-                {events.map((event, index) => (
+            <div className="grid grid-cols-[auto,repeat(7,1fr)] grid-rows-[auto,repeat(13,1fr)] gap-px bg-border relative">
+              {/* Time slots column */}
+              {timeSlots.map((time, index) => (
+                <div key={time} className="row-start-2 row-span-1 p-2 text-xs text-center bg-card text-muted-foreground" style={{ gridRow: `${index + 2}` }}>
+                  {time}
+                </div>
+              ))}
+              {/* Day headers */}
+              {days.map((day, index) => (
+                <div key={day} className="col-start-2 col-span-1 p-2 text-sm font-semibold text-center bg-card" style={{ gridColumn: `${index + 2}` }}>
+                  {day}
+                </div>
+              ))}
+              
+              {/* Grid cells */}
+              {Array.from({ length: timeSlots.length * days.length }).map((_, index) => {
+                const dayIndex = index % days.length;
+                const timeIndex = Math.floor(index / days.length);
+                return (
                   <div
-                    key={event.id || index}
-                    style={getGridPosition(event)}
-                    className={`p-2 rounded-lg text-white text-xs overflow-hidden flex flex-col ${event.type === 'custom' ? 'bg-secondary' : 'bg-primary'}`}
-                  >
-                    <span className="font-bold">{event.title}</span>
-                    <span className="opacity-80">{event.startTime} - {event.endTime}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+                    key={`${dayIndex}-${timeIndex}`}
+                    className="bg-card"
+                    style={{ gridColumn: dayIndex + 2, gridRow: timeIndex + 2 }}
+                  />
+                );
+              })}
+              
+              {/* Events */}
+              {events.map((event, index) => (
+                <div
+                  key={event.id || index}
+                  style={getGridPosition(event)}
+                  className={`p-2 rounded-lg text-white text-xs overflow-hidden flex flex-col ${event.type === 'custom' ? 'bg-secondary' : 'bg-primary'}`}
+                >
+                  <span className="font-bold">{event.title}</span>
+                  <span className="opacity-80">{event.startTime} - {event.endTime}</span>
+                </div>
+              ))}
+            </div>
           </ScrollArea>
         </CardContent>
       </Card>

@@ -1,13 +1,8 @@
 'use client';
 
 import {
-  createContext,
-  useContext,
-  ReactNode,
   useCallback,
   useMemo,
-  useState,
-  useEffect,
 } from 'react';
 import type { Task } from '@/lib/types';
 import {
@@ -26,7 +21,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 
-interface TasksContextType {
+interface TasksHook {
   tasks: Task[];
   getTaskById: (taskId: string) => Task | undefined;
   addTask: (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => void;
@@ -35,14 +30,11 @@ interface TasksContextType {
   isLoading: boolean;
 }
 
-const TasksContext = createContext<TasksContextType | undefined>(undefined);
-
-export function TasksProvider({ children }: { children: ReactNode }) {
+export function useTasks(): TasksHook {
   const { user, firestore, isUserLoading, areServicesAvailable } = useFirebase();
 
   const tasksCollectionRef = useMemoFirebase(
     () => {
-        // Do not create a reference until services are available and user is loaded and exists
         if (!areServicesAvailable || isUserLoading || !user || !firestore) return null;
         return collection(firestore, 'users', user.uid, 'tasks');
     },
@@ -57,7 +49,6 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     if (!rawTasks) return [];
     return rawTasks.map((task) => ({
       ...task,
-      // Safely convert Firestore Timestamp to JS Date for client-side use
       deadline: task.deadline instanceof Timestamp ? task.deadline.toDate() : new Date(),
     })).sort((a, b) => a.deadline.getTime() - b.deadline.getTime());
   }, [rawTasks]);
@@ -67,7 +58,6 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     (taskId: string) => {
       const task = tasks.find((task) => task.id === taskId);
       if (!task) return undefined;
-      // Return a version of the task with a JS Date object
       return {
         ...task,
         deadline: task.deadline instanceof Timestamp ? task.deadline.toDate() : task.deadline,
@@ -161,15 +151,5 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     isLoading,
   };
 
-  return (
-    <TasksContext.Provider value={value}>{children}</TasksContext.Provider>
-  );
-}
-
-export function useTasks() {
-  const context = useContext(TasksContext);
-  if (context === undefined) {
-    throw new Error('useTasks must be used within a TasksProvider');
-  }
-  return context;
+  return value;
 }

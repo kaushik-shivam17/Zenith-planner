@@ -1,13 +1,8 @@
 'use client';
 
 import {
-  createContext,
-  useContext,
-  ReactNode,
   useCallback,
   useMemo,
-  useState,
-  useEffect,
 } from 'react';
 import type { Mission } from '@/lib/types';
 import {
@@ -19,7 +14,7 @@ import {
 } from '@/firebase';
 import { collection, doc, serverTimestamp, query, where, getDocs, writeBatch, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 
-interface MissionsContextType {
+interface MissionsHook {
   missions: Mission[];
   getMissionById: (missionId: string) => Mission | undefined;
   addMission: (missionData: Pick<Mission, 'title'>) => void;
@@ -28,14 +23,11 @@ interface MissionsContextType {
   isLoading: boolean;
 }
 
-const MissionsContext = createContext<MissionsContextType | undefined>(undefined);
-
-export function MissionsProvider({ children }: { children: ReactNode }) {
+export function useMissions(): MissionsHook {
   const { user, firestore, isUserLoading, areServicesAvailable } = useFirebase();
 
   const missionsCollectionRef = useMemoFirebase(
     () => {
-      // Do not create a reference until services are available and user is loaded and exists
       if (!areServicesAvailable || isUserLoading || !user || !firestore) return null;
       return collection(firestore, 'users', user.uid, 'missions');
     },
@@ -147,10 +139,9 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
     [user, firestore]
   );
   
-  // The overall loading state depends on both auth and Firestore loading.
   const isLoading = isUserLoading || (!!user && isMissionsLoading);
 
-  const value: MissionsContextType = {
+  return {
     missions: missions || [],
     getMissionById,
     addMission,
@@ -158,16 +149,4 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
     deleteMission,
     isLoading,
   };
-
-  return (
-    <MissionsContext.Provider value={value}>{children}</MissionsContext.Provider>
-  );
-}
-
-export function useMissions() {
-  const context = useContext(MissionsContext);
-  if (context === undefined) {
-    throw new Error('useMissions must be used within a MissionsProvider');
-  }
-  return context;
 }

@@ -1,9 +1,6 @@
 'use client';
 
 import {
-  createContext,
-  useContext,
-  ReactNode,
   useCallback,
   useMemo,
 } from 'react';
@@ -17,7 +14,7 @@ import {
 } from '@/firebase';
 import { collection, writeBatch, doc, addDoc, deleteDoc, getDocs } from 'firebase/firestore';
 
-interface TimetableContextType {
+interface TimetableHook {
   events: TimetableEvent[];
   setEvents: (events: Omit<TimetableEvent, 'id' | 'userId'>[]) => Promise<void>;
   addCustomEvents: (events: Omit<TimetableEvent, 'id' | 'userId' | 'type'>[]) => Promise<void>;
@@ -26,14 +23,11 @@ interface TimetableContextType {
   isLoading: boolean;
 }
 
-const TimetableContext = createContext<TimetableContextType | undefined>(undefined);
-
-export function TimetableProvider({ children }: { children: ReactNode }) {
+export function useTimetable(): TimetableHook {
   const { user, firestore, isUserLoading, areServicesAvailable } = useFirebase();
 
   const timetableCollectionRef = useMemoFirebase(
     () => {
-        // Do not create a reference until services are available and user is loaded and exists
         if (!areServicesAvailable || isUserLoading || !user || !firestore) return null;
         return collection(firestore, 'users', user.uid, 'timetableEvents');
     },
@@ -130,7 +124,7 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
 
   const isLoading = isUserLoading || (!!user && areEventsLoading);
 
-  const value: TimetableContextType = {
+  return {
     events: eventsData || [],
     setEvents,
     addCustomEvents,
@@ -138,16 +132,4 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
     clearEvents,
     isLoading,
   };
-
-  return (
-    <TimetableContext.Provider value={value}>{children}</TimetableContext.Provider>
-  );
-}
-
-export function useTimetable() {
-  const context = useContext(TimetableContext);
-  if (context === undefined) {
-    throw new Error('useTimetable must be used within a TimetableProvider');
-  }
-  return context;
 }

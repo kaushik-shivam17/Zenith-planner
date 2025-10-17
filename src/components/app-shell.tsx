@@ -150,12 +150,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       isActive={isActive('/profile')}
                       className="w-full flex items-center gap-2"
                     >
-                      <Avatar className="w-6 h-6">
-                        <AvatarImage src={user.photoURL || undefined} />
-                        <AvatarFallback>
-                          <UserIcon className="w-4 h-4" />
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserIcon />
                       <span>Profile</span>
                     </SidebarMenuButton>
                   </Link>

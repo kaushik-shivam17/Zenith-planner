@@ -4,9 +4,9 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { useFirebase, setDocumentNonBlocking, useMemoFirebase } from '@/firebase';
+import { useFirebase, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { doc, serverTimestamp } from 'firebase/firestore';
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { useDoc } from '@/firebase/firestore/use-doc';
 
@@ -28,6 +28,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Loader2, User } from 'lucide-react';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -85,7 +87,7 @@ export function Profile() {
   }, [userProfile, user, form]);
 
   async function onSubmit(values: UserProfile) {
-    if (!user) {
+    if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Not authenticated' });
       return;
     }
@@ -100,14 +102,27 @@ export function Profile() {
       id: user.uid,
       updatedAt: serverTimestamp(),
     };
-    
-    setDocumentNonBlocking(doc(firestore, 'users', user.uid), dataToSave, { merge: true });
 
-    toast({
-      title: 'Profile Updated',
-      description: 'Your changes have been saved.',
-    });
-    setIsSubmitting(false);
+    const docRef = doc(firestore, 'users', user.uid);
+    
+    try {
+      await setDoc(docRef, dataToSave, { merge: true });
+      toast({
+        title: 'Profile Updated',
+        description: 'Your changes have been saved.',
+      });
+    } catch (error) {
+       errorEmitter.emit(
+        'permission-error',
+        new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'write',
+          requestResourceData: dataToSave,
+        })
+      )
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   const handleCalculateBmi = () => {

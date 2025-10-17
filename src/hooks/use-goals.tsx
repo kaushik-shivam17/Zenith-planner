@@ -11,9 +11,6 @@ import type { Goal } from '@/lib/types';
 import {
   useFirebase,
   useCollection,
-  addDocumentNonBlocking,
-  updateDocumentNonBlocking,
-  deleteDocumentNonBlocking,
   useMemoFirebase,
 } from '@/firebase';
 import { collection, doc, serverTimestamp, runTransaction, increment } from 'firebase/firestore';
@@ -45,9 +42,9 @@ export function useGoals(missionId: string) {
     async (goalData: Pick<Goal, 'title' | 'description'>) => {
       if (!user || !firestore) return;
       
-      const goalsCollectionRef = collection(firestore, 'users', user.uid, 'missions', missionId, 'goals');
+      const goalsColRef = collection(firestore, 'users', user.uid, 'missions', missionId, 'goals');
       const missionDocRef = doc(firestore, 'users', user.uid, 'missions', missionId);
-      const newGoalRef = doc(goalsCollectionRef);
+      const newGoalRef = doc(goalsColRef);
 
       const newGoal = {
         ...goalData,
@@ -75,8 +72,7 @@ export function useGoals(missionId: string) {
       if (!user || !firestore || !goals) return;
       const goal = goals.find((g) => g.id === goalId);
       if (goal) {
-        const goalsCollectionRef = collection(firestore, 'users', user.uid, 'missions', missionId, 'goals');
-        const goalDocRef = doc(goalsCollectionRef, goalId);
+        const goalDocRef = doc(firestore, 'users', user.uid, 'missions', missionId, 'goals', goalId);
         const missionDocRef = doc(firestore, 'users', user.uid, 'missions', missionId);
         
         try {
@@ -99,8 +95,7 @@ export function useGoals(missionId: string) {
       const goalToDelete = goals.find(g => g.id === goalId);
       if (!goalToDelete) return;
 
-      const goalsCollectionRef = collection(firestore, 'users', user.uid, 'missions', missionId, 'goals');
-      const goalDocRef = doc(goalsCollectionRef, goalId);
+      const goalDocRef = doc(firestore, 'users', user.uid, 'missions', missionId, 'goals', goalId);
       const missionDocRef = doc(firestore, 'users', user.uid, 'missions', missionId);
 
       try {

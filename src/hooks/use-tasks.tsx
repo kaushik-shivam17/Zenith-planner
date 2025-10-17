@@ -13,11 +13,18 @@ import type { Task } from '@/lib/types';
 import {
   useFirebase,
   useCollection,
-  addDocument,
-  updateDocumentNonBlocking,
   useMemoFirebase,
+  errorEmitter,
+  FirestorePermissionError,
 } from '@/firebase';
-import { collection, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  serverTimestamp,
+  Timestamp,
+  addDoc,
+  updateDoc,
+} from 'firebase/firestore';
 
 interface TasksContextType {
   tasks: Task[];
@@ -79,13 +86,24 @@ export function TasksProvider({ children }: { children: ReactNode }) {
         createdAt: serverTimestamp(),
         deadline: Timestamp.fromDate(taskData.deadline), // Convert JS Date to Firestore Timestamp
       };
-      await addDocument(tasksCollectionRef, newTask);
+      try {
+        await addDoc(tasksCollectionRef, newTask);
+      } catch (error) {
+        errorEmitter.emit(
+          'permission-error',
+          new FirestorePermissionError({
+            path: tasksCollectionRef.path,
+            operation: 'create',
+            requestResourceData: newTask,
+          })
+        );
+      }
     },
     [tasksCollectionRef, user]
   );
 
   const updateTask = useCallback(
-    (taskId: string, updates: Partial<Omit<Task, 'id' | 'userId'>>) => {
+    async (taskId: string, updates: Partial<Omit<Task, 'id' | 'userId'>>) => {
       if (!tasksCollectionRef) return;
       const taskDocRef = doc(tasksCollectionRef, taskId);
       
@@ -94,7 +112,18 @@ export function TasksProvider({ children }: { children: ReactNode }) {
         (updatesForFirestore as any).deadline = Timestamp.fromDate(updates.deadline);
       }
 
-      updateDocumentNonBlocking(taskDocRef, updatesForFirestore);
+      try {
+        await updateDoc(taskDocRef, updatesForFirestore);
+      } catch (error) {
+        errorEmitter.emit(
+          'permission-error',
+          new FirestorePermissionError({
+            path: taskDocRef.path,
+            operation: 'update',
+            requestResourceData: updatesForFirestore,
+          })
+        );
+      }
     },
     [tasksCollectionRef]
   );
@@ -105,7 +134,17 @@ export function TasksProvider({ children }: { children: ReactNode }) {
       const task = tasks.find((t) => t.id === taskId);
       if (task) {
         const taskDocRef = doc(tasksCollectionRef, taskId);
-        updateDocumentNonBlocking(taskDocRef, { completed: !task.completed });
+        const newCompletedStatus = !task.completed;
+        updateDoc(taskDocRef, { completed: newCompletedStatus }).catch((error) => {
+          errorEmitter.emit(
+            'permission-error',
+            new FirestorePermissionError({
+              path: taskDocRef.path,
+              operation: 'update',
+              requestResourceData: { completed: newCompletedStatus },
+            })
+          );
+        });
       }
     },
     [tasksCollectionRef, tasks]

@@ -12,10 +12,10 @@ import {
   useFirebase,
   useCollection,
   useMemoFirebase,
-  addDocumentNonBlocking,
-  deleteDocumentNonBlocking,
+  errorEmitter,
+  FirestorePermissionError,
 } from '@/firebase';
-import { collection, writeBatch, doc } from 'firebase/firestore';
+import { collection, writeBatch, doc, addDoc } from 'firebase/firestore';
 
 interface TimetableContextType {
   events: TimetableEvent[];
@@ -45,29 +45,46 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
       if (!timetableCollectionRef || !user || !firestore) return;
       const batch = writeBatch(firestore);
       
-      // Delete all existing events first. This is simpler than diffing.
-      const snapshot = await timetableCollectionRef.get();
-      snapshot.docs.forEach(doc => {
-        batch.delete(doc.ref);
-      });
+      try {
+        // Delete all existing events first. This is simpler than diffing.
+        const snapshot = await timetableCollectionRef.get();
+        snapshot.docs.forEach(doc => {
+          batch.delete(doc.ref);
+        });
 
-      // Add new events
-      newEvents.forEach(event => {
-        const newEventRef = doc(timetableCollectionRef);
-        const eventWithUser = { ...event, id: newEventRef.id, userId: user.uid };
-        batch.set(newEventRef, eventWithUser);
-      });
-      
-      await batch.commit();
+        // Add new events
+        newEvents.forEach(event => {
+          const newEventRef = doc(timetableCollectionRef);
+          const eventWithUser = { ...event, id: newEventRef.id, userId: user.uid };
+          batch.set(newEventRef, eventWithUser);
+        });
+        
+        await batch.commit();
+      } catch (error) {
+        console.error('Error setting events: ', error);
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: timetableCollectionRef.path,
+          operation: 'write', // This is a batch write, so 'write' is a general term
+        }));
+      }
     }, [timetableCollectionRef, user, firestore]);
 
   const addCustomEvents = useCallback(async (customEvents: Omit<TimetableEvent, 'id' | 'userId' | 'type'>[]) => {
       if (!timetableCollectionRef || !user) return;
       
-      customEvents.forEach(event => {
+      for (const event of customEvents) {
         const eventWithUser = { ...event, userId: user.uid, type: 'custom' as 'custom' };
-        addDocumentNonBlocking(timetableCollectionRef, eventWithUser);
-      });
+        try {
+          await addDoc(timetableCollectionRef, eventWithUser);
+        } catch (error) {
+          console.error('Error adding custom event:', error);
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: timetableCollectionRef.path,
+            operation: 'create',
+            requestResourceData: eventWithUser,
+          }));
+        }
+      }
       
   }, [timetableCollectionRef, user]);
 
@@ -83,7 +100,15 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
         }
       });
       
-      await batch.commit();
+      try {
+        await batch.commit();
+      } catch (error) {
+         console.error('Error clearing events: ', error);
+         errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: timetableCollectionRef.path,
+          operation: 'delete',
+        }));
+      }
     }, [timetableCollectionRef, eventsData, firestore]);
 
 

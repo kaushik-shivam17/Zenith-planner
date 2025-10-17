@@ -13,12 +13,11 @@ import type { Mission } from '@/lib/types';
 import {
   useFirebase,
   useCollection,
-  addDocumentNonBlocking,
-  updateDocumentNonBlocking,
-  deleteDocumentNonBlocking,
   useMemoFirebase,
+  errorEmitter,
+  FirestorePermissionError,
 } from '@/firebase';
-import { collection, doc, serverTimestamp, query, where, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, query, where, getDocs, writeBatch, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 interface MissionsContextType {
   missions: Mission[];
@@ -66,7 +65,7 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
   );
 
   const addMission = useCallback(
-    (missionData: Pick<Mission, 'title'>) => {
+    async (missionData: Pick<Mission, 'title'>) => {
       if (!missionsCollectionRef || !user) return;
       const newMission = {
         ...missionData,
@@ -76,16 +75,38 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
         totalGoals: 0,
         completedGoals: 0,
       };
-      addDocumentNonBlocking(missionsCollectionRef, newMission);
+      try {
+        await addDoc(missionsCollectionRef, newMission);
+      } catch (error) {
+         errorEmitter.emit(
+          'permission-error',
+          new FirestorePermissionError({
+            path: missionsCollectionRef.path,
+            operation: 'create',
+            requestResourceData: newMission,
+          })
+        );
+      }
     },
     [missionsCollectionRef, user]
   );
   
   const updateMission = useCallback(
-    (missionId: string, updates: Partial<Omit<Mission, 'id' | 'userId'>>) => {
+    async (missionId: string, updates: Partial<Omit<Mission, 'id' | 'userId'>>) => {
         if (!missionsCollectionRef) return;
         const missionDocRef = doc(missionsCollectionRef, missionId);
-        updateDocumentNonBlocking(missionDocRef, updates);
+        try {
+          await updateDoc(missionDocRef, updates);
+        } catch(error) {
+          errorEmitter.emit(
+            'permission-error',
+            new FirestorePermissionError({
+              path: missionDocRef.path,
+              operation: 'update',
+              requestResourceData: updates,
+            })
+          );
+        }
     },
     [missionsCollectionRef]
   );
@@ -97,22 +118,31 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
       
       const batch = writeBatch(firestore);
       
-      // Get a reference to the missions collection for the current user
       const userMissionsCollectionRef = collection(firestore, 'users', user.uid, 'missions');
       
       // Delete goals from the sub-collection
       const goalsSubCollectionRef = collection(userMissionsCollectionRef, missionId, 'goals');
-      const goalsSubSnapshot = await getDocs(goalsSubCollectionRef);
-      goalsSubSnapshot.forEach(goalDoc => {
-        batch.delete(goalDoc.ref);
-      });
+      try {
+        const goalsSubSnapshot = await getDocs(goalsSubCollectionRef);
+        goalsSubSnapshot.forEach(goalDoc => {
+          batch.delete(goalDoc.ref);
+        });
       
-      // Delete the mission document itself
-      const missionDocRef = doc(userMissionsCollectionRef, missionId);
-      batch.delete(missionDocRef);
+        // Delete the mission document itself
+        const missionDocRef = doc(userMissionsCollectionRef, missionId);
+        batch.delete(missionDocRef);
 
-      // Commit the batch
-      await batch.commit();
+        await batch.commit();
+      } catch (error) {
+        // A more specific error would be better, but we don't know which operation failed.
+         errorEmitter.emit(
+            'permission-error',
+            new FirestorePermissionError({
+              path: goalsSubCollectionRef.path, // or missionDocRef.path
+              operation: 'delete',
+            })
+        );
+      }
     },
     [user, firestore]
   );

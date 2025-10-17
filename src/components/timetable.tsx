@@ -1,9 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { BrainCircuit, Loader2, Plus, Trash2, Eye } from 'lucide-react';
-import { useForm, useFieldArray } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { BrainCircuit, Loader2, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -13,27 +10,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-} from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { useTasks } from '@/hooks/use-tasks';
 import { generateTimetableAction } from '@/app/actions';
 import { ScrollArea } from './ui/scroll-area';
 import { useTimetable } from '@/hooks/use-timetable';
 import type { TimetableEvent } from '@/lib/types';
+import { useRouter } from 'next/navigation';
 
 
 const timeSlots = [
@@ -43,47 +26,13 @@ const timeSlots = [
 ];
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-const formSchema = z.object({
-  customEvents: z.array(z.object({
-    title: z.string().min(1),
-    day: z.string().min(1),
-    startTime: z.string().min(1),
-    endTime: z.string().min(1),
-  })).refine(
-    (events) => {
-      for (const event of events) {
-        const startIndex = timeSlots.indexOf(event.startTime);
-        const endIndex = timeSlots.indexOf(event.endTime);
-        if (startIndex !== -1 && endIndex !== -1 && startIndex >= endIndex) {
-          return false;
-        }
-      }
-      return true;
-    },
-    {
-      message: 'End time must be after start time for all events.',
-    }
-  ),
-});
-
 
 export function Timetable() {
+  const router = useRouter();
   const { tasks } = useTasks();
   const { toast } = useToast();
-  const { events, setEvents, addCustomEvents, clearEvents, isLoading: isTimetableLoading } = useTimetable();
+  const { events, setEvents, isLoading: isTimetableLoading, clearEvents } = useTimetable();
   const [isGenerating, setIsGenerating] = useState(false);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      customEvents: [],
-    },
-  });
-  
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: 'customEvents',
-  });
 
   const getGridPosition = (event: TimetableEvent) => {
     const dayIndex = days.indexOf(event.day);
@@ -99,27 +48,6 @@ export function Timetable() {
       gridRowStart: startTimeIndex + 2,
       gridRowEnd: endTimeIndex + 2,
     };
-  };
-  
-  const handlePreviewCustomEvents = async () => {
-    const customEventValues = form.getValues('customEvents');
-    if (customEventValues.length === 0) {
-      toast({
-        variant: 'destructive',
-        title: 'No events to add',
-        description: 'Please add at least one custom event before previewing.',
-      });
-      return;
-    }
-    
-    await clearEvents('custom');
-    await addCustomEvents(customEventValues);
-    
-    toast({
-      title: 'Timetable Updated',
-      description: 'Your custom events have been added to the timetable.',
-    });
-    form.reset({ customEvents: [] });
   };
 
   const handleGenerateTimetable = async () => {
@@ -139,7 +67,14 @@ export function Timetable() {
     const result = await generateTimetableAction({ tasks, customEvents });
     if (result.success && result.data) {
       const taskEvents = result.data.timetable.map(item => ({...item, type: 'task' as 'task'}));
-      await setEvents(taskEvents);
+      
+      // We want to replace only the task events, not the custom ones
+      const customEventsToKeep = events.filter(e => e.type === 'custom');
+      const newEventList = [...customEventsToKeep, ...taskEvents];
+      
+      // The setEvents function in the hook should be able to handle this logic
+      await setEvents(newEventList);
+
       toast({
         title: 'Timetable Generated',
         description: 'Your AI-powered timetable is ready.',
@@ -153,113 +88,27 @@ export function Timetable() {
     }
     setIsGenerating(false);
   };
+  
+  const handleClearTasks = () => {
+    const customEvents = events.filter(e => e.type === 'custom');
+    setEvents(customEvents); // set events to only be custom events
+    toast({ title: 'Study blocks cleared from timetable.' });
+  }
 
   return (
     <div className="space-y-6 fade-in">
-      <Card>
-        <CardHeader>
-          <CardTitle>Custom Schedule</CardTitle>
-          <CardDescription>Add your fixed classes or appointments. Click "Add to Timetable" to see them on the grid below.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <div className="space-y-4">
-              {fields.map((field, index) => (
-                <div key={field.id} className="grid grid-cols-1 sm:grid-cols-5 gap-2 items-end">
-                  <FormField
-                    control={form.control}
-                    name={`customEvents.${index}.title`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Title</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="e.g., Math Class" />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`customEvents.${index}.day`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Day</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select day" /></SelectTrigger></FormControl>
-                          <SelectContent>{days.map(day => <SelectItem key={day} value={day}>{day}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`customEvents.${index}.startTime`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Start Time</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger></FormControl>
-                          <SelectContent>{timeSlots.map(time => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`customEvents.${index}.endTime`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>End Time</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger></FormControl>
-                          <SelectContent>{timeSlots.slice(1).map(time => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
-                  <Button variant="ghost" size="icon" onClick={() => remove(index)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-             {form.formState.errors.customEvents && (
-                <p className="text-sm font-medium text-destructive mt-2">
-                    {form.formState.errors.customEvents.message}
-                </p>
-            )}
-            <div className="flex items-center gap-2 mt-4">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => append({ title: '', day: '', startTime: '', endTime: '' })}
-              >
-                <Plus className="mr-2 h-4 w-4" /> Add Event
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={handlePreviewCustomEvents}
-                disabled={fields.length === 0}
-              >
-                <Eye className="mr-2 h-4 w-4" /> Add to Timetable
-              </Button>
-            </div>
-          </Form>
-        </CardContent>
-      </Card>
-
-      <Card>
+       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <div>
             <CardTitle>Your Weekly Timetable</CardTitle>
-            <CardDescription>AI-generated study blocks and your custom events.</CardDescription>
+            <CardDescription>
+              AI-generated study blocks and your custom events. Manage your fixed events from the{' '}
+              <Button variant="link" className="p-0 h-auto" onClick={() => router.push('/schedule')}>Schedule</Button> page.
+            </CardDescription>
           </div>
            <div className="flex gap-2">
-            <Button variant="outline" onClick={() => clearEvents('all')}>
-              <Trash2 className="mr-2 h-4 w-4" /> Clear All
+            <Button variant="outline" onClick={handleClearTasks}>
+              <Trash2 className="mr-2 h-4 w-4" /> Clear Study Blocks
             </Button>
             <Button onClick={handleGenerateTimetable} disabled={isGenerating}>
               {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}

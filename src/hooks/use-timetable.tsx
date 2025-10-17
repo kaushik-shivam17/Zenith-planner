@@ -20,7 +20,7 @@ import { collection, writeBatch, doc } from 'firebase/firestore';
 interface TimetableContextType {
   events: TimetableEvent[];
   setEvents: (events: Omit<TimetableEvent, 'id' | 'userId'>[]) => Promise<void>;
-  addCustomEvents: (events: Omit<TimetableEvent, 'id' | 'userId'>[]) => Promise<void>;
+  addCustomEvents: (events: Omit<TimetableEvent, 'id' | 'userId' | 'type'>[]) => Promise<void>;
   clearEvents: (type: 'task' | 'custom' | 'all') => Promise<void>;
   isLoading: boolean;
 }
@@ -42,15 +42,13 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
   const { data: eventsData, isLoading: areEventsLoading } = useCollection<TimetableEvent>(timetableCollectionRef);
 
   const setEvents = useCallback(async (newEvents: Omit<TimetableEvent, 'id' | 'userId'>[]) => {
-      if (!timetableCollectionRef || !user || !eventsData || !firestore) return;
+      if (!timetableCollectionRef || !user || !firestore) return;
       const batch = writeBatch(firestore);
       
-      // Delete all existing 'task' events
-      eventsData.forEach(event => {
-        if (event.type === 'task') {
-          const eventDocRef = doc(timetableCollectionRef, event.id);
-          batch.delete(eventDocRef);
-        }
+      // Delete all existing events first. This is simpler than diffing.
+      const snapshot = await timetableCollectionRef.get();
+      snapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
       });
 
       // Add new events
@@ -61,9 +59,9 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
       });
       
       await batch.commit();
-    }, [timetableCollectionRef, user, firestore, eventsData]);
+    }, [timetableCollectionRef, user, firestore]);
 
-  const addCustomEvents = useCallback(async (customEvents: Omit<TimetableEvent, 'id' | 'userId'>[]) => {
+  const addCustomEvents = useCallback(async (customEvents: Omit<TimetableEvent, 'id' | 'userId' | 'type'>[]) => {
       if (!timetableCollectionRef || !user) return;
       
       customEvents.forEach(event => {
@@ -74,16 +72,19 @@ export function TimetableProvider({ children }: { children: ReactNode }) {
   }, [timetableCollectionRef, user]);
 
   const clearEvents = useCallback(async (type: 'task' | 'custom' | 'all') => {
-      if (!timetableCollectionRef || !eventsData) return;
+      if (!timetableCollectionRef || !eventsData || !firestore) return;
+
+      const batch = writeBatch(firestore);
       
       eventsData.forEach(event => {
         if (type === 'all' || event.type === type) {
           const eventDocRef = doc(timetableCollectionRef, event.id);
-          deleteDocumentNonBlocking(eventDocRef);
+          batch.delete(eventDocRef);
         }
       });
       
-    }, [timetableCollectionRef, eventsData]);
+      await batch.commit();
+    }, [timetableCollectionRef, eventsData, firestore]);
 
 
   const isLoading = isUserLoading || (!!user && areEventsLoading);

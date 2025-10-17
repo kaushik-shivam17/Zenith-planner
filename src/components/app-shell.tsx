@@ -6,6 +6,7 @@ import {
   Calendar,
   HeartPulse,
   LayoutDashboard,
+  ListTodo,
   LogIn,
   LogOut,
   Rocket,
@@ -29,12 +30,16 @@ import { Header } from '@/components/header';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
+import { TimetableProvider } from '@/hooks/use-timetable';
+import { MissionsProvider } from '@/hooks/use-missions';
+import { TasksProvider } from '@/hooks/use-tasks';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/tasks', label: 'Tasks', icon: BadgeCheck },
   { href: '/missions', label: 'Missions', icon: Rocket },
   { href: '/timetable', label: 'Timetable', icon: Calendar },
+  { href: '/schedule', label: 'Schedule', icon: ListTodo },
   { href: '/focus', label: 'Focus AI', icon: BrainCircuit },
   { href: '/fitness', label: 'Fitness', icon: HeartPulse },
 ];
@@ -88,8 +93,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const mainContent = (
-    <main className="min-h-screen p-4 sm:p-6 md:p-8 flex-1">
+  const mainContent = user ? (
+    <TimetableProvider>
+      <MissionsProvider>
+        <TasksProvider>
+          <main className="min-h-screen p-4 sm:p-6 md:p-8 flex-1">
+            <div className="max-w-5xl mx-auto">
+              <div className="md:hidden mb-4">
+                <Header />
+              </div>
+              {children}
+            </div>
+          </main>
+        </TasksProvider>
+      </MissionsProvider>
+    </TimetableProvider>
+  ) : (
+     <main className="min-h-screen p-4 sm:p-6 md:p-8 flex-1">
       <div className="max-w-5xl mx-auto">
         <div className="md:hidden mb-4">
           <Header />

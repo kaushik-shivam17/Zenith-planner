@@ -54,6 +54,21 @@ export interface UserHookResult {
 // React Context
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
 
+const MissingFirebaseConfigError = () => (
+  <div className="flex h-screen items-center justify-center bg-background text-foreground">
+    <div className="max-w-lg rounded-lg border border-destructive bg-card p-6 text-center shadow-lg">
+      <h1 className="text-2xl font-bold text-destructive">Firebase Not Configured</h1>
+      <p className="mt-4 text-card-foreground">
+        Your Firebase API key is missing. The application cannot connect to Firebase services.
+      </p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Please copy the web app configuration from your Firebase project settings and paste it into the <strong>.env</strong> file in your project. Then, restart the development server.
+      </p>
+    </div>
+  </div>
+);
+
+
 /**
  * FirebaseProvider manages and provides Firebase services and user authentication state.
  */
@@ -69,10 +84,12 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     userError: null,
   });
 
+  const servicesAvailable = !!(firebaseApp && firestore && auth);
+
   // Effect to subscribe to Firebase auth state changes
   useEffect(() => {
     if (!auth) { // If no Auth service instance, cannot determine user state
-      setUserAuthState({ user: null, isUserLoading: false, userError: new Error("Auth service not provided.") });
+      setUserAuthState({ user: null, isUserLoading: false, userError: servicesAvailable ? new Error("Auth service not provided.") : null });
       return;
     }
 
@@ -90,11 +107,10 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     );
 
     return () => unsubscribe(); // Cleanup on unmount
-  }, [auth]); // Depends only on the auth instance
+  }, [auth, servicesAvailable]);
 
   // Memoize the context value
   const contextValue = useMemo((): FirebaseContextState => {
-    const servicesAvailable = !!(firebaseApp && firestore && auth);
     return {
       areServicesAvailable: servicesAvailable,
       firebaseApp: servicesAvailable ? firebaseApp : null,
@@ -104,7 +120,13 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       isUserLoading: userAuthState.isUserLoading,
       userError: userAuthState.userError,
     };
-  }, [firebaseApp, firestore, auth, userAuthState]);
+  }, [firebaseApp, firestore, auth, userAuthState, servicesAvailable]);
+
+  if (!servicesAvailable && !userAuthState.isUserLoading) {
+    // If services never became available after the initial check, show the error UI.
+    return <MissingFirebaseConfigError />;
+  }
+
 
   return (
     <FirebaseContext.Provider value={contextValue}>

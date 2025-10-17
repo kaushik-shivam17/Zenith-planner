@@ -17,6 +17,19 @@ let firebaseServices: {
  * This function ensures that Firebase is initialized only once.
  */
 export function initializeFirebase() {
+  if (firebaseServices) {
+    return firebaseServices;
+  }
+
+  // Guard against missing API key.
+  if (!firebaseConfig.apiKey) {
+    console.error(
+      'Firebase API key is missing. Please add your Firebase project config to .env.local'
+    );
+    // Return null services if config is invalid to prevent crash.
+    return { firebaseApp: null, auth: null, firestore: null };
+  }
+
   if (!firebaseServices) {
     const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     firebaseServices = {

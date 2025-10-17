@@ -1,16 +1,22 @@
 'use client';
 
+import { useContext } from 'react';
 import { Timetable as TimetableComponent } from '@/components/timetable';
-import { useTimetable } from '@/hooks/use-timetable';
-import { useTasks } from '@/hooks/use-tasks';
 import { Loader2 } from 'lucide-react';
+import { DataContext } from '@/context/data-provider';
 
 
 export default function TimetablePage() {
-  const { events, setEvents, addCustomEvents, deleteCustomEvent, clearEvents, isLoading: isTimetableLoading } = useTimetable();
-  const { tasks, isLoading: areTasksLoading } = useTasks();
+  const { 
+    events, 
+    setEvents, 
+    addCustomEvents, 
+    deleteCustomEvent, 
+    clearEvents, 
+    tasks, 
+    isLoading 
+  } = useContext(DataContext);
   
-  const isLoading = isTimetableLoading || areTasksLoading;
   
   if (isLoading) {
     return (

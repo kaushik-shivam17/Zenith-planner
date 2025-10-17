@@ -1,11 +1,12 @@
 'use client';
 
+import { useContext } from 'react';
 import { TaskManager } from '@/components/task-manager';
-import { useTasks } from '@/hooks/use-tasks';
 import { Loader2 } from 'lucide-react';
+import { DataContext } from '@/context/data-provider';
 
 export default function TasksPage() {
-  const { tasks, addTask, updateTask, toggleTaskCompletion, isLoading } = useTasks();
+  const { tasks, addTask, updateTask, toggleTaskCompletion, isLoading } = useContext(DataContext);
   
   if (isLoading) {
     return (

@@ -3,18 +3,18 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2, Plus, Sparkles, Trash2 } from 'lucide-react';
-import { useMissions } from '@/hooks/use-missions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { useGoals } from '@/hooks/use-goals';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { suggestGoalsForMissionAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { DataContext } from '@/context/data-provider';
+import { useGoals } from '@/hooks/use-goals';
 
 type GoalFormData = {
   title: string;
@@ -25,7 +25,8 @@ export default function MissionDetailPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { missionId } = useParams();
-  const { getMissionById, isLoading: isMissionsLoading, deleteMission } = useMissions();
+  
+  const { getMissionById, isLoading: isMissionsLoading, deleteMission } = useContext(DataContext);
   const { goals, addGoal, toggleGoalCompletion, deleteGoal, isLoading: areGoalsLoading } = useGoals(missionId as string);
 
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);

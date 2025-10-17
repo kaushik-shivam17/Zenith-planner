@@ -1,9 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo, useContext } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useTasks } from '@/hooks/use-tasks';
-import { useMissions } from '@/hooks/use-missions';
 import { ArrowLeft, Bot, Loader2, Send, Split } from 'lucide-react';
 import {
   generateTaskRoadmapAction,
@@ -22,6 +20,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import { DataContext } from '@/context/data-provider';
 
 type ChatMessage = {
   role: 'user' | 'model';
@@ -36,8 +35,8 @@ export default function RoadmapPage() {
 
   const itemType = searchParams.get('type') === 'mission' ? 'mission' : 'task';
 
-  const { getTaskById, updateTask, isLoading: areTasksLoading } = useTasks();
-  const { getMissionById, updateMission, isLoading: areMissionsLoading } = useMissions();
+  const { getTaskById, updateTask, isLoading: areTasksLoading } = useContext(DataContext);
+  const { getMissionById, updateMission, isLoading: areMissionsLoading } = useContext(DataContext);
 
   const [roadmap, setRoadmap] = useState<GenerateTaskRoadmapOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);

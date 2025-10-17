@@ -28,11 +28,6 @@ const ContinueConversationOutputSchema = z.object({
 export type ContinueConversationOutput = z.infer<typeof ContinueConversationOutputSchema>;
 
 export async function continueConversation(input: ContinueConversationInput): Promise<ContinueConversationOutput> {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error(
-      'The GEMINI_API_KEY environment variable is not set. Please add it to your Vercel project settings.'
-    );
-  }
   return continueConversationFlow(input);
 }
 

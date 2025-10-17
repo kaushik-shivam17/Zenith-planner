@@ -30,11 +30,6 @@ const GenerateTaskRoadmapOutputSchema = z.object({
 export type GenerateTaskRoadmapOutput = z.infer<typeof GenerateTaskRoadmapOutputSchema>;
 
 export async function generateTaskRoadmap(input: GenerateTaskRoadmapInput): Promise<GenerateTaskRoadmapOutput> {
-    if (!process.env.GEMINI_API_KEY) {
-    throw new Error(
-      'The GEMINI_API_KEY environment variable is not set. Please add it to your Vercel project settings.'
-    );
-  }
   return generateTaskRoadmapFlow(input);
 }
 
@@ -64,11 +59,6 @@ const generateTaskRoadmapFlow = ai.defineFlow(
     outputSchema: GenerateTaskRoadmapOutputSchema,
   },
   async (input) => {
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error(
-        'The GEMINI_API_KEY environment variable is not set. Please add it to your Vercel project settings.'
-      );
-    }
     const { output } = await prompt(input);
     return output!;
   }

@@ -26,11 +26,6 @@ const SuggestOptimalStudyTimesOutputSchema = z.object({
 export type SuggestOptimalStudyTimesOutput = z.infer<typeof SuggestOptimalStudyTimesOutputSchema>;
 
 export async function suggestOptimalStudyTimes(input: SuggestOptimalStudyTimesInput): Promise<SuggestOptimalStudyTimesOutput> {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error(
-      'The GEMINI_API_KEY environment variable is not set. Please add it to your Vercel project settings.'
-    );
-  }
   return suggestOptimalStudyTimesFlow(input);
 }
 

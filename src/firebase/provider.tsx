@@ -53,21 +53,6 @@ export interface UserHookResult {
 // React Context
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
 
-const MissingFirebaseConfigError = () => (
-  <div className="flex h-screen items-center justify-center bg-background text-foreground">
-    <div className="max-w-lg rounded-lg border border-destructive bg-card p-6 text-center shadow-lg">
-      <h1 className="text-2xl font-bold text-destructive">Firebase Not Configured</h1>
-      <p className="mt-4 text-card-foreground">
-        Your Firebase API key is missing or invalid. The application cannot connect to Firebase services.
-      </p>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Please copy the web app configuration from your Firebase project settings and paste the values into the <strong>.env</strong> file in your project. Then, restart the development server.
-      </p>
-    </div>
-  </div>
-);
-
-
 /**
  * FirebaseProvider manages and provides Firebase services and user authentication state.
  */
@@ -120,12 +105,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       userError: userAuthState.userError,
     };
   }, [firebaseApp, firestore, auth, userAuthState, servicesAvailable]);
-
-  if (!servicesAvailable && !userAuthState.isUserLoading) {
-    // If services never became available after the initial check, show the error UI.
-    return <MissingFirebaseConfigError />;
-  }
-
 
   return (
     <FirebaseContext.Provider value={contextValue}>

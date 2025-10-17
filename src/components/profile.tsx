@@ -10,7 +10,7 @@ import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useEffect, useState, useRef } from 'react';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { updatePassword, updateProfile } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
 
 
@@ -476,3 +476,5 @@ export function Profile() {
     </div>
   );
 }
+
+    

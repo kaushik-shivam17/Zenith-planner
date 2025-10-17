@@ -13,7 +13,7 @@ import type { Task } from '@/lib/types';
 import {
   useFirebase,
   useCollection,
-  addDocumentNonBlocking,
+  addDocument,
   updateDocumentNonBlocking,
   useMemoFirebase,
 } from '@/firebase';
@@ -70,7 +70,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
   );
 
   const addTask = useCallback(
-    (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => {
+    async (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => {
       if (!tasksCollectionRef || !user) return;
       const newTask = {
         ...taskData,
@@ -79,7 +79,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
         createdAt: serverTimestamp(),
         deadline: Timestamp.fromDate(taskData.deadline), // Convert JS Date to Firestore Timestamp
       };
-      addDocumentNonBlocking(tasksCollectionRef, newTask);
+      await addDocument(tasksCollectionRef, newTask);
     },
     [tasksCollectionRef, user]
   );

@@ -37,7 +37,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 
 
 const profileSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters.'),
   email: z.string().email(),
   class: z.string().optional(),
   height: z.coerce.number().positive('Height must be positive.').optional(),
@@ -78,7 +77,6 @@ export function Profile() {
   const form = useForm<UserProfile>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      name: '',
       email: '',
       class: '',
       height: undefined, // cm
@@ -99,7 +97,6 @@ export function Profile() {
   useEffect(() => {
     if (userProfile) {
       form.reset({
-        name: userProfile.name ?? '',
         email: userProfile.email ?? user?.email ?? '',
         class: userProfile.class ?? '',
         // Convert height from meters (Firestore) to cm (UI)
@@ -107,7 +104,6 @@ export function Profile() {
         weight: userProfile.weight ?? undefined,
       });
     } else if (user) {
-      form.setValue('name', user.displayName || '');
       form.setValue('email', user.email || '');
     }
   }, [userProfile, user, form]);
@@ -122,18 +118,7 @@ export function Profile() {
     // Convert height from cm (UI) to meters for Firestore
     const heightInMeters = values.height ? values.height / 100 : undefined;
 
-    const dataToSave: UserProfileFirestore & { updatedAt: any } = {
-      ...values,
-      height: heightInMeters,
-      updatedAt: serverTimestamp(),
-    };
-    
-    // We don't want to save the user's ID or email as part of the document fields
-    // if we can help it, as it's redundant. The document ID is the user ID.
-    // However, the schema might require it. Let's align with the hook which
-    // omits it.
     const finalData = {
-      name: values.name,
       class: values.class,
       height: heightInMeters,
       weight: values.weight,
@@ -151,14 +136,12 @@ export function Profile() {
         description: 'Your changes have been saved.',
       });
     } catch (error) {
-       errorEmitter.emit(
-        'permission-error',
-        new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'update',
-          requestResourceData: finalData,
-        })
-      )
+       console.error("Failed to update profile", error);
+       toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: error instanceof Error ? error.message : 'Could not save your profile.',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -237,19 +220,6 @@ export function Profile() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Your full name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
                 <FormField
                   control={form.control}
                   name="email"

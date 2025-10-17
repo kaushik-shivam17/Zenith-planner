@@ -10,7 +10,9 @@ import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useEffect, useState, useRef } from 'react';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { updateProfile } from 'firebase/auth';
+import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { FirebaseError } from 'firebase/app';
+
 
 import { Button } from '@/components/ui/button';
 import {
@@ -33,6 +35,7 @@ import { Loader2, User as UserIcon } from 'lucide-react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 
 
 const profileSchema = z.object({
@@ -44,7 +47,16 @@ const profileSchema = z.object({
   photoURL: z.string().url().optional(),
 });
 
+const passwordSchema = z.object({
+  newPassword: z.string().min(6, 'Password must be at least 6 characters.'),
+  confirmPassword: z.string(),
+}).refine(data => data.newPassword === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
+});
+
 type UserProfile = z.infer<typeof profileSchema>;
+type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 // This is the type that will be stored in Firestore, with height in meters
 type UserProfileFirestore = Omit<UserProfile, 'height'> & { height?: number };
@@ -55,9 +67,11 @@ export function Profile() {
   const { firestore } = useFirebase();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
   const [bmi, setBmi] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
 
   const userDocRef = useMemoFirebase(
     () => (user ? doc(firestore, 'users', user.uid) : null),
@@ -75,6 +89,14 @@ export function Profile() {
       height: undefined, // cm
       weight: undefined,
       photoURL: '',
+    },
+  });
+
+  const passwordForm = useForm<PasswordFormValues>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: {
+      newPassword: '',
+      confirmPassword: '',
     },
   });
   
@@ -178,6 +200,37 @@ export function Profile() {
       )
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function onPasswordSubmit(values: PasswordFormValues) {
+    if (!user || !auth.currentUser) return;
+    setIsPasswordSubmitting(true);
+    try {
+      await updatePassword(auth.currentUser, values.newPassword);
+      toast({
+        title: 'Password Updated',
+        description: 'Your password has been changed successfully.',
+      });
+      setIsPasswordDialogOpen(false);
+      passwordForm.reset();
+    } catch (error) {
+      console.error('Password update error', error);
+      let description = 'An unexpected error occurred.';
+      if (error instanceof FirebaseError) {
+        if (error.code === 'auth/requires-recent-login') {
+          description = 'This action is sensitive and requires recent authentication. Please log out and log back in to change your password.';
+        } else {
+          description = error.message;
+        }
+      }
+      toast({
+        variant: 'destructive',
+        title: 'Password Change Failed',
+        description: description,
+      });
+    } finally {
+      setIsPasswordSubmitting(false);
     }
   }
 
@@ -358,12 +411,61 @@ export function Profile() {
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-4">
                 <Button type="submit" disabled={isSubmitting || isUploading}>
                   {(isSubmitting || isUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Save Changes
                 </Button>
-                 <Button type="button" variant="outline" onClick={handleCalculateBmi}>
+                <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button type="button" variant="outline">Change Password</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Change Your Password</DialogTitle>
+                      <DialogDescription>
+                        Enter a new password below. After confirming, you will be logged out and can log in with the new password.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <Form {...passwordForm}>
+                      <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+                        <FormField
+                          control={passwordForm.control}
+                          name="newPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>New Password</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="••••••••" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={passwordForm.control}
+                          name="confirmPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Confirm New Password</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="••••••••" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <DialogFooter>
+                          <Button type="submit" disabled={isPasswordSubmitting}>
+                            {isPasswordSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Update Password
+                          </Button>
+                        </DialogFooter>
+                      </form>
+                    </Form>
+                  </DialogContent>
+                </Dialog>
+                 <Button type="button" variant="secondary" onClick={handleCalculateBmi}>
                   Check BMI
                 </Button>
               </div>

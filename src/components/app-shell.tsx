@@ -37,6 +37,7 @@ const navItems = [
   { href: '/tasks', label: 'Tasks', icon: BadgeCheck },
   { href: '/missions', label: 'Missions', icon: Rocket },
   { href: '/timetable', label: 'Timetable', icon: Calendar },
+  { href: '/schedule', label: 'Schedule', icon: ListTodo },
   { href: '/focus', label: 'Focus AI', icon: BrainCircuit },
   { href: '/fitness', label: 'Fitness', icon: HeartPulse },
 ];
@@ -47,7 +48,6 @@ const protectedRoutePaths = [
   '/profile',
   '/roadmap',
   '/missions/',
-  '/schedule',
 ];
 const protectedAndDataRoutes = new Set(protectedRoutePaths);
 
@@ -82,14 +82,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       });
     }
   };
-  
-  if (isUserLoading) {
-    return (
-       <div className="flex h-screen items-center justify-center bg-background">
-          <div className="text-2xl font-semibold text-foreground">Loading...</div>
-      </div>
-    );
-  }
 
   const mainContent = (
      <main className="min-h-screen p-4 sm:p-6 md:p-8 flex-1">
@@ -101,6 +93,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
     </main>
   );
+  
+  // The main loading gate is now in FirebaseClientProvider.
+  // We only render the shell if the user is authenticated for a protected route, or for any public route.
+  // useAuthGuard handles the redirection logic.
+  if (isUserLoading && isProtectedRoute) {
+     return null; // Render nothing while waiting for auth state on protected routes
+  }
+  
+  if (!user && isProtectedRoute) {
+    return null; // Don't render the shell if user is not logged in on a protected route
+  }
+
 
   return (
     <SidebarProvider>
@@ -184,5 +188,3 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
-
-    

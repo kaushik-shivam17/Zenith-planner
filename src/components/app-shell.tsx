@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -29,9 +28,6 @@ import {
 import { Header } from '@/components/header';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useToast } from '@/hooks/use-toast';
-import { MissionsProvider } from '@/hooks/use-missions';
-import { TasksProvider } from '@/hooks/use-tasks';
-import { TimetableProvider } from '@/hooks/use-timetable';
 import { useUser } from '@/firebase';
 
 const navItems = [
@@ -43,7 +39,6 @@ const navItems = [
   { href: '/fitness', label: 'Fitness', icon: HeartPulse },
 ];
 
-// Combine all protected routes into an array first
 const protectedRoutePaths = [
   ...navItems.map(item => item.href),
   '/',
@@ -51,7 +46,6 @@ const protectedRoutePaths = [
   '/roadmap',
   '/missions/'
 ];
-// Then create a Set from the array
 const protectedAndDataRoutes = new Set(protectedRoutePaths);
 
 
@@ -59,11 +53,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   
-  // A route is "protected" if it requires a user to be logged in.
   const isProtectedRoute = Array.from(protectedAndDataRoutes).some(route => pathname.startsWith(route));
   
   const { user, isUserLoading } = useUser();
-  // useAuthGuard will handle redirection for protected routes
   useAuthGuard(isProtectedRoute);
 
   const { toast } = useToast();
@@ -88,8 +80,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   };
   
-  // Strict loading gate. Do not render anything until auth state is confirmed.
-  // This is the most critical part of the fix for the race condition.
   if (isUserLoading) {
     return (
        <div className="flex h-screen items-center justify-center bg-background">
@@ -97,10 +87,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-
-  // Determine if the current route needs data providers.
-  // This is true if the route is protected AND the user is logged in.
-  const needsProviders = isProtectedRoute && user;
 
   const mainContent = (
     <main className="min-h-screen p-4 sm:p-6 md:p-8 flex-1">
@@ -111,17 +97,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {children}
       </div>
     </main>
-  );
-  
-  // Conditionally wrap the content with providers only when needed.
-  const contentWithProviders = (
-    <TimetableProvider>
-      <MissionsProvider>
-        <TasksProvider>
-          {mainContent}
-        </TasksProvider>
-      </MissionsProvider>
-    </TimetableProvider>
   );
 
   return (
@@ -161,7 +136,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="pt-2">
-             {/* We don't need a loading skeleton here anymore because the main gate handles it */}
             {user ? (
               <>
                 <SidebarMenuItem>
@@ -197,7 +171,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )}
           </SidebarFooter>
         </Sidebar>
-        {needsProviders ? contentWithProviders : mainContent}
+        {mainContent}
       </div>
     </SidebarProvider>
   );

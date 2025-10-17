@@ -22,7 +22,7 @@ export type SuggestGoalsForMissionOutput = z.infer<typeof SuggestGoalsForMission
 export async function suggestGoalsForMission(input: SuggestGoalsForMissionInput): Promise<SuggestGoalsForMissionOutput> {
   if (!process.env.GEMINI_API_KEY) {
     throw new Error(
-      'The GEMINI_API_KEY environment variable is not set. Please add it to your .env file.'
+      'The GEMINI_API_KEY environment variable is not set. Please add it to your Vercel project settings.'
     );
   }
   return suggestGoalsForMissionFlow(input);

@@ -30,7 +30,7 @@ export type ContinueConversationOutput = z.infer<typeof ContinueConversationOutp
 export async function continueConversation(input: ContinueConversationInput): Promise<ContinueConversationOutput> {
   if (!process.env.GEMINI_API_KEY) {
     throw new Error(
-      'The GEMINI_API_KEY environment variable is not set. Please add it to your .env file.'
+      'The GEMINI_API_KEY environment variable is not set. Please add it to your Vercel project settings.'
     );
   }
   return continueConversationFlow(input);

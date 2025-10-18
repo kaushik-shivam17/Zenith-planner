@@ -27,7 +27,8 @@ export function initializeFirebase() {
       'Firebase API key is missing. Please add your Firebase project config to the .env file.'
     );
     // Return null services if config is invalid to prevent crash.
-    return { firebaseApp: null, auth: null, firestore: null };
+    // We cast to any to satisfy the return type, the provider will handle the nulls.
+    return { firebaseApp: null, auth: null, firestore: null } as any;
   }
 
   if (!firebaseServices) {

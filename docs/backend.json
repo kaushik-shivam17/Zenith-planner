@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -8,49 +9,106 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the User entity."
+          "description": "Unique identifier for the user (matches Firebase Auth UID)."
+        },
+        "name": {
+          "type": "string",
+          "description": "The user's full name."
         },
         "email": {
           "type": "string",
-          "description": "Email address of the user.",
+          "description": "The user's email address.",
           "format": "email"
+        },
+        "class": {
+          "type": "string",
+          "description": "The user's class or grade (optional)."
+        },
+        "height": {
+          "type": "number",
+          "description": "User's height in meters (optional)."
+        },
+        "weight": {
+          "type": "number",
+          "description": "User's weight in kilograms (optional)."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
         }
       },
       "required": [
         "id",
+        "name",
         "email"
       ]
+    },
+    "Roadmap": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Roadmap",
+      "type": "object",
+      "description": "Represents an AI-generated roadmap for a task or mission.",
+      "properties": {
+        "introduction": {
+          "type": "string"
+        },
+        "milestones": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "emoji": { "type": "string" },
+              "steps": { "type": "array", "items": { "type": "string" } }
+            },
+            "required": ["title", "emoji", "steps"]
+          }
+        },
+        "conclusion": {
+          "type": "string"
+        }
+      },
+      "required": ["introduction", "milestones", "conclusion"]
     },
     "Task": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Task",
       "type": "object",
-      "description": "Represents a task that a user needs to complete.",
+      "description": "Represents a single task for a user.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the Task entity."
+          "description": "The unique identifier for the task."
         },
         "userId": {
           "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N Task)"
+          "description": "The Firebase Auth UID of the user who owns this task."
         },
         "title": {
           "type": "string",
-          "description": "Title of the task."
+          "description": "The title of the task."
         },
         "description": {
           "type": "string",
-          "description": "Detailed description of the task."
+          "description": "Optional details about the task."
         },
         "deadline": {
           "type": "string",
-          "description": "Deadline for the task.",
-          "format": "date-time"
+          "format": "date-time",
+          "description": "The deadline for the task as a Firestore Timestamp."
         },
         "completed": {
           "type": "boolean",
-          "description": "Indicates whether the task is completed or not."
+          "description": "Whether the task has been completed."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the task was created."
+        },
+        "roadmap": {
+          "$ref": "#/backend/entities/Roadmap",
+          "description": "The AI-generated roadmap for this task."
         }
       },
       "required": [
@@ -58,137 +116,149 @@
         "userId",
         "title",
         "deadline",
-        "completed"
+        "completed",
+        "createdAt"
       ]
     },
-    "Subtask": {
+    "Mission": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Subtask",
+      "title": "Mission",
       "type": "object",
-      "description": "Represents a subtask of a larger task.",
+      "description": "Represents a long-term goal or mission for a user.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the Subtask entity."
+          "description": "The unique identifier for the mission."
         },
-        "taskId": {
+        "userId": {
           "type": "string",
-          "description": "Reference to Task. (Relationship: Task 1:N Subtask)"
+          "description": "The Firebase Auth UID of the user who owns this mission."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the mission."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the mission was created."
+        },
+        "totalGoals": {
+          "type": "number",
+          "description": "The total number of goals for this mission."
+        },
+        "completedGoals": {
+          "type": "number",
+          "description": "The number of completed goals for this mission."
+        },
+        "roadmap": {
+          "$ref": "#/backend/entities/Roadmap",
+          "description": "The AI-generated roadmap for this mission."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "createdAt",
+        "totalGoals",
+        "completedGoals"
+      ]
+    },
+    "Goal": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Goal",
+      "type": "object",
+      "description": "Represents a single goal or sub-task for a mission.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique identifier for the goal."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who owns this goal."
+        },
+        "missionId": {
+          "type": "string",
+          "description": "The ID of the mission this goal belongs to."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the goal."
         },
         "description": {
           "type": "string",
-          "description": "Description of the subtask."
+          "description": "Optional details about the goal."
         },
         "completed": {
           "type": "boolean",
-          "description": "Indicates whether the subtask is completed or not."
+          "description": "Whether the goal has been completed."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the goal was created."
         }
       },
       "required": [
         "id",
-        "taskId",
-        "description",
-        "completed"
+        "userId",
+        "missionId",
+        "title",
+        "completed",
+        "createdAt"
       ]
     },
-    "ScheduleEntry": {
+    "TimetableEvent": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ScheduleEntry",
+      "title": "Timetable Event",
       "type": "object",
-      "description": "Represents a scheduled time slot for a task.",
+      "description": "Represents a single event on the user's timetable.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the ScheduleEntry entity."
+          "description": "The unique identifier for the event."
         },
         "userId": {
           "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N ScheduleEntry)"
+          "description": "The UID of the user who owns this event."
         },
-        "taskId": {
+        "title": {
           "type": "string",
-          "description": "Reference to Task. (Relationship: Task 1:N ScheduleEntry)"
+          "description": "The title of the event."
+        },
+        "day": {
+          "type": "string",
+          "description": "The day of the week for the event."
         },
         "startTime": {
           "type": "string",
-          "description": "Start time of the scheduled entry.",
-          "format": "date-time"
+          "description": "The start time of the event."
         },
         "endTime": {
           "type": "string",
-          "description": "End time of the scheduled entry.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "taskId",
-        "startTime",
-        "endTime"
-      ]
-    },
-    "Reminder": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Reminder",
-      "type": "object",
-      "description": "Represents a reminder for a specific event.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Reminder entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N Reminder)"
+          "description": "The end time of the event."
         },
         "type": {
           "type": "string",
-          "description": "Type of reminder (e.g., break, sleep, hydration)."
-        },
-        "time": {
-          "type": "string",
-          "description": "Time the reminder should be triggered.",
-          "format": "date-time"
-        },
-        "message": {
-          "type": "string",
-          "description": "Message displayed in the reminder."
+          "description": "The type of event ('custom' or 'task')."
         }
       },
       "required": [
         "id",
         "userId",
-        "type",
-        "time",
-        "message"
-      ]
-    },
-    "FocusTip": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "FocusTip",
-      "type": "object",
-      "description": "Represents a tip to improve focus and productivity.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the FocusTip entity."
-        },
-        "text": {
-          "type": "string",
-          "description": "The text content of the focus tip."
-        }
-      },
-      "required": [
-        "id",
-        "text"
+        "title",
+        "day",
+        "startTime",
+        "endTime",
+        "type"
       ]
     }
   },
   "auth": {
     "providers": [
-      "password",
-      "anonymous"
+      "password"
     ]
   },
   "firestore": {
@@ -200,11 +270,11 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Stores user profiles.  Authorization is based on path-based ownership (request.auth.uid == userId).",
+          "description": "Stores user profile information, including BMI-related data. Users can only read/write their own document.",
           "params": [
             {
               "name": "userId",
-              "description": "The unique identifier for the user."
+              "description": "The unique identifier for the user. This is the Firebase Auth UID."
             }
           ]
         }
@@ -216,7 +286,7 @@
           "schema": {
             "$ref": "#/backend/entities/Task"
           },
-          "description": "Stores tasks owned by a specific user. Authorization is based on path-based ownership (request.auth.uid == userId).",
+          "description": "Stores tasks for a specific user. Users can only read/write their own tasks.",
           "params": [
             {
               "name": "userId",
@@ -230,86 +300,69 @@
         }
       },
       {
-        "path": "/users/{userId}/tasks/{taskId}/subtasks/{subtaskId}",
+        "path": "/users/{userId}/missions/{missionId}",
         "definition": {
-          "entityName": "Subtask",
+          "entityName": "Mission",
           "schema": {
-            "$ref": "#/backend/entities/Subtask"
+            "$ref": "#/backend/entities/Mission"
           },
-          "description": "Stores subtasks belonging to a specific task. Authorization is based on path-based ownership (request.auth.uid == userId).",
+          "description": "Stores long-term missions for a specific user. Users can only read/write their own missions.",
           "params": [
             {
               "name": "userId",
               "description": "The unique identifier for the user."
             },
             {
-              "name": "taskId",
-              "description": "The unique identifier for the task."
-            },
-            {
-              "name": "subtaskId",
-              "description": "The unique identifier for the subtask."
+              "name": "missionId",
+              "description": "The unique identifier for the mission."
             }
           ]
         }
       },
       {
-        "path": "/users/{userId}/scheduleEntries/{scheduleEntryId}",
+        "path": "/users/{userId}/missions/{missionId}/goals/{goalId}",
         "definition": {
-          "entityName": "ScheduleEntry",
+          "entityName": "Goal",
           "schema": {
-            "$ref": "#/backend/entities/ScheduleEntry"
+            "$ref": "#/backend/entities/Goal"
           },
-          "description": "Stores schedule entries for a specific user. Authorization is based on path-based ownership (request.auth.uid == userId).",
+          "description": "Stores goals for a specific mission. Users can only read/write their own goals.",
           "params": [
             {
               "name": "userId",
               "description": "The unique identifier for the user."
             },
             {
-              "name": "scheduleEntryId",
-              "description": "The unique identifier for the schedule entry."
+              "name": "missionId",
+              "description": "The unique identifier for the mission."
+            },
+            {
+              "name": "goalId",
+              "description": "The unique identifier for the goal."
             }
           ]
         }
       },
       {
-        "path": "/users/{userId}/reminders/{reminderId}",
+        "path": "/users/{userId}/timetableEvents/{eventId}",
         "definition": {
-          "entityName": "Reminder",
+          "entityName": "TimetableEvent",
           "schema": {
-            "$ref": "#/backend/entities/Reminder"
+            "$ref": "#/backend/entities/TimetableEvent"
           },
-          "description": "Stores reminders for a specific user. Authorization is based on path-based ownership (request.auth.uid == userId).",
+          "description": "Stores timetable events for a specific user. Users can only read/write their own events.",
           "params": [
             {
               "name": "userId",
               "description": "The unique identifier for the user."
             },
             {
-              "name": "reminderId",
-              "description": "The unique identifier for the reminder."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/focusTips/{focusTipId}",
-        "definition": {
-          "entityName": "FocusTip",
-          "schema": {
-            "$ref": "#/backend/entities/FocusTip"
-          },
-          "description": "Stores global focus tips, accessible to all users.",
-          "params": [
-            {
-              "name": "focusTipId",
-              "description": "The unique identifier for the focus tip."
+              "name": "eventId",
+              "description": "The unique identifier for the timetable event."
             }
           ]
         }
       }
-    ],
-    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability. User-owned data is stored under `/users/{userId}`. Tasks, subtasks, schedule entries, and reminders are all subcollections of the user, enabling simple path-based security rules. Focus tips are global and public, residing in a separate collection. This structure eliminates the need for `get()` calls in security rules, enabling atomic operations and simplifying debugging. List operations are secured via path-based ownership."
+    ]
   }
 }

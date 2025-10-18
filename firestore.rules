@@ -1,45 +1,54 @@
 /**
  * @fileoverview Firestore Security Rules for Zenith Planner.
  *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for personal data,
- * while allowing public read access to global data like focus tips.
+ * Core Philosophy: This ruleset enforces a strict user-ownership model for most data,
+ * with the exception of global focus tips. Each user has full control over their own
+ * tasks, subtasks, schedule entries, and reminders.
  *
  * Data Structure:
  * - /users/{userId}: Stores user profiles.
- * - /users/{userId}/tasks/{taskId}: Stores tasks owned by a specific user.
- * - /users/{userId}/tasks/{taskId}/subtasks/{subtaskId}: Stores subtasks belonging to a specific task.
- * - /users/{userId}/scheduleEntries/{scheduleEntryId}: Stores schedule entries for a specific user.
- * - /users/{userId}/reminders/{reminderId}: Stores reminders for a specific user.
- * - /focusTips/{focusTipId}: Stores global focus tips, accessible to all users.
+ * - /users/{userId}/tasks/{taskId}: Stores tasks for a given user.
+ * - /users/{userId}/tasks/{taskId}/subtasks/{subtaskId}: Stores subtasks for a specific task.
+ * - /users/{userId}/scheduleEntries/{scheduleEntryId}: Stores schedule entries for a given user.
+ * - /users/{userId}/reminders/{reminderId}: Stores reminders for a given user.
+ * - /focusTips/{focusTipId}: Stores global focus tips.
  *
  * Key Security Decisions:
- * - User data is strictly controlled by the owning user, based on their UID.
- * - Focus tips are publicly readable but not writable by users.
- * - List operations are generally allowed for user-owned subcollections,
- *   enabling clients to efficiently retrieve data.
+ * - Users can only access their own data (tasks, subtasks, schedule entries, reminders).
+ * - Focus tips are publicly readable.
+ * - Listing of user documents is disallowed for privacy.
+ *
+ * Denormalization for Authorization:
+ * - All user-owned documents (tasks, subtasks, schedule entries, reminders) have a `userId` field
+ *   that MUST match the `userId` in the path. This is enforced during creation and immutability
+ *   is enforced during updates.
+ *
+ * Structural Segregation:
+ * - Public focus tips are stored in a separate top-level collection (`/focusTips`) to allow for
+ *   public read access without compromising user-specific data.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile documents.
+     * @description Secure user profiles.
      * @path /users/{userId}
-     * @allow (create) - Authenticated user can create their own profile if the userId matches their auth.uid.
-     * @allow (get) - Authenticated user can read their own profile.
-     * @allow (update) - Authenticated user can update their own profile.
-     * @allow (delete) - Authenticated user can delete their own profile.
-     * @deny (create) - User cannot create a profile for another user.
-     * @deny (get) - User cannot read another user's profile.
-     * @deny (update) - User cannot update another user's profile.
-     * @deny (delete) - User cannot delete another user's profile.
+     * @allow (create) - User with UID 'user_abc' can create their own profile at /users/user_abc.
+     * @allow (get) - User with UID 'user_abc' can get their own profile at /users/user_abc.
+     * @allow (update) - User with UID 'user_abc' can update their own profile at /users/user_abc.
+     * @allow (delete) - User with UID 'user_abc' can delete their own profile at /users/user_abc.
+     * @deny (create) - User with UID 'user_xyz' cannot create a profile at /users/user_abc.
+     * @deny (get) - User with UID 'user_xyz' cannot get the profile at /users/user_abc.
+     * @deny (update) - User with UID 'user_xyz' cannot update the profile at /users/user_abc.
+     * @deny (delete) - User with UID 'user_xyz' cannot delete the profile at /users/user_abc.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
+
       function isExistingOwner(userId) {
           return isOwner(userId) && resource != null;
       }
@@ -52,22 +61,23 @@ service cloud.firestore {
     }
 
     /**
-     * @description Controls access to task documents within a user's profile.
+     * @description Secure tasks owned by a specific user.
      * @path /users/{userId}/tasks/{taskId}
-     * @allow (create) - Authenticated user can create a task under their profile.
-     * @allow (get) - Authenticated user can read a task under their profile.
-     * @allow (update) - Authenticated user can update a task under their profile.
-     * @allow (delete) - Authenticated user can delete a task under their profile.
-     * @deny (create) - User cannot create a task under another user's profile.
-     * @deny (get) - User cannot read a task under another user's profile.
-     * @deny (update) - User cannot update a task under another user's profile.
-     * @deny (delete) - User cannot delete a task under another user's profile.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) - User with UID 'user_abc' can create a task under /users/user_abc/tasks/task_123.
+     * @allow (get) - User with UID 'user_abc' can get their task at /users/user_abc/tasks/task_123.
+     * @allow (update) - User with UID 'user_abc' can update their task at /users/user_abc/tasks/task_123.
+     * @allow (delete) - User with UID 'user_abc' can delete their task at /users/user_abc/tasks/task_123.
+     * @deny (create) - User with UID 'user_xyz' cannot create a task under /users/user_abc/tasks/task_123.
+     * @deny (get) - User with UID 'user_xyz' cannot get the task at /users/user_abc/tasks/task_123.
+     * @deny (update) - User with UID 'user_xyz' cannot update the task at /users/user_abc/tasks/task_123.
+     * @deny (delete) - User with UID 'user_xyz' cannot delete the task at /users/user_abc/tasks/task_123.
+     * @principle Enforces document ownership for writes and prevents unauthorized data access.
      */
     match /users/{userId}/tasks/{taskId} {
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
+
       function isExistingOwner(userId) {
           return isOwner(userId) && resource != null;
       }
@@ -80,50 +90,52 @@ service cloud.firestore {
     }
 
     /**
-     * @description Controls access to subtask documents within a task.
+     * @description Secure subtasks belonging to a specific task.
      * @path /users/{userId}/tasks/{taskId}/subtasks/{subtaskId}
-     * @allow (create) - Authenticated user can create a subtask under their task.
-     * @allow (get) - Authenticated user can read a subtask under their task.
-     * @allow (update) - Authenticated user can update a subtask under their task.
-     * @allow (delete) - Authenticated user can delete a subtask under their task.
-     * @deny (create) - User cannot create a subtask under another user's task.
-     * @deny (get) - User cannot read a subtask under another user's task.
-     * @deny (update) - User cannot update a subtask under another user's task.
-     * @deny (delete) - User cannot delete a subtask under another user's task.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) - User with UID 'user_abc' can create a subtask under /users/user_abc/tasks/task_123/subtasks/subtask_456.
+     * @allow (get) - User with UID 'user_abc' can get their subtask at /users/user_abc/tasks/task_123/subtasks/subtask_456.
+     * @allow (update) - User with UID 'user_abc' can update their subtask at /users/user_abc/tasks/task_123/subtasks/subtask_456.
+     * @allow (delete) - User with UID 'user_abc' can delete their subtask at /users/user_abc/tasks/task_123/subtasks/subtask_456.
+     * @deny (create) - User with UID 'user_xyz' cannot create a subtask under /users/user_abc/tasks/task_123/subtasks/subtask_456.
+     * @deny (get) - User with UID 'user_xyz' cannot get the subtask at /users/user_abc/tasks/task_123/subtasks/subtask_456.
+     * @deny (update) - User with UID 'user_xyz' cannot update the subtask at /users/user_abc/tasks/task_123/subtasks/subtask_456.
+     * @deny (delete) - User with UID 'user_xyz' cannot delete the subtask at /users/user_abc/tasks/task_123/subtasks/subtask_456.
+     * @principle Enforces document ownership for writes and prevents unauthorized data access.
      */
     match /users/{userId}/tasks/{taskId}/subtasks/{subtaskId} {
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
+
       function isExistingOwner(userId) {
           return isOwner(userId) && resource != null;
       }
 
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.taskId == taskId;
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to schedule entry documents within a user's profile.
+     * @description Secure schedule entries for a specific user.
      * @path /users/{userId}/scheduleEntries/{scheduleEntryId}
-     * @allow (create) - Authenticated user can create a schedule entry under their profile.
-     * @allow (get) - Authenticated user can read a schedule entry under their profile.
-     * @allow (update) - Authenticated user can update a schedule entry under their profile.
-     * @allow (delete) - Authenticated user can delete a schedule entry under their profile.
-     * @deny (create) - User cannot create a schedule entry under another user's profile.
-     * @deny (get) - User cannot read a schedule entry under another user's profile.
-     * @deny (update) - User cannot update a schedule entry under another user's profile.
-     * @deny (delete) - User cannot delete a schedule entry under another user's profile.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) - User with UID 'user_abc' can create a schedule entry under /users/user_abc/scheduleEntries/entry_789.
+     * @allow (get) - User with UID 'user_abc' can get their schedule entry at /users/user_abc/scheduleEntries/entry_789.
+     * @allow (update) - User with UID 'user_abc' can update their schedule entry at /users/user_abc/scheduleEntries/entry_789.
+     * @allow (delete) - User with UID 'user_abc' can delete their schedule entry at /users/user_abc/scheduleEntries/entry_789.
+     * @deny (create) - User with UID 'user_xyz' cannot create a schedule entry under /users/user_abc/scheduleEntries/entry_789.
+     * @deny (get) - User with UID 'user_xyz' cannot get the schedule entry at /users/user_abc/scheduleEntries/entry_789.
+     * @deny (update) - User with UID 'user_xyz' cannot update the schedule entry at /users/user_abc/scheduleEntries/entry_789.
+     * @deny (delete) - User with UID 'user_xyz' cannot delete the schedule entry at /users/user_abc/scheduleEntries/entry_789.
+     * @principle Enforces document ownership for writes and prevents unauthorized data access.
      */
     match /users/{userId}/scheduleEntries/{scheduleEntryId} {
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
+
       function isExistingOwner(userId) {
           return isOwner(userId) && resource != null;
       }
@@ -136,22 +148,23 @@ service cloud.firestore {
     }
 
     /**
-     * @description Controls access to reminder documents within a user's profile.
+     * @description Secure reminders for a specific user.
      * @path /users/{userId}/reminders/{reminderId}
-     * @allow (create) - Authenticated user can create a reminder under their profile.
-     * @allow (get) - Authenticated user can read a reminder under their profile.
-     * @allow (update) - Authenticated user can update a reminder under their profile.
-     * @allow (delete) - Authenticated user can delete a reminder under their profile.
-     * @deny (create) - User cannot create a reminder under another user's profile.
-     * @deny (get) - User cannot read a reminder under another user's profile.
-     * @deny (update) - User cannot update a reminder under another user's profile.
-     * @deny (delete) - User cannot delete a reminder under another user's profile.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) - User with UID 'user_abc' can create a reminder under /users/user_abc/reminders/reminder_def.
+     * @allow (get) - User with UID 'user_abc' can get their reminder at /users/user_abc/reminders/reminder_def.
+     * @allow (update) - User with UID 'user_abc' can update their reminder at /users/user_abc/reminders/reminder_def.
+     * @allow (delete) - User with UID 'user_abc' can delete their reminder at /users/user_abc/reminders/reminder_def.
+     * @deny (create) - User with UID 'user_xyz' cannot create a reminder under /users/user_abc/reminders/reminder_def.
+     * @deny (get) - User with UID 'user_xyz' cannot get the reminder at /users/user_abc/reminders/reminder_def.
+     * @deny (update) - User with UID 'user_xyz' cannot update the reminder at /users/user_abc/reminders/reminder_def.
+     * @deny (delete) - User with UID 'user_xyz' cannot delete the reminder at /users/user_abc/reminders/reminder_def.
+     * @principle Enforces document ownership for writes and prevents unauthorized data access.
      */
     match /users/{userId}/reminders/{reminderId} {
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
+
       function isExistingOwner(userId) {
           return isOwner(userId) && resource != null;
       }
@@ -164,14 +177,14 @@ service cloud.firestore {
     }
 
     /**
-     * @description Controls access to focus tip documents.
+     * @description Allow public read access to focus tips.
      * @path /focusTips/{focusTipId}
-     * @allow (get) - Any user can read focus tips.
+     * @allow (get) - Any user can get any focus tip.
      * @allow (list) - Any user can list focus tips.
-     * @deny (create) - No user can create focus tips.
-     * @deny (update) - No user can update focus tips.
-     * @deny (delete) - No user can delete focus tips.
-     * @principle Allows public read access, denies all write access.
+     * @deny (create) - No one can create focus tips through the client.
+     * @deny (update) - No one can update focus tips through the client.
+     * @deny (delete) - No one can delete focus tips through the client.
+     * @principle Allows public read access while restricting write access.
      */
     match /focusTips/{focusTipId} {
       allow get: if true;

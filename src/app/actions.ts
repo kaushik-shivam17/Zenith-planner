@@ -38,7 +38,7 @@ const ensureAiReady = (): { ready: boolean; error?: string } => {
     return {
       ready: false,
       error:
-        'The AI system is not configured. Please set the GEMINI_API_KEY in your Vercel project environment variables to use this feature.',
+        'The AI system is not configured. Please set the GEMINI_API_KEY in your project environment variables to use this feature.',
     };
   }
   return { ready: true };

@@ -28,11 +28,13 @@ import {
 } from './ui/card';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, serverTimestamp } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { FirebaseError } from 'firebase/app';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const formSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters.'),
   email: z.string().email('Invalid email address.'),
   password: z.string().min(6, 'Password must be at least 6 characters.'),
 });
@@ -46,6 +48,7 @@ export function Signup() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: '',
       email: '',
       password: '',
     },
@@ -68,17 +71,22 @@ export function Signup() {
       const user = userCredential.user;
 
       // Create a user document in Firestore
-      await setDoc(doc(firestore, "users", user.uid), {
+      const userDocRef = doc(firestore, "users", user.uid);
+      const newUserProfile = {
         id: user.uid,
         email: user.email,
-        name: user.email?.split('@')[0] || 'New User', // Default name
-      });
+        name: values.name,
+        updatedAt: serverTimestamp(),
+      };
+      
+      // Use the non-blocking write with error handling
+      setDocumentNonBlocking(userDocRef, newUserProfile, { merge: false });
       
       toast({
         title: 'Account Created!',
-        description: 'Welcome! Please complete your profile.',
+        description: 'Welcome! You can now use the app.',
       });
-      router.push('/profile'); // Redirect to profile to complete setup
+      router.push('/dashboard'); 
     } catch (error: any) {
       console.error('Signup error', error);
        let description = 'An unexpected error occurred.';
@@ -116,6 +124,22 @@ export function Signup() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+               <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g., John Doe"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="email"

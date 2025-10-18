@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -24,6 +25,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { Header } from '@/components/header';
 import { useToast } from '@/hooks/use-toast';
@@ -39,16 +41,24 @@ const navItems = [
   { href: '/fitness', label: 'Fitness', icon: HeartPulse },
 ];
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+function AppContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
+  const { isMobile, setOpenMobile } = useSidebar();
+  
   const isAuthPage = pathname === '/login' || pathname === '/signup';
   useAuthGuard(!isAuthPage);
   const { user } = useUser();
 
   const { toast } = useToast();
   const isActive = (href: string) => pathname === href || (href === '/dashboard' && pathname === '/');
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -70,86 +80,93 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <SidebarProvider>
-       <div className="flex w-full">
-          <Sidebar>
-            <SidebarHeader>
-              <div className="flex items-center gap-3 p-2">
-                <div className="flex flex-col">
-                  <h1 className="text-xl font-bold tracking-tighter font-headline">
-                    Zenith Planner
-                  </h1>
-                  <p className="text-xs text-muted-foreground">
-                    Your AI-powered assistant
-                  </p>
-                </div>
-              </div>
-            </SidebarHeader>
-            <SidebarContent>
-              <SidebarMenu>
-                {navItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <Link href={item.href} className="w-full">
-                      <SidebarMenuButton
-                        isActive={isActive(item.href)}
-                        className="w-full"
-                        tooltip={{
-                          children: item.label,
-                        }}
-                      >
-                        <item.icon />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </Link>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarContent>
-            <SidebarFooter className="pt-2">
-              {user ? (
-                <>
-                  <SidebarMenuItem>
-                    <Link href="/profile" className="w-full">
-                      <SidebarMenuButton
-                        isActive={isActive('/profile')}
-                        className="w-full flex items-center gap-2"
-                      >
-                        <UserIcon />
-                        <span>Profile</span>
-                      </SidebarMenuButton>
-                    </Link>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton onClick={handleSignOut} className="w-full">
-                      <LogOut />
-                      <span>Logout</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </>
-              ) : (
-                <SidebarMenuItem>
-                  <Link href="/login" className="w-full">
-                    <SidebarMenuButton
-                      isActive={isActive('/login')}
-                      className="w-full"
-                    >
-                      <LogIn />
-                      <span>Login</span>
-                    </SidebarMenuButton>
-                  </Link>
-                </SidebarMenuItem>
-              )}
-            </SidebarFooter>
-          </Sidebar>
-          <main className="min-h-screen p-4 sm:p-6 md:p-8 flex-1">
-            <div className="max-w-5xl mx-auto">
-              <div className="md:hidden mb-4">
-                <Header />
-              </div>
-              {children}
+    <div className="flex w-full">
+      <Sidebar>
+        <SidebarHeader>
+          <div className="flex items-center gap-3 p-2">
+            <div className="flex flex-col">
+              <h1 className="text-xl font-bold tracking-tighter font-headline">
+                Zenith Planner
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                Your AI-powered assistant
+              </p>
             </div>
-          </main>
-      </div>
+          </div>
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarMenu>
+            {navItems.map((item) => (
+              <SidebarMenuItem key={item.href} onClick={handleLinkClick}>
+                <Link href={item.href} className="w-full">
+                  <SidebarMenuButton
+                    isActive={isActive(item.href)}
+                    className="w-full"
+                    tooltip={{
+                      children: item.label,
+                    }}
+                  >
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarContent>
+        <SidebarFooter className="pt-2">
+          {user ? (
+            <>
+              <SidebarMenuItem onClick={handleLinkClick}>
+                <Link href="/profile" className="w-full">
+                  <SidebarMenuButton
+                    isActive={isActive('/profile')}
+                    className="w-full flex items-center gap-2"
+                  >
+                    <UserIcon />
+                    <span>Profile</span>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={handleSignOut} className="w-full">
+                  <LogOut />
+                  <span>Logout</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </>
+          ) : (
+            <SidebarMenuItem onClick={handleLinkClick}>
+              <Link href="/login" className="w-full">
+                <SidebarMenuButton
+                  isActive={isActive('/login')}
+                  className="w-full"
+                >
+                  <LogIn />
+                  <span>Login</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          )}
+        </SidebarFooter>
+      </Sidebar>
+      <main className="min-h-screen p-4 sm:p-6 md:p-8 flex-1">
+        <div className="max-w-5xl mx-auto">
+          <div className="md:hidden mb-4">
+            <Header />
+          </div>
+          {children}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+
+export function AppShell({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <AppContent>{children}</AppContent>
     </SidebarProvider>
   );
 }

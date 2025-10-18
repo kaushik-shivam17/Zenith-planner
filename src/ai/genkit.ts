@@ -1,15 +1,14 @@
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
 
+// The Gemini API key is optional. The app can start without it,
+// but AI-related features will fail at runtime if the key is not provided.
 const geminiApiKey = process.env.GEMINI_API_KEY;
 
-if (!geminiApiKey) {
-  throw new Error(
-    'The GEMINI_API_KEY environment variable is not set. Please add it to your Vercel project settings.'
-  );
-}
-
 export const ai = genkit({
-  plugins: [googleAI({apiKey: geminiApiKey})],
+  plugins: [
+    // Conditionally add the googleAI plugin only if the API key is available.
+    ...(geminiApiKey ? [googleAI({apiKey: geminiApiKey})] : []),
+  ],
   model: 'googleai/gemini-2.5-flash',
 });

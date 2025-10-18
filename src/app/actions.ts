@@ -1,5 +1,6 @@
 'use server';
 
+import { ai } from '@/ai/genkit';
 import {
   generateStudySchedule,
   type GenerateStudyScheduleOutput,
@@ -31,39 +32,60 @@ import { Timestamp } from 'firebase/firestore';
 
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string };
 
+const ensureAiReady = (): { ready: boolean; error?: string } => {
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  if (!geminiApiKey || ai.listPlugins().length === 0) {
+    return {
+      ready: false,
+      error:
+        'The AI system is not configured. Please set the GEMINI_API_KEY in your Vercel project environment variables to use this feature.',
+    };
+  }
+  return { ready: true };
+};
+
 export const generateScheduleAction = async (
   tasks: string
 ): Promise<ActionResult<GenerateStudyScheduleOutput>> => {
+  const readiness = ensureAiReady();
+  if (!readiness.ready) return { success: false, error: readiness.error! };
+
   try {
     const result = await generateStudySchedule({ tasks });
     return { success: true, data: result };
   } catch (error: any) {
     console.error(error);
-    return { success: false, error: error.message || 'Failed to generate schedule. The AI system may be offline.' };
+    return { success: false, error: error.message || 'Failed to generate schedule.' };
   }
 };
 
 export const breakDownTaskAction = async (
   task: string
 ): Promise<ActionResult<BreakDownTaskOutput>> => {
+  const readiness = ensureAiReady();
+  if (!readiness.ready) return { success: false, error: readiness.error! };
+
   try {
     const result = await breakDownTask({ task });
     return { success: true, data: result };
   } catch (error: any) {
     console.error(error);
-    return { success: false, error: error.message || 'Failed to break down task. The AI system may be offline.' };
+    return { success: false, error: error.message || 'Failed to break down task.' };
   }
 };
 
 export const suggestTimesAction = async (
   input: SuggestOptimalStudyTimesInput
 ): Promise<ActionResult<SuggestOptimalStudyTimesOutput>> => {
+  const readiness = ensureAiReady();
+  if (!readiness.ready) return { success: false, error: readiness.error! };
+
   try {
     const result = await suggestOptimalStudyTimes(input);
     return { success: true, data: result };
   } catch (error: any) {
     console.error(error);
-    return { success: false, error: error.message || 'Failed to suggest times. The AI system may be offline.' };
+    return { success: false, error: error.message || 'Failed to suggest times.' };
   }
 };
 
@@ -91,6 +113,9 @@ type GenerateTimetableActionInput = {
 export const generateTimetableAction = async (
   input: GenerateTimetableActionInput
 ): Promise<ActionResult<GenerateTimetableOutput>> => {
+  const readiness = ensureAiReady();
+  if (!readiness.ready) return { success: false, error: readiness.error! };
+
   try {
     // Ensure deadline is a string for the AI flow
     const serializableTasks = input.tasks.map(task => ({
@@ -102,7 +127,7 @@ export const generateTimetableAction = async (
     return { success: true, data: result };
   } catch (error: any) {
     console.error(error);
-    return { success: false, error: error.message || 'Failed to generate timetable. The AI system may be offline.' };
+    return { success: false, error: error.message || 'Failed to generate timetable.' };
   }
 };
 
@@ -110,24 +135,29 @@ export const getFitnessAdviceAction = async (
   prompt: string,
   bmi?: number
 ): Promise<ActionResult<GetFitnessAdviceOutput>> => {
+  const readiness = ensureAiReady();
+  if (!readiness.ready) return { success: false, error: readiness.error! };
+
   try {
     const result = await getFitnessAdvice({ prompt, bmi });
     return { success: true, data: result };
   } catch (error: any) {
     console.error(error);
-    return { success: false, error: error.message || 'Failed to get fitness advice. The AI system may be offline.' };
+    return { success: false, error: error.message || 'Failed to get fitness advice.' };
   }
 };
 
 export const generateTaskRoadmapAction = async (
   taskTitle: string
 ): Promise<ActionResult<GenerateTaskRoadmapOutput>> => {
+  const readiness = ensureAiReady();
+  if (!readiness.ready) return { success: false, error: readiness.error! };
   try {
     const result = await generateTaskRoadmap({ taskTitle });
     return { success: true, data: result };
   } catch (error: any) {
     console.error(error);
-    return { success: false, error: error.message || 'Failed to generate roadmap. The AI system may be offline.' };
+    return { success: false, error: error.message || 'Failed to generate roadmap.' };
   }
 };
 
@@ -135,12 +165,15 @@ export const continueConversationAction = async (
   taskTitle: string,
   history: { user: string; model: string }[]
 ): Promise<ActionResult<ContinueConversationOutput>> => {
+  const readiness = ensureAiReady();
+  if (!readiness.ready) return { success: false, error: readiness.error! };
+
   try {
     const result = await continueConversation({ taskTitle, history });
     return { success: true, data: result };
   } catch (error: any) {
     console.error(error);
-    return { success: false, error: error.message || 'Failed to continue conversation. The AI system may be offline.' };
+    return { success: false, error: error.message || 'Failed to continue conversation.' };
   }
 };
 
@@ -148,11 +181,14 @@ export const continueConversationAction = async (
 export const suggestGoalsForMissionAction = async (
   missionTitle: string
 ): Promise<ActionResult<SuggestGoalsForMissionOutput>> => {
+  const readiness = ensureAiReady();
+  if (!readiness.ready) return { success: false, error: readiness.error! };
+
   try {
     const result = await suggestGoalsForMission({ missionTitle });
     return { success: true, data: result };
   } catch (error: any) {
     console.error(error);
-    return { success: false, error: error.message || 'Failed to suggest goals. The AI system may be offline.' };
+    return { success: false, error: error.message || 'Failed to suggest goals.' };
   }
 };

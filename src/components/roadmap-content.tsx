@@ -120,18 +120,17 @@ export function RoadmapContent({ taskId }: { taskId: string }) {
     setUserInput('');
     setIsChatLoading(true);
   
-    // Correctly build the history for the API
-    const conversationHistoryForApi: { user: string; model: string }[] = [];
-    for (let i = 0; i < newChatHistory.length - 1; i += 2) {
-      const userMsg = newChatHistory[i];
-      const modelMsg = newChatHistory[i + 1];
-      if (userMsg?.role === 'user' && modelMsg?.role === 'model') {
-        conversationHistoryForApi.push({ user: userMsg.content, model: modelMsg.content });
-      }
-    }
-    // Add the latest user message
-    conversationHistoryForApi.push({ user: newUserMessage.content, model: ''});
-
+    const conversationHistoryForApi = newChatHistory.reduce((acc, msg, index) => {
+        if (msg.role === 'user') {
+            const modelResponse = newChatHistory[index + 1];
+            acc.push({
+                user: msg.content,
+                // The last user message won't have a model response yet.
+                model: modelResponse?.role === 'model' ? modelResponse.content : '',
+            });
+        }
+        return acc;
+    }, [] as { user: string; model: string }[]);
 
     const result = await continueConversationAction(
       item.title,
@@ -149,6 +148,7 @@ export function RoadmapContent({ taskId }: { taskId: string }) {
         title: 'Error',
         description: result.error,
       });
+      // remove the user message if AI fails
       setChatHistory(prev => prev.slice(0, -1));
     }
     setIsChatLoading(false);

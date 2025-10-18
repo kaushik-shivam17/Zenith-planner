@@ -54,12 +54,7 @@ export function useTasks(): TasksHook {
 
   const getTaskById = useCallback(
     (taskId: string) => {
-      const task = tasks.find((task) => task.id === taskId);
-      if (!task) return undefined;
-      return {
-        ...task,
-        deadline: task.deadline instanceof Timestamp ? task.deadline.toDate() : task.deadline,
-      };
+      return tasks.find((task) => task.id === taskId);
     },
     [tasks]
   );
@@ -74,7 +69,7 @@ export function useTasks(): TasksHook {
         createdAt: serverTimestamp(),
         deadline: Timestamp.fromDate(taskData.deadline), // Convert JS Date to Firestore Timestamp
       };
-      await addDocument(tasksCollectionRef, newTask);
+      addDocument(tasksCollectionRef, newTask);
     },
     [tasksCollectionRef, user]
   );
@@ -110,7 +105,7 @@ export function useTasks(): TasksHook {
   const isLoading = isUserLoading || (!!user && areTasksLoading);
 
   const value = {
-    tasks: tasks.map(t => ({...t, deadline: t.deadline instanceof Timestamp ? t.deadline.toDate() : t.deadline})),
+    tasks: tasks,
     getTaskById,
     addTask,
     updateTask,

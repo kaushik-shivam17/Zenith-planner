@@ -68,10 +68,7 @@ export function TaskManager() {
                 you're done.
               </DialogDescription>
             </DialogHeader>
-            <TaskForm onAddTask={(data) => {
-                addTask(data);
-                setIsAddOpen(false);
-            }} />
+            <TaskForm onAddTask={handleTaskAdded} />
           </DialogContent>
         </Dialog>
       </CardHeader>

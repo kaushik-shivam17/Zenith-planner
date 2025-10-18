@@ -6,7 +6,7 @@ export type Task = {
   id: string;
   title: string;
   description?: string;
-  deadline: Timestamp;
+  deadline: Date | Timestamp;
   completed: boolean;
   subtasks?: string[];
   userId: string;

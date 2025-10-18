@@ -6,6 +6,7 @@ import { FirebaseProvider, useUser } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 function AuthLoadingGate({ children }: { children: ReactNode }) {
   const { isUserLoading } = useUser();
@@ -43,6 +44,7 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
       firestore={firebaseServices.firestore}
     >
       <AuthLoadingGate>{children}</AuthLoadingGate>
+      <FirebaseErrorListener />
     </FirebaseProvider>
   );
 }

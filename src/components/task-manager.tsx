@@ -22,12 +22,12 @@ import {
 import { TaskForm } from '@/components/task-form';
 import { TaskList } from '@/components/task-list';
 import type { Task } from '@/lib/types';
-import { useTasks } from '@/hooks/use-tasks';
+import { useData } from '@/context/data-provider';
 
 
 export function TaskManager() {
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const { tasks, addTask, updateTask, toggleTaskCompletion, isLoading } = useTasks();
+  const { tasks, addTask, updateTask, toggleTaskCompletion, isLoading } = useData();
 
 
   const handleTaskAdded = async (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => {

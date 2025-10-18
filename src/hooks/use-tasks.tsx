@@ -21,7 +21,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 
-interface TasksHook {
+export interface TasksHook {
   tasks: Task[];
   getTaskById: (taskId: string) => Task | undefined;
   addTask: (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => Promise<void>;
@@ -35,10 +35,10 @@ export function useTasks(): TasksHook {
 
   const tasksCollectionRef = useMemoFirebase(
     () => {
-        if (!areServicesAvailable || isUserLoading || !user || !firestore) return null;
+        if (!areServicesAvailable || !user || !firestore) return null;
         return collection(firestore, 'users', user.uid, 'tasks');
     },
-    [areServicesAvailable, isUserLoading, user, firestore]
+    [areServicesAvailable, user, firestore]
   );
 
   const { data: rawTasks, isLoading: areTasksLoading } = useCollection<Omit<Task, 'id'>>(

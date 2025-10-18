@@ -42,8 +42,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
-import { useTimetable } from '@/hooks/use-timetable';
-import { useTasks } from '@/hooks/use-tasks';
+import { useData } from '@/context/data-provider';
 
 
 const timeSlots = [
@@ -248,8 +247,7 @@ function ScheduleManagerDialog({ events, addCustomEvents, deleteCustomEvent, isL
 }
 
 export function Timetable() {
-  const { events, setEvents, addCustomEvents, deleteCustomEvent, clearEvents, isLoading: isTimetableLoading } = useTimetable();
-  const { tasks, isLoading: areTasksLoading } = useTasks();
+  const { events, setEvents, addCustomEvents, deleteCustomEvent, clearEvents, tasks, isLoading } = useData();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPrefsOpen, setIsPrefsOpen] = useState(false);
@@ -321,8 +319,6 @@ export function Timetable() {
     clearEvents('task');
     toast({ title: 'Study blocks cleared from timetable.' });
   }
-
-  const isLoading = isTimetableLoading || areTasksLoading;
 
   if (isLoading) {
     return (

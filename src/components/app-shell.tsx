@@ -44,7 +44,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   const isAuthPage = pathname === '/login' || pathname === '/signup';
-  const { user } = useAuthGuard(!isAuthPage);
+  useAuthGuard(!isAuthPage);
+  const { user } = useUser();
 
   const { toast } = useToast();
   const isActive = (href: string) => pathname === href || (href === '/dashboard' && pathname === '/');

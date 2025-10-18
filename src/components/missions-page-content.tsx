@@ -21,11 +21,11 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { useMissions } from '@/hooks/use-missions';
+import { useData } from '@/context/data-provider';
 
 export function MissionsPageContent() {
   const router = useRouter();
-  const { missions, addMission, isLoading } = useMissions();
+  const { missions, addMission, isLoading } = useData();
   const [newMissionTitle, setNewMissionTitle] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   

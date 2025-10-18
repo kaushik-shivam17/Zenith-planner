@@ -139,6 +139,9 @@ export const getFitnessAdviceAction = async (
   if (!readiness.ready) return { success: false, error: readiness.error! };
 
   try {
+    if (!prompt.trim()) {
+      return { success: false, error: 'Please provide a question or topic for advice.' };
+    }
     const result = await getFitnessAdvice({ prompt, bmi });
     return { success: true, data: result };
   } catch (error: any) {

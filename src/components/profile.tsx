@@ -6,7 +6,7 @@ import * as z from 'zod';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useFirebase, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, serverTimestamp } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { updatePassword } from 'firebase/auth';
@@ -56,6 +56,13 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 // This is the type that will be stored in Firestore, with height in meters
 type UserProfileFirestore = Omit<UserProfile, 'height'> & { height?: number };
 
+type BmiResult = {
+  value: string;
+  status: 'Underweight' | 'Normal' | 'Overweight';
+  color: string;
+  label: string;
+};
+
 
 export function Profile() {
   const { user, auth } = useAuthGuard(true);
@@ -63,7 +70,7 @@ export function Profile() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
-  const [bmi, setBmi] = useState<string | null>(null);
+  const [bmiResult, setBmiResult] = useState<BmiResult | null>(null);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
 
   const userDocRef = useMemoFirebase(
@@ -174,10 +181,35 @@ export function Profile() {
   
     if (height && weight && height > 0 && weight > 0) {
       const heightInMeters = height / 100;
-      const bmiValue = (weight / (heightInMeters * heightInMeters)).toFixed(2);
-      setBmi(bmiValue);
+      const bmiValue = parseFloat((weight / (heightInMeters * heightInMeters)).toFixed(2));
+      
+      let status: BmiResult['status'];
+      let color: string;
+      let label: string;
+
+      if (bmiValue < 18.5) {
+        status = 'Underweight';
+        color = 'text-yellow-500';
+        label = 'BMI is low';
+      } else if (bmiValue >= 18.5 && bmiValue <= 24.9) {
+        status = 'Normal';
+        color = 'text-green-500';
+        label = 'BMI is good';
+      } else {
+        status = 'Overweight';
+        color = 'text-red-500';
+        label = 'BMI is high';
+      }
+
+      setBmiResult({
+        value: bmiValue.toString(),
+        status,
+        color,
+        label
+      });
+
     } else {
-      setBmi(null);
+      setBmiResult(null);
       toast({
         variant: 'destructive',
         title: 'Missing or Invalid Information',
@@ -253,7 +285,7 @@ export function Profile() {
                           onChange={(e) => {
                             const value = e.target.value;
                             field.onChange(value === '' ? undefined : parseFloat(value));
-                            setBmi(null);
+                            setBmiResult(null);
                           }}
                         />
                       </FormControl>
@@ -277,7 +309,7 @@ export function Profile() {
                           onChange={(e) => {
                             const value = e.target.value;
                             field.onChange(value === '' ? undefined : parseFloat(value));
-                            setBmi(null);
+                            setBmiResult(null);
                           }}
                         />
                       </FormControl>
@@ -285,10 +317,11 @@ export function Profile() {
                     </FormItem>
                   )}
                 />
-                 {bmi && (
+                 {bmiResult && (
                   <div className="flex items-center p-4 rounded-md bg-secondary sm:col-span-2">
                     <p className="text-sm font-medium text-foreground">
-                      Your calculated BMI is: <strong className="text-primary">{bmi}</strong>
+                      Your calculated BMI is: <strong className={bmiResult.color}>{bmiResult.value}</strong>
+                      <span className={`ml-2 font-semibold ${bmiResult.color}`}>({bmiResult.label})</span>
                     </p>
                   </div>
                 )}

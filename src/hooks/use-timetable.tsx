@@ -11,7 +11,9 @@ import {
   errorEmitter,
   FirestorePermissionError,
 } from '@/firebase';
-import { collection, writeBatch, doc, addDoc, deleteDoc, getDocs } from 'firebase/firestore';
+import { collection, writeBatch, doc, deleteDoc, getDocs } from 'firebase/firestore';
+import { addDocument } from '@/firebase/non-blocking-updates';
+
 
 interface TimetableHook {
   events: TimetableEvent[];
@@ -67,20 +69,13 @@ export function useTimetable(): TimetableHook {
       if (!timetableCollectionRef || !user) return;
       
       try {
-        const batch = writeBatch(timetableCollectionRef.firestore);
         for (const event of customEvents) {
-          const newEventRef = doc(timetableCollectionRef);
-          const eventWithUser = { ...event, id: newEventRef.id, userId: user.uid, type: 'custom' as 'custom' };
-          batch.set(newEventRef, eventWithUser);
+            const eventWithUser = { ...event, userId: user.uid, type: 'custom' as 'custom' };
+            await addDocument(timetableCollectionRef, eventWithUser);
         }
-        await batch.commit();
       } catch (error) {
-          console.error('Error adding custom event:', error);
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: timetableCollectionRef.path,
-            operation: 'create',
-            // Note: can't provide specific data for batch writes easily
-          }));
+          // The error is already emitted by addDocument, so we just log it here.
+          console.error('Error adding custom event(s):', error);
       }
       
   }, [timetableCollectionRef, user]);

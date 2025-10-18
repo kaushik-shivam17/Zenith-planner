@@ -12,7 +12,8 @@ import {
   errorEmitter,
   FirestorePermissionError,
 } from '@/firebase';
-import { collection, doc, serverTimestamp, getDocs, writeBatch, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, getDocs, writeBatch, updateDoc } from 'firebase/firestore';
+import { addDocument, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 interface MissionsHook {
   missions: Mission[];
@@ -67,18 +68,7 @@ export function useMissions(): MissionsHook {
         totalGoals: 0,
         completedGoals: 0,
       };
-      try {
-        await addDoc(missionsCollectionRef, newMission);
-      } catch (error) {
-         errorEmitter.emit(
-          'permission-error',
-          new FirestorePermissionError({
-            path: missionsCollectionRef.path,
-            operation: 'create',
-            requestResourceData: newMission,
-          })
-        );
-      }
+      await addDocument(missionsCollectionRef, newMission);
     },
     [missionsCollectionRef, user]
   );
@@ -87,18 +77,7 @@ export function useMissions(): MissionsHook {
     async (missionId: string, updates: Partial<Omit<Mission, 'id' | 'userId'>>) => {
         if (!missionsCollectionRef) return;
         const missionDocRef = doc(missionsCollectionRef, missionId);
-        try {
-          await updateDoc(missionDocRef, updates);
-        } catch(error) {
-          errorEmitter.emit(
-            'permission-error',
-            new FirestorePermissionError({
-              path: missionDocRef.path,
-              operation: 'update',
-              requestResourceData: updates,
-            })
-          );
-        }
+        updateDocumentNonBlocking(missionDocRef, updates);
     },
     [missionsCollectionRef]
   );

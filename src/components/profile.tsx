@@ -31,9 +31,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Loader2, User as UserIcon } from 'lucide-react';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
 const profileSchema = z.object({
@@ -129,22 +128,14 @@ export function Profile() {
 
     const docRef = doc(firestore, 'users', user.uid);
     
-    try {
-      await setDoc(docRef, finalData, { merge: true });
-      toast({
-        title: 'Profile Updated',
-        description: 'Your changes have been saved.',
-      });
-    } catch (error) {
-       console.error("Failed to update profile", error);
-       toast({
-        variant: 'destructive',
-        title: 'Update Failed',
-        description: error instanceof Error ? error.message : 'Could not save your profile.',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    setDocumentNonBlocking(docRef, finalData, { merge: true });
+
+    toast({
+      title: 'Profile Update Saving',
+      description: 'Your changes are being saved.',
+    });
+    
+    setIsSubmitting(false);
   }
 
   async function onPasswordSubmit(values: PasswordFormValues) {

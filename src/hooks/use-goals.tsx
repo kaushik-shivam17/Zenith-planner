@@ -12,7 +12,7 @@ import {
   errorEmitter,
   FirestorePermissionError,
 } from '@/firebase';
-import { collection, doc, serverTimestamp, runTransaction, increment } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, runTransaction, increment, writeBatch, getDocs } from 'firebase/firestore';
 
 interface GoalsContextType {
   goals: Goal[];

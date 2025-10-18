@@ -9,17 +9,14 @@ import {
   useFirebase,
   useCollection,
   useMemoFirebase,
-  errorEmitter,
-  FirestorePermissionError,
 } from '@/firebase';
 import {
   collection,
   doc,
   serverTimestamp,
   Timestamp,
-  addDoc,
-  updateDoc,
 } from 'firebase/firestore';
+import { addDocument, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 export interface TasksHook {
   tasks: Task[];
@@ -77,18 +74,7 @@ export function useTasks(): TasksHook {
         createdAt: serverTimestamp(),
         deadline: Timestamp.fromDate(taskData.deadline), // Convert JS Date to Firestore Timestamp
       };
-      try {
-        await addDoc(tasksCollectionRef, newTask);
-      } catch (error) {
-        errorEmitter.emit(
-          'permission-error',
-          new FirestorePermissionError({
-            path: tasksCollectionRef.path,
-            operation: 'create',
-            requestResourceData: newTask,
-          })
-        );
-      }
+      await addDocument(tasksCollectionRef, newTask);
     },
     [tasksCollectionRef, user]
   );
@@ -103,18 +89,7 @@ export function useTasks(): TasksHook {
         (updatesForFirestore as any).deadline = Timestamp.fromDate(updates.deadline);
       }
 
-      try {
-        await updateDoc(taskDocRef, updatesForFirestore);
-      } catch (error) {
-        errorEmitter.emit(
-          'permission-error',
-          new FirestorePermissionError({
-            path: taskDocRef.path,
-            operation: 'update',
-            requestResourceData: updatesForFirestore,
-          })
-        );
-      }
+      updateDocumentNonBlocking(taskDocRef, updatesForFirestore);
     },
     [tasksCollectionRef]
   );
@@ -126,18 +101,7 @@ export function useTasks(): TasksHook {
       if (task) {
         const taskDocRef = doc(tasksCollectionRef, taskId);
         const newCompletedStatus = !task.completed;
-        try {
-          await updateDoc(taskDocRef, { completed: newCompletedStatus });
-        } catch (error) {
-          errorEmitter.emit(
-            'permission-error',
-            new FirestorePermissionError({
-              path: taskDocRef.path,
-              operation: 'update',
-              requestResourceData: { completed: newCompletedStatus },
-            })
-          );
-        }
+        updateDocumentNonBlocking(taskDocRef, { completed: newCompletedStatus });
       }
     },
     [tasksCollectionRef, tasks]

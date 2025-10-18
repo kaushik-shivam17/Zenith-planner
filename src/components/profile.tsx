@@ -32,11 +32,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Loader2, User as UserIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocument } from '@/firebase/non-blocking-updates';
 
 
 const profileSchema = z.object({
   email: z.string().email(),
+  name: z.string().min(2, "Name must be at least 2 characters."),
   class: z.string().optional(),
   height: z.coerce.number().positive('Height must be positive.').optional(),
   weight: z.coerce.number().positive('Weight must be positive.').optional(),
@@ -84,6 +85,7 @@ export function Profile() {
     resolver: zodResolver(profileSchema),
     defaultValues: {
       email: '',
+      name: '',
       class: '',
       height: undefined, // cm
       weight: undefined,
@@ -104,6 +106,7 @@ export function Profile() {
     if (userProfile) {
       form.reset({
         email: userProfile.email ?? user?.email ?? '',
+        name: userProfile.name ?? user?.displayName ?? '',
         class: userProfile.class ?? '',
         // Convert height from meters (Firestore) to cm (UI)
         height: userProfile.height ? userProfile.height * 100 : undefined,
@@ -111,6 +114,7 @@ export function Profile() {
       });
     } else if (user) {
       form.setValue('email', user.email || '');
+      form.setValue('name', user.displayName || '');
     }
   }, [userProfile, user, form]);
 
@@ -125,21 +129,19 @@ export function Profile() {
     const heightInMeters = values.height ? values.height / 100 : undefined;
 
     const finalData = {
-      class: values.class,
+      ...values,
       height: heightInMeters,
-      weight: values.weight,
-      email: values.email,
       updatedAt: serverTimestamp(),
     }
 
 
     const docRef = doc(firestore, 'users', user.uid);
     
-    setDocumentNonBlocking(docRef, finalData, { merge: true });
+    setDocument(docRef, finalData, { merge: true });
 
     toast({
       title: 'Profile Update Saving',
-      description: 'Your changes are being saved.',
+      description: 'Your changes are being saved in the background.',
     });
     
     setIsSubmitting(false);
@@ -243,6 +245,19 @@ export function Profile() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Jane Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="email"

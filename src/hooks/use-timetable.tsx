@@ -11,8 +11,8 @@ import {
   errorEmitter,
   FirestorePermissionError,
 } from '@/firebase';
-import { collection, writeBatch, doc, deleteDoc, getDocs } from 'firebase/firestore';
-import { addDocument } from '@/firebase/non-blocking-updates';
+import { collection, writeBatch, doc, getDocs } from 'firebase/firestore';
+import { addDocument, deleteDocument } from '@/firebase/non-blocking-updates';
 
 
 interface TimetableHook {
@@ -68,14 +68,9 @@ export function useTimetable(): TimetableHook {
   const addCustomEvents = useCallback(async (customEvents: Omit<TimetableEvent, 'id' | 'userId' | 'type'>[]) => {
       if (!timetableCollectionRef || !user) return;
       
-      try {
-        for (const event of customEvents) {
-            const eventWithUser = { ...event, userId: user.uid, type: 'custom' as 'custom' };
-            await addDocument(timetableCollectionRef, eventWithUser);
-        }
-      } catch (error) {
-          // The error is already emitted by addDocument, so we just log it here.
-          console.error('Error adding custom event(s):', error);
+      for (const event of customEvents) {
+          const eventWithUser = { ...event, userId: user.uid, type: 'custom' as 'custom' };
+          addDocument(timetableCollectionRef, eventWithUser);
       }
       
   }, [timetableCollectionRef, user]);
@@ -83,15 +78,7 @@ export function useTimetable(): TimetableHook {
   const deleteCustomEvent = useCallback(async (eventId: string) => {
     if (!timetableCollectionRef) return;
     const eventDocRef = doc(timetableCollectionRef, eventId);
-    try {
-      await deleteDoc(eventDocRef);
-    } catch (error) {
-      console.error('Error deleting event:', error);
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: eventDocRef.path,
-        operation: 'delete',
-      }));
-    }
+    deleteDocument(eventDocRef);
   }, [timetableCollectionRef]);
 
 

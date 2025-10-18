@@ -12,8 +12,8 @@ import {
   errorEmitter,
   FirestorePermissionError,
 } from '@/firebase';
-import { collection, doc, serverTimestamp, getDocs, writeBatch, updateDoc } from 'firebase/firestore';
-import { addDocument, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { collection, doc, serverTimestamp, getDocs, writeBatch } from 'firebase/firestore';
+import { addDocument, updateDocument, deleteDocument } from '@/firebase/non-blocking-updates';
 
 interface MissionsHook {
   missions: Mission[];
@@ -68,7 +68,7 @@ export function useMissions(): MissionsHook {
         totalGoals: 0,
         completedGoals: 0,
       };
-      await addDocument(missionsCollectionRef, newMission);
+      addDocument(missionsCollectionRef, newMission);
     },
     [missionsCollectionRef, user]
   );
@@ -77,7 +77,7 @@ export function useMissions(): MissionsHook {
     async (missionId: string, updates: Partial<Omit<Mission, 'id' | 'userId'>>) => {
         if (!missionsCollectionRef) return;
         const missionDocRef = doc(missionsCollectionRef, missionId);
-        updateDocumentNonBlocking(missionDocRef, updates);
+        updateDocument(missionDocRef, updates);
     },
     [missionsCollectionRef]
   );

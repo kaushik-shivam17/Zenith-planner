@@ -32,7 +32,7 @@ import { Loader2 } from 'lucide-react';
 import { doc, serverTimestamp } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { FirebaseError } from 'firebase/app';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocument } from '@/firebase/non-blocking-updates';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -77,11 +77,12 @@ export function Signup() {
         id: user.uid,
         email: user.email,
         name: values.name,
+        createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
       
       // Use the non-blocking write with error handling
-      setDocumentNonBlocking(userDocRef, newUserProfile, { merge: false });
+      setDocument(userDocRef, newUserProfile);
       
       toast({
         title: 'Account Created!',

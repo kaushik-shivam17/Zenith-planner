@@ -32,6 +32,10 @@
           "type": "number",
           "description": "User's weight in kilograms (optional)."
         },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
         "updatedAt": {
           "type": "string",
           "format": "date-time"
@@ -40,7 +44,9 @@
       "required": [
         "id",
         "name",
-        "email"
+        "email",
+        "createdAt",
+        "updatedAt"
       ]
     },
     "Roadmap": {
@@ -82,7 +88,7 @@
         },
         "userId": {
           "type": "string",
-          "description": "The UID of the user who owns this task."
+          "description": "The Firebase Auth UID of the user who owns this task."
         },
         "title": {
           "type": "string",
@@ -132,7 +138,7 @@
         },
         "userId": {
           "type": "string",
-          "description": "The UID of the user who owns this mission."
+          "description": "The Firebase Auth UID of the user who owns this mission."
         },
         "title": {
           "type": "string",
@@ -290,7 +296,7 @@
           "params": [
             {
               "name": "userId",
-              "description": "The unique identifier for the user."
+              "description": "The unique identifier for the user (Firebase Auth UID)."
             },
             {
               "name": "taskId",
@@ -310,7 +316,7 @@
           "params": [
             {
               "name": "userId",
-              "description": "The unique identifier for the user."
+              "description": "The unique identifier for the user (Firebase Auth UID)."
             },
             {
               "name": "missionId",

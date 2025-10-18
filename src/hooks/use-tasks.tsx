@@ -16,7 +16,7 @@ import {
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
-import { addDocument, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { addDocument, updateDocument } from '@/firebase/non-blocking-updates';
 
 export interface TasksHook {
   tasks: Task[];
@@ -84,7 +84,7 @@ export function useTasks(): TasksHook {
         (updatesForFirestore as any).deadline = Timestamp.fromDate(updates.deadline);
       }
 
-      updateDocumentNonBlocking(taskDocRef, updatesForFirestore);
+      updateDocument(taskDocRef, updatesForFirestore);
     },
     [tasksCollectionRef]
   );
@@ -96,7 +96,7 @@ export function useTasks(): TasksHook {
       if (task) {
         const taskDocRef = doc(tasksCollectionRef, taskId);
         const newCompletedStatus = !task.completed;
-        updateDocumentNonBlocking(taskDocRef, { completed: newCompletedStatus });
+        updateDocument(taskDocRef, { completed: newCompletedStatus });
       }
     },
     [tasksCollectionRef, tasks]

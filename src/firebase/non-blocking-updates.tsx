@@ -16,18 +16,18 @@ import {FirestorePermissionError} from '@/firebase/errors';
  * Initiates a setDoc operation for a document reference.
  * Does NOT await the write operation internally.
  */
-export function setDocumentNonBlocking(docRef: DocumentReference, data: any, options: SetOptions) {
-  setDoc(docRef, data, options).catch(error => {
+export function setDocument(docRef: DocumentReference, data: any, options?: SetOptions) {
+  const operation = options && 'merge' in options && options.merge ? 'update' : 'create';
+  setDoc(docRef, data, options || {}).catch(error => {
     errorEmitter.emit(
       'permission-error',
       new FirestorePermissionError({
         path: docRef.path,
-        operation: 'write', // or 'create'/'update' based on options
+        operation: operation,
         requestResourceData: data,
       })
     )
   })
-  // Execution continues immediately
 }
 
 
@@ -53,7 +53,7 @@ export function addDocument(colRef: CollectionReference, data: any) {
  * Initiates an updateDoc operation for a document reference.
  * Does NOT await the write operation internally.
  */
-export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) {
+export function updateDocument(docRef: DocumentReference, data: any) {
   updateDoc(docRef, data)
     .catch(error => {
       errorEmitter.emit(
@@ -72,7 +72,7 @@ export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) 
  * Initiates a deleteDoc operation for a document reference.
  * Does NOT await the write operation internally.
  */
-export function deleteDocumentNonBlocking(docRef: DocumentReference) {
+export function deleteDocument(docRef: DocumentReference) {
   deleteDoc(docRef)
     .catch(error => {
       errorEmitter.emit(

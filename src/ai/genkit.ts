@@ -10,5 +10,6 @@ export const ai = genkit({
     // Conditionally add the googleAI plugin only if the API key is available.
     ...(geminiApiKey ? [googleAI({apiKey: geminiApiKey})] : []),
   ],
-  model: 'googleai/gemini-2.5-flash',
+  // You can define a default model for your flows.
+  // model: 'googleai/gemini-1.5-flash-latest',
 });

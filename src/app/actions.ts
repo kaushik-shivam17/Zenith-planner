@@ -33,8 +33,7 @@ import { Timestamp } from 'firebase/firestore';
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string };
 
 const ensureAiReady = (): { ready: boolean; error?: string } => {
-  const geminiApiKey = process.env.GEMINI_API_KEY;
-  if (!geminiApiKey || ai.listPlugins().length === 0) {
+  if (ai.listPlugins().length === 0) {
     return {
       ready: false,
       error:

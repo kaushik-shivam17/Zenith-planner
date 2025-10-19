@@ -13,7 +13,6 @@ import {
   FirestorePermissionError,
 } from '@/firebase';
 import { collection, doc, serverTimestamp, runTransaction, increment } from 'firebase/firestore';
-import { setDocument, deleteDocument } from '@/firebase/non-blocking-updates';
 
 interface GoalsContextType {
   goals: Goal[];

@@ -120,18 +120,22 @@ export function RoadmapContent({ taskId }: { taskId: string }) {
     setUserInput('');
     setIsChatLoading(true);
   
-    const conversationHistoryForApi = newChatHistory.reduce((acc, msg, index) => {
+    // Convert the full chat history into the {user, model} pair format
+    const conversationHistoryForApi = newChatHistory
+      .reduce((acc, msg, index) => {
         if (msg.role === 'user') {
-            const modelResponse = newChatHistory[index + 1];
-            acc.push({
-                user: msg.content,
-                // The last user message won't have a model response yet.
-                model: modelResponse?.role === 'model' ? modelResponse.content : '',
-            });
+          // Find the next model message
+          const modelMsg = newChatHistory.slice(index + 1).find(m => m.role === 'model');
+          acc.push({
+            user: msg.content,
+            model: modelMsg ? modelMsg.content : ''
+          });
         }
         return acc;
-    }, [] as { user: string; model: string }[]);
-
+      }, [] as { user: string; model: string }[]);
+      
+    // The very last user message won't have a model response yet.
+    // The API is designed to respond to the last user message.
     const result = await continueConversationAction(
       item.title,
       conversationHistoryForApi

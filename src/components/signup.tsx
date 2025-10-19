@@ -100,6 +100,9 @@ export function Signup() {
           case 'auth/weak-password':
             description = 'The password is too weak. Please use at least 6 characters.';
             break;
+           case 'auth/invalid-api-key':
+            description = 'The Firebase API key is invalid. Please check your project configuration.';
+            break;
           default:
             description = error.message;
         }

@@ -191,16 +191,16 @@ export function Profile() {
 
       if (bmiValue < 18.5) {
         status = 'Underweight';
-        color = 'text-yellow-500';
-        label = 'BMI is low';
+        color = 'text-yellow-400';
+        label = 'Underweight';
       } else if (bmiValue >= 18.5 && bmiValue <= 24.9) {
         status = 'Normal';
-        color = 'text-green-500';
-        label = 'BMI is good';
+        color = 'text-green-400';
+        label = 'Normal';
       } else {
         status = 'Overweight';
-        color = 'text-red-500';
-        label = 'BMI is high';
+        color = 'text-red-400';
+        label = 'Overweight';
       }
 
       setBmiResult({

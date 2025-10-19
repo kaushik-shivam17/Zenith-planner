@@ -17,8 +17,9 @@ import {FirestorePermissionError} from '@/firebase/errors';
  * Does NOT await the write operation internally.
  */
 export function setDocument(docRef: DocumentReference, data: any, options?: SetOptions) {
-  const operation = options && 'merge' in options && options.merge ? 'update' : 'create';
+  const operation = options?.merge ? 'update' : 'create';
   setDoc(docRef, data, options || {}).catch(error => {
+    console.error(`setDocument failed for path: ${docRef.path}`, error);
     errorEmitter.emit(
       'permission-error',
       new FirestorePermissionError({
@@ -37,6 +38,7 @@ export function setDocument(docRef: DocumentReference, data: any, options?: SetO
  */
 export function addDocument(colRef: CollectionReference, data: any) {
     addDoc(colRef, data).catch(error => {
+        console.error(`addDocument failed for path: ${colRef.path}`, error);
         errorEmitter.emit(
             'permission-error',
             new FirestorePermissionError({
@@ -56,6 +58,7 @@ export function addDocument(colRef: CollectionReference, data: any) {
 export function updateDocument(docRef: DocumentReference, data: any) {
   updateDoc(docRef, data)
     .catch(error => {
+      console.error(`updateDocument failed for path: ${docRef.path}`, error);
       errorEmitter.emit(
         'permission-error',
         new FirestorePermissionError({
@@ -75,6 +78,7 @@ export function updateDocument(docRef: DocumentReference, data: any) {
 export function deleteDocument(docRef: DocumentReference) {
   deleteDoc(docRef)
     .catch(error => {
+      console.error(`deleteDocument failed for path: ${docRef.path}`, error);
       errorEmitter.emit(
         'permission-error',
         new FirestorePermissionError({

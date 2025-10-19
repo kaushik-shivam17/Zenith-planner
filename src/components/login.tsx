@@ -80,6 +80,9 @@ export function Login() {
           case 'auth/invalid-credential':
             description = 'Invalid email or password. Please try again.';
             break;
+          case 'auth/invalid-api-key':
+            description = 'The Firebase API key is invalid. Please check your project configuration.';
+            break;
           default:
             description = error.message;
         }

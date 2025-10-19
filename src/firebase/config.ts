@@ -2,6 +2,8 @@
 // This file is generated based on your .env file.
 // To configure Firebase, add your Firebase app config to .env.
 
+// This configuration is used for the Firebase SDKs on the client-side.
+// It is public and does not contain any sensitive information.
 export const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,

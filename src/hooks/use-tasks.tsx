@@ -21,7 +21,7 @@ import { addDocument, updateDocument } from '@/firebase/non-blocking-updates';
 export interface TasksHook {
   tasks: Task[];
   getTaskById: (taskId: string) => Task | undefined;
-  addTask: (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => Promise<void>;
+  addTask: (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline' | 'roadmap'> & { deadline: Date }) => Promise<void>;
   updateTask: (taskId: string, updates: Partial<Omit<Task, 'id' | 'userId'>>) => Promise<void>;
   toggleTaskCompletion: (taskId: string) => Promise<void>;
   isLoading: boolean;
@@ -38,7 +38,7 @@ export function useTasks(): TasksHook {
     [areServicesAvailable, user, firestore]
   );
 
-  const { data: rawTasks, isLoading: areTasksLoading } = useCollection<Omit<Task, 'id'>>(
+  const { data: rawTasks, isLoading: areTasksLoading } = useCollection<Omit<Task, 'id' | 'deadline'> & { deadline: Timestamp }>(
     tasksCollectionRef
   );
 
@@ -47,7 +47,7 @@ export function useTasks(): TasksHook {
     return rawTasks.map((task) => ({
       ...task,
       // Ensure deadline is always a JS Date object for consistent use in components
-      deadline: task.deadline instanceof Timestamp ? task.deadline.toDate() : new Date(task.deadline),
+      deadline: task.deadline.toDate(),
     })).sort((a, b) => a.deadline.getTime() - b.deadline.getTime());
   }, [rawTasks]);
 
@@ -60,11 +60,11 @@ export function useTasks(): TasksHook {
   );
 
   const addTask = useCallback(
-    async (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => {
+    async (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline' | 'roadmap'> & { deadline: Date }) => {
       if (!tasksCollectionRef || !user) return;
       const newTask = {
         ...taskData,
-        userId: user!.uid,
+        userId: user.uid,
         completed: false,
         createdAt: serverTimestamp(),
         deadline: Timestamp.fromDate(taskData.deadline), // Convert JS Date to Firestore Timestamp

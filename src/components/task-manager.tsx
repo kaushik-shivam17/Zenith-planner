@@ -21,8 +21,8 @@ import {
 } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/task-form';
 import { TaskList } from '@/components/task-list';
-import type { Task } from '@/lib/types';
 import { useData } from '@/context/data-provider';
+import type { Task } from '@/lib/types';
 
 
 export function TaskManager() {
@@ -30,7 +30,7 @@ export function TaskManager() {
   const { tasks, addTask, updateTask, toggleTaskCompletion, isLoading } = useData();
 
 
-  const handleTaskAdded = async (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline'> & { deadline: Date }) => {
+  const handleTaskAdded = async (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline' | 'roadmap'> & { deadline: Date }) => {
     await addTask(taskData);
     setIsAddOpen(false);
   };

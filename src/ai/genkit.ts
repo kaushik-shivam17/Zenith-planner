@@ -3,7 +3,7 @@ import {googleAI} from '@genkit-ai/google-genai';
 
 // The Gemini API key is optional. The app can start without it,
 // but AI-related features will fail at runtime if the key is not provided.
-const geminiApiKey = process.env.GEMINI_API_KEY;
+const geminiApiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
 export const ai = genkit({
   plugins: [

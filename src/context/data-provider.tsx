@@ -31,6 +31,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     isLoading,
   };
   
+  // This prevents child components from attempting to use data hooks
+  // before the user's auth state is resolved and data is available.
   if (isLoading && user) {
      return (
       <div className="flex h-screen items-center justify-center bg-background">

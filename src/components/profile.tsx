@@ -130,6 +130,7 @@ export function Profile() {
 
     const finalData = {
       ...values,
+      id: user.uid,
       height: heightInMeters,
       updatedAt: serverTimestamp(),
     }

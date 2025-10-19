@@ -22,6 +22,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTasks } from '@/hooks/use-tasks';
 import { useMissions } from '@/hooks/use-missions';
+import { setDocument } from '@/firebase/non-blocking-updates';
+import { doc } from 'firebase/firestore';
+import { useFirebase } from '@/firebase';
 
 type ChatMessage = {
   role: 'user' | 'model';
@@ -32,11 +35,12 @@ export function RoadmapContent({ taskId }: { taskId: string }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
+  const { firestore, user } = useFirebase();
 
   const itemType = searchParams.get('type') === 'mission' ? 'mission' : 'task';
 
-  const { getTaskById, updateTask, isLoading: areTasksLoading } = useTasks();
-  const { getMissionById, updateMission, isLoading: areMissionsLoading } = useMissions();
+  const { getTaskById, isLoading: areTasksLoading } = useTasks();
+  const { getMissionById, isLoading: areMissionsLoading } = useMissions();
 
   const [roadmap, setRoadmap] = useState<GenerateTaskRoadmapOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,18 +78,10 @@ export function RoadmapContent({ taskId }: { taskId: string }) {
             const newRoadmap = result.data;
             setRoadmap(newRoadmap);
             setChatHistory([{ role: 'model', content: newRoadmap.introduction }]);
-            try {
-                if (itemType === 'task') {
-                    await updateTask(item.id, { roadmap: newRoadmap });
-                } else {
-                    await updateMission(item.id, { roadmap: newRoadmap });
-                }
-            } catch (e) {
-                 toast({
-                    variant: 'destructive',
-                    title: 'Error Saving Roadmap',
-                    description: 'Could not save the generated roadmap. Please try again.',
-                });
+            if (firestore && user) {
+                const collectionName = itemType === 'task' ? 'tasks' : 'missions';
+                const docRef = doc(firestore, 'users', user.uid, collectionName, item.id);
+                setDocument(docRef, { roadmap: newRoadmap }, { merge: true });
             }
           } else {
             setError(result.error);
@@ -103,7 +99,7 @@ export function RoadmapContent({ taskId }: { taskId: string }) {
       setError(`The requested ${itemType} could not be found.`);
       setIsLoading(false);
     }
-  }, [item, isItemLoading, toast, itemType, updateTask, updateMission]);
+  }, [item, isItemLoading, toast, itemType, firestore, user]);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -115,27 +111,24 @@ export function RoadmapContent({ taskId }: { taskId: string }) {
     if (!userInput.trim() || !item) return;
   
     const newUserMessage: ChatMessage = { role: 'user', content: userInput };
-    const newChatHistory = [...chatHistory, newUserMessage];
-    setChatHistory(newChatHistory);
+    setChatHistory((prev) => [...prev, newUserMessage]);
     setUserInput('');
     setIsChatLoading(true);
   
     // Convert the full chat history into the {user, model} pair format
-    const conversationHistoryForApi = newChatHistory
-      .reduce((acc, msg, index) => {
+    const conversationHistoryForApi = chatHistory
+      .reduce((acc, msg) => {
         if (msg.role === 'user') {
-          // Find the next model message
-          const modelMsg = newChatHistory.slice(index + 1).find(m => m.role === 'model');
-          acc.push({
-            user: msg.content,
-            model: modelMsg ? modelMsg.content : ''
-          });
+          acc.push({ user: msg.content, model: '' }); // Push user message
+        } else if (msg.role === 'model' && acc.length > 0) {
+          acc[acc.length - 1].model = msg.content; // Add model response to last user message
         }
         return acc;
       }, [] as { user: string; model: string }[]);
       
-    // The very last user message won't have a model response yet.
-    // The API is designed to respond to the last user message.
+    // Add the latest user message
+    conversationHistoryForApi.push({ user: newUserMessage.content, model: '' });
+
     const result = await continueConversationAction(
       item.title,
       conversationHistoryForApi

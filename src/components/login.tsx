@@ -30,7 +30,7 @@ import {
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { FirebaseError } from 'firebase/app';
-import { useFirebase } from '@/firebase';
+import { useAuth } from '@/firebase';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address.'),
@@ -41,7 +41,7 @@ export function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { auth } = useFirebase();
+  const auth = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

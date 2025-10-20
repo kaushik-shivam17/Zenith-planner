@@ -61,7 +61,7 @@ export function Signup() {
       toast({
         variant: 'destructive',
         title: 'Initialization Error',
-        description: 'Firebase is not ready. Please try again in a moment.',
+        description: 'Authentication service is not available. Please try again in a moment.',
       });
       setIsLoading(false);
       return;

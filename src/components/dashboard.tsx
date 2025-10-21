@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, Lightbulb, User } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -12,10 +12,13 @@ import {
 } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/task-form';
 import { useTasks } from '@/hooks/use-tasks';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import type { Task } from '@/lib/types';
+import { Clock } from '@/components/clock';
+import { useUser } from '@/firebase';
+import { PRODUCTIVITY_TIPS } from '@/lib/constants';
 
 function InteractiveDateCard() {
   const [date] = useState(new Date());
@@ -40,7 +43,7 @@ function InteractiveDateCard() {
   return (
     <>
       <Card
-        className="cursor-pointer hover:bg-secondary/50 transition-colors relative group"
+        className="cursor-pointer hover:bg-card/70 transition-colors relative group border-dashed hover:border-primary"
       >
         <Button 
           variant="ghost" 
@@ -66,6 +69,9 @@ function InteractiveDateCard() {
           </div>
           <div className="text-xl md:text-2xl font-semibold text-muted-foreground">
             {format(date, 'MMMM yyyy')}
+          </div>
+          <div className="absolute bottom-4 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+            Click to add a task for today
           </div>
         </CardContent>
       </Card>
@@ -99,26 +105,82 @@ function InteractiveDateCard() {
 }
 
 
-import { Clock } from '@/components/clock';
+function WelcomeHeader() {
+    const { user } = useUser();
+    const [greeting, setGreeting] = useState('');
+
+    useEffect(() => {
+        const hour = new Date().getHours();
+        if (hour < 12) {
+            setGreeting('Good Morning');
+        } else if (hour < 18) {
+            setGreeting('Good Afternoon');
+        } else {
+            setGreeting('Good Evening');
+        }
+    }, []);
+
+    return (
+        <div className="flex items-center gap-4">
+             <User className="w-10 h-10 text-primary" />
+            <div>
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+                    {greeting}, {user?.displayName?.split(' ')[0] || 'User'}!
+                </h1>
+                <p className="text-muted-foreground">
+                    Ready to conquer your goals today?
+                </p>
+            </div>
+        </div>
+    );
+}
+
+function ProductivityTipCard() {
+    const [tip, setTip] = useState('');
+
+    useEffect(() => {
+        // This ensures the same tip is shown for a given day, and it only runs on the client.
+        const dayIndex = new Date().getDate() % PRODUCTIVITY_TIPS.length;
+        setTip(PRODUCTIVITY_TIPS[dayIndex]);
+    }, []);
+
+    if (!tip) return null;
+
+    return (
+        <Card className="bg-secondary/50 border-l-4 border-accent">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-3 text-lg">
+                    <Lightbulb className="text-accent"/>
+                    Productivity Tip of the Day
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-muted-foreground italic">{tip}</p>
+            </CardContent>
+        </Card>
+    )
+}
 
 export function Dashboard() {
   return (
     <div className="space-y-8 fade-in">
-      <div className="flex flex-col items-center justify-center space-y-4">
-        <Clock />
-      </div>
+        <WelcomeHeader />
 
-      <InteractiveDateCard />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 flex flex-col items-center justify-center space-y-4 p-6 rounded-lg bg-card">
+                <Clock />
+            </div>
+            <InteractiveDateCard />
+        </div>
+        
+        <ProductivityTipCard />
       
-      <div className="flex flex-col items-center justify-center space-y-4 pt-4">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-center">
-          Welcome to Zenith Planner
-        </h1>
-        <p className="text-muted-foreground text-center max-w-md">
-          Select a date on the calendar to quickly add a new task or choose a tool from the sidebar.
-        </p>
-         <p className="text-sm text-muted-foreground mt-2">✨ Created By Shivam Kaushik ✨</p>
-      </div>
+        <div className="flex flex-col items-center justify-center space-y-4 pt-4">
+            <p className="text-sm text-muted-foreground text-center max-w-md">
+                Select a date to quickly add a new task or choose a tool from the sidebar.
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">✨ Created By Shivam Kaushik ✨</p>
+        </div>
     </div>
   );
 }

@@ -3,20 +3,19 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Bot,
   BrainCircuit,
   CalendarCheck2,
-  Check,
   ClipboardList,
   Loader2,
   Split,
+  Tag,
+  AlertTriangle,
 } from 'lucide-react';
-import { format, formatDistanceToNow, isPast } from 'date-fns';
+import { formatDistanceToNow, isPast } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 
 import { generateScheduleAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -27,6 +26,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 // The Task type from the props will have a JS Date object.
 type Task = {
@@ -37,7 +37,6 @@ type Task = {
   completed: boolean;
   subtasks?: string[];
 };
-
 
 type TaskListProps = {
   tasks: Task[];
@@ -66,10 +65,7 @@ export function TaskList({ tasks, onUpdateTask, onToggleTask }: TaskListProps) {
       .filter((t) => !t.completed)
       .map(
         (t) =>
-          `${t.title} (Deadline: ${format(
-            t.deadline,
-            'PPP'
-          )}, Description: ${t.description || 'N/A'})`
+          `${t.title} (Deadline: ${t.deadline.toLocaleDateString()})`
       )
       .join('; ');
 
@@ -99,116 +95,127 @@ export function TaskList({ tasks, onUpdateTask, onToggleTask }: TaskListProps) {
 
   if (tasks.length === 0) {
     return (
-      <div className="text-center text-muted-foreground py-12">
+      <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">
         <ClipboardList className="mx-auto h-12 w-12" />
-        <h3 className="mt-4 text-lg font-semibold">No tasks logged</h3>
-        <p className="mt-1 text-sm">Add a new task to get started.</p>
+        <h3 className="mt-4 text-lg font-semibold">No Tasks Here!</h3>
+        <p className="mt-1 text-sm">Click "Add Task" to get started.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button
-          onClick={handleGenerateSchedule}
-          disabled={isGenerating}
-          size="sm"
-        >
-          {isGenerating ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <BrainCircuit className="mr-2 h-4 w-4" />
-          )}
-          Generate Study Schedule
-        </Button>
-      </div>
-      <ScrollArea className="h-[400px] pr-4">
-        <div className="space-y-4">
-          {tasks
-            .map(task => ({
-              ...task,
-              deadline: task.deadline instanceof Date ? task.deadline : (task.deadline as unknown as Timestamp).toDate(),
-            }))
-            .sort((a, b) => a.deadline.getTime() - b.deadline.getTime())
-            .map((task) => {
-              const isOverdue = isPast(task.deadline) && !task.completed;
-              return (
-              <div
-                key={task.id}
-                className={`flex items-start gap-4 p-4 rounded-md border transition-all ${isOverdue ? 'border-destructive/50' : ''}`}
-              >
-                <Checkbox
-                  id={`task-${task.id}`}
-                  checked={task.completed}
-                  onCheckedChange={() => onToggleTask(task.id)}
-                  className="mt-1"
-                />
-                <div className="flex-1">
-                  <label
-                    htmlFor={`task-${task.id}`}
-                    className={`font-medium ${
-                      task.completed ? 'line-through text-muted-foreground' : ''
-                    }`}
-                  >
-                    {task.title}
-                  </label>
-                  <p className="text-sm text-muted-foreground">
-                    {task.description}
-                  </p>
-                  <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                    <CalendarCheck2 className="h-4 w-4" />
-                    <span className={isOverdue ? 'text-destructive' : ''}>
-                      {formatDistanceToNow(task.deadline, { addSuffix: true })}
-                    </span>
-                    {isOverdue && (
-                      <div className="h-2 w-2 rounded-full bg-destructive" title="This task is overdue."></div>
-                    )}
-                  </div>
-                </div>
-                {!task.completed && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleBreakdown(task)}
-                    disabled={!!isBreakingDown}
-                  >
-                    {isBreakingDown === task.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Split className="h-4 w-4" />
-                    )}
-                    <span className="sr-only">Create Roadmap</span>
-                  </Button>
-                )}
-              </div>
-            )})}
+    <TooltipProvider>
+      <div className="space-y-4">
+        <div className="flex justify-end">
+          <Button
+            onClick={handleGenerateSchedule}
+            disabled={isGenerating}
+            size="sm"
+          >
+            {isGenerating ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <BrainCircuit className="mr-2 h-4 w-4" />
+            )}
+            Generate AI Schedule
+          </Button>
         </div>
-      </ScrollArea>
+        <ScrollArea className="h-[400px] pr-4 -mr-4">
+          <div className="space-y-3">
+            {tasks
+              .map(task => ({
+                ...task,
+                deadline: task.deadline instanceof Date ? task.deadline : (task.deadline as unknown as Timestamp).toDate(),
+              }))
+              .sort((a, b) => a.deadline.getTime() - b.deadline.getTime())
+              .map((task) => {
+                const isOverdue = isPast(task.deadline) && !task.completed;
+                return (
+                <div
+                  key={task.id}
+                  className={`flex items-start gap-4 p-4 rounded-lg border transition-all group hover:border-primary/50 hover:bg-card/50 ${isOverdue ? 'border-destructive/50 bg-destructive/10' : 'bg-card'}`}
+                >
+                  <Checkbox
+                    id={`task-${task.id}`}
+                    checked={task.completed}
+                    onCheckedChange={() => onToggleTask(task.id)}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <label
+                      htmlFor={`task-${task.id}`}
+                      className={`font-medium cursor-pointer ${
+                        task.completed ? 'line-through text-muted-foreground' : ''
+                      }`}
+                    >
+                      {task.title}
+                    </label>
+                    {task.description && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                            {task.description}
+                        </p>
+                    )}
+                    <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+                      <div className={`flex items-center gap-2 ${isOverdue ? 'text-destructive font-medium' : ''}`}>
+                         {isOverdue ? <AlertTriangle className="h-4 w-4" /> : <CalendarCheck2 className="h-4 w-4" />}
+                        <span>
+                          Due {formatDistanceToNow(task.deadline, { addSuffix: true })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  {!task.completed && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleBreakdown(task)}
+                                disabled={!!isBreakingDown}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                                {isBreakingDown === task.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                <Split className="h-4 w-4" />
+                                )}
+                                <span className="sr-only">Create Roadmap</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Generate AI Roadmap</p>
+                        </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+              )})}
+          </div>
+        </ScrollArea>
 
-      <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Bot />
-              <span>AI-Generated Study Schedule</span>
-            </DialogTitle>
-            <DialogDescription>
-              Here is a suggested schedule based on your active tasks.
-            </DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="max-h-[60vh] mt-4">
-            <div
-              className="prose prose-sm prose-invert"
-              dangerouslySetInnerHTML={{
-                __html: scheduleData
-                  ? scheduleData.replace(/\n/g, '<br />')
-                  : '',
-              }}
-            />
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
-    </div>
+        <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <BrainCircuit className="text-primary" />
+                <span>AI-Generated Study Schedule</span>
+              </DialogTitle>
+              <DialogDescription>
+                Here is a suggested schedule based on your active tasks. You can adjust this in the Timetable page.
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="max-h-[60vh] mt-4">
+              <div
+                className="prose prose-sm prose-invert"
+                dangerouslySetInnerHTML={{
+                  __html: scheduleData
+                    ? scheduleData.replace(/\n/g, '<br />')
+                    : '',
+                }}
+              />
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </TooltipProvider>
   );
 }

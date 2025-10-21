@@ -4,135 +4,131 @@
  *
  * Data Structure:
  * - All data is nested under /users/{userId}, ensuring that each user's data is isolated.
- * - Subcollections under each user (tasks, missions, timetableEvents) further organize the data.
+ * - Subcollections under each user (tasks, missions, goals, timetableEvents) further organize the data.
  *
  * Key Security Decisions:
- * - Users can only access their own data.
- * - Listing of user documents is denied to prevent user enumeration.
- * - Data consistency is enforced by validating the userId field within documents against the path.
+ * - Users can only access their own data. No cross-user access is allowed.
+ * - Listing of user documents is disallowed for privacy.
  *
  * Denormalization for Authorization:
- * - The `userId` field within each document (task, mission, goal, timetableEvent) is used for authorization, avoiding the need for additional reads.
+ * - Each document (task, mission, goal, timetableEvent) contains a userId field that must match the userId in the path.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile documents.
+     * @description Prevents listing of all user documents.
+     * @path /users
+     * @allow None - listing users is not permitted.
+     * @deny None - this rule explicitly denies listing.
+     * @principle Prevents unauthorized enumeration of user IDs.
+     */
+    match /users {
+      allow list: if false;
+    }
+
+    /**
+     * @description Controls access to user profile information.
      * @path /users/{userId}
-     * @allow (create) - Authenticated user can create their own profile if the UID matches the document ID.
-     * @allow (get, update, delete) - Authenticated user can only access their own profile.
-     * @deny (list) - Listing users is not allowed.
-     * @deny (create) - Creating a user with an ID that does not match the authenticated user's UID.
-     * @principle Enforces document ownership for writes.
+     * @allow (get) User with UID 'user123' can read their profile: auth.uid == 'user123'
+     * @allow (create) User with UID 'user123' can create their profile: auth.uid == 'user123' and request.resource.data.id == 'user123'
+     * @allow (update) User with UID 'user123' can update their profile: auth.uid == 'user123' and resource.data.id == 'user123'
+     * @allow (delete) User with UID 'user123' can delete their profile: auth.uid == 'user123' and resource.data.id == 'user123'
+     * @deny (get) User with UID 'user456' cannot read user 'user123' profile: auth.uid == 'user456'
+     * @principle Enforces user-ownership for profile data.
      */
     match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false;
       allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
       allow update: if isSignedIn() && isOwner(userId) && resource.data.id == userId;
-      allow delete: if isSignedIn() && isOwner(userId) && resource.data.id == userId;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow list: if false;
     }
 
     /**
-     * @description Controls access to task documents for a specific user.
+     * @description Controls access to tasks for a specific user.
      * @path /users/{userId}/tasks/{taskId}
-     * @allow (create, get, update, delete, list) - Authenticated user can only access their own tasks.
-     * @deny (create) - Creating a task with a userId that does not match the authenticated user's UID.
-     * @principle Enforces document ownership for all operations.
+     * @allow (get) User with UID 'user123' can read task 'task456': auth.uid == 'user123'
+     * @allow (create) User with UID 'user123' can create task 'task456': auth.uid == 'user123' and request.resource.data.userId == 'user123'
+     * @allow (update) User with UID 'user123' can update task 'task456': auth.uid == 'user123' and resource.data.userId == 'user123'
+     * @allow (delete) User with UID 'user123' can delete task 'task456': auth.uid == 'user123' and resource.data.userId == 'user123'
+     * @deny (get) User with UID 'user456' cannot read task 'task456' of user 'user123': auth.uid == 'user456'
+     * @principle Enforces user-ownership for tasks.
      */
     match /users/{userId}/tasks/{taskId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
       allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
       allow update: if isSignedIn() && isOwner(userId) && resource.data.userId == userId;
-      allow delete: if isSignedIn() && isOwner(userId) && resource.data.userId == userId;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
     }
 
     /**
-     * @description Controls access to mission documents for a specific user.
+     * @description Controls access to missions for a specific user.
      * @path /users/{userId}/missions/{missionId}
-     * @allow (create, get, update, delete, list) - Authenticated user can only access their own missions.
-     * @deny (create) - Creating a mission with a userId that does not match the authenticated user's UID.
-     * @principle Enforces document ownership for all operations.
+     * @allow (get) User with UID 'user123' can read mission 'mission456': auth.uid == 'user123'
+     * @allow (create) User with UID 'user123' can create mission 'mission456': auth.uid == 'user123' and request.resource.data.userId == 'user123'
+     * @allow (update) User with UID 'user123' can update mission 'mission456': auth.uid == 'user123' and resource.data.userId == 'user123'
+     * @allow (delete) User with UID 'user123' can delete mission 'mission456': auth.uid == 'user123' and resource.data.userId == 'user123'
+     * @deny (get) User with UID 'user456' cannot read mission 'mission456' of user 'user123': auth.uid == 'user456'
+     * @principle Enforces user-ownership for missions.
      */
     match /users/{userId}/missions/{missionId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
       allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
       allow update: if isSignedIn() && isOwner(userId) && resource.data.userId == userId;
-      allow delete: if isSignedIn() && isOwner(userId) && resource.data.userId == userId;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
     }
 
     /**
-     * @description Controls access to goal documents for a specific mission.
+     * @description Controls access to goals for a specific mission of a user.
      * @path /users/{userId}/missions/{missionId}/goals/{goalId}
-     * @allow (create, get, update, delete, list) - Authenticated user can only access their own goals within their own missions.
-     * @deny (create) - Creating a goal with a userId that does not match the authenticated user's UID.
-     * @principle Enforces document ownership and relational integrity for all operations.
+     * @allow (get) User with UID 'user123' can read goal 'goal789' in mission 'mission456': auth.uid == 'user123'
+     * @allow (create) User with UID 'user123' can create goal 'goal789' in mission 'mission456': auth.uid == 'user123' and request.resource.data.userId == 'user123'
+     * @allow (update) User with UID 'user123' can update goal 'goal789' in mission 'mission456': auth.uid == 'user123' and resource.data.userId == 'user123'
+     * @allow (delete) User with UID 'user123' can delete goal 'goal789' in mission 'mission456': auth.uid == 'user123' and resource.data.userId == 'user123'
+     * @deny (get) User with UID 'user456' cannot read goal 'goal789' of user 'user123': auth.uid == 'user456'
+     * @principle Enforces user-ownership for goals within missions.
      */
     match /users/{userId}/missions/{missionId}/goals/{goalId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
       allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
       allow update: if isSignedIn() && isOwner(userId) && resource.data.userId == userId;
-      allow delete: if isSignedIn() && isOwner(userId) && resource.data.userId == userId;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
     }
 
     /**
-     * @description Controls access to timetable event documents for a specific user.
+     * @description Controls access to timetable events for a specific user.
      * @path /users/{userId}/timetableEvents/{eventId}
-     * @allow (create, get, update, delete, list) - Authenticated user can only access their own timetable events.
-     * @deny (create) - Creating a timetable event with a userId that does not match the authenticated user's UID.
-     * @principle Enforces document ownership for all operations.
+     * @allow (get) User with UID 'user123' can read event 'eventabc': auth.uid == 'user123'
+     * @allow (create) User with UID 'user123' can create event 'eventabc': auth.uid == 'user123' and request.resource.data.userId == 'user123'
+     * @allow (update) User with UID 'user123' can update event 'eventabc': auth.uid == 'user123' and resource.data.userId == 'user123'
+     * @allow (delete) User with UID 'user123' can delete event 'eventabc': auth.uid == 'user123' and resource.data.userId == 'user123'
+     * @deny (get) User with UID 'user456' cannot read event 'eventabc' of user 'user123': auth.uid == 'user456'
+     * @principle Enforces user-ownership for timetable events.
      */
     match /users/{userId}/timetableEvents/{eventId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
       allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
       allow update: if isSignedIn() && isOwner(userId) && resource.data.userId == userId;
-      allow delete: if isSignedIn() && isOwner(userId) && resource.data.userId == userId;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
     }
+  }
+
+  // Helper functions
+  function isSignedIn() {
+    return request.auth != null;
+  }
+
+  function isOwner(userId) {
+    return request.auth.uid == userId;
+  }
+
+  function isExistingOwner(userId) {
+    return isSignedIn() && isOwner(userId) && resource != null;
   }
 }

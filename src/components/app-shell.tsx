@@ -31,6 +31,7 @@ import { Header } from '@/components/header';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { NotificationManager } from './notification-manager';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -155,6 +156,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
           <div className="md:hidden mb-4">
             <Header />
           </div>
+          {user && <NotificationManager />}
           {children}
         </div>
       </main>

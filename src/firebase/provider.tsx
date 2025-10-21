@@ -5,6 +5,9 @@ import React, { DependencyList, createContext, useContext, ReactNode, useMemo, u
 import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
+import { usePathname } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
+
 
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -52,6 +55,28 @@ export interface UserHookResult {
 
 // React Context
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
+
+export function AuthLoadingGate({ children }: { children: ReactNode }) {
+    const { isUserLoading } = useUser();
+    const pathname = usePathname();
+    const isAuthPage = pathname === '/login' || pathname === '/signup';
+    
+    // Show loading screen only on protected routes
+    const isProtectedRoute = !isAuthPage;
+  
+    if (isUserLoading && isProtectedRoute) {
+      return (
+        <div className="flex h-screen items-center justify-center bg-background">
+          <div className="flex items-center gap-2 text-lg font-semibold text-foreground">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span>Loading...</span>
+          </div>
+        </div>
+      );
+    }
+  
+    return <>{children}</>;
+  }
 
 /**
  * FirebaseProvider manages and provides Firebase services and user authentication state.

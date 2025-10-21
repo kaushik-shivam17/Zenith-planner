@@ -167,7 +167,7 @@ export function Dashboard() {
         <WelcomeHeader />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 flex flex-col items-center justify-center space-y-4 p-6 rounded-lg bg-card">
+            <div className="lg:col-span-2 flex flex-col items-center justify-center p-6 rounded-lg bg-card">
                 <Clock />
             </div>
             <InteractiveDateCard />

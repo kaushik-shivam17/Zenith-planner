@@ -150,7 +150,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
             </SidebarMenuItem>
           )}
            <div className="text-center text-xs text-muted-foreground p-4 mt-4 border-t border-sidebar-border">
-            Created by Shivam Kaushik 🕶️
+            Created by Shivam Kaushik
           </div>
         </SidebarFooter>
       </Sidebar>

@@ -1,10 +1,11 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useData } from '@/context/data-provider';
 import { useToast } from '@/hooks/use-toast';
-import { isToday, differenceInMinutes, parse, getDay } from 'date-fns';
+import { isToday, differenceInMinutes, parse, getDay, isSameDay } from 'date-fns';
+import { Timestamp } from 'firebase/firestore';
+
 
 const DAY_MAP: { [key: string]: number } = {
   'Sunday': 0,
@@ -30,7 +31,10 @@ export function NotificationManager() {
       // Check for upcoming tasks due today
       tasks.forEach(task => {
         const taskId = `task-${task.id}`;
-        if (!task.completed && isToday(task.deadline) && !notifiedIds.has(taskId)) {
+        // The deadline can be a Date object or a Firestore Timestamp object
+        const deadlineDate = task.deadline instanceof Timestamp ? task.deadline.toDate() : task.deadline;
+        
+        if (!task.completed && isToday(deadlineDate) && !notifiedIds.has(taskId)) {
           toast({
             title: 'Task Reminder: Due Today!',
             description: `Your task "${task.title}" is due today.`,

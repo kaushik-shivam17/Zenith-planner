@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -11,23 +10,19 @@ export function useAuthGuard(isProtectedRoute: boolean) {
   const pathname = usePathname();
 
   useEffect(() => {
-    // Wait until the initial loading is complete
     if (isUserLoading) {
-      return;
+      return; // Wait until user status is resolved
     }
 
     const isAuthPage = pathname === '/login' || pathname === '/signup';
 
-    // If it's a protected route and the user is not logged in, redirect to login
     if (isProtectedRoute && !user) {
+      // If it's a protected route and user is not logged in, redirect to login.
       router.replace('/login');
-    }
-    
-    // If the user is logged in and trying to access a login/signup page, redirect to dashboard
-    if (user && isAuthPage) {
+    } else if (user && isAuthPage) {
+      // If user is logged in and tries to access login/signup, redirect to dashboard.
       router.replace('/dashboard');
     }
-
   }, [user, isUserLoading, isProtectedRoute, router, pathname]);
 
   return { user, isUserLoading };

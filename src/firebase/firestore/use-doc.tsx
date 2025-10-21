@@ -89,7 +89,7 @@ export function useDoc<T = any>(
     return () => unsubscribe();
   }, [memoizedDocRef]); // Re-run if the memoizedDocRef changes.
 
-  if(memoizedDocRef && !memoizedDocRef.__memo) {
+  if(process.env.NODE_ENV === 'development' && memoizedDocRef && !memoizedDocRef.__memo) {
     throw new Error('useDoc ref was not properly memoized using useMemoFirebase. This will cause performance issues.');
   }
 

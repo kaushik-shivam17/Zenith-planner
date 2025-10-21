@@ -300,7 +300,7 @@ export function Profile() {
                           value={field.value ?? ''}
                           onChange={(e) => {
                             const value = e.target.value;
-                            field.onChange(value === '' ? undefined : parseFloat(value));
+                            field.onChange(value === '' ? undefined : Number(value));
                             setBmiResult(null);
                           }}
                         />
@@ -324,7 +324,7 @@ export function Profile() {
                           value={field.value ?? ''}
                           onChange={(e) => {
                             const value = e.target.value;
-                            field.onChange(value === '' ? undefined : parseFloat(value));
+                            field.onChange(value === '' ? undefined : Number(value));
                             setBmiResult(null);
                           }}
                         />

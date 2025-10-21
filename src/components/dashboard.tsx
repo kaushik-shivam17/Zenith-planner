@@ -94,7 +94,7 @@ function InteractiveDateCard() {
             <DialogTitle>Log a New Task for {selectedDateForTask ? format(selectedDateForTask, 'PPP') : ''}</DialogTitle>
             <DialogDescription>
               Input the details for a new task objective. Click save when
-              you&apos;re done.
+              you're done.
             </DialogDescription>
           </DialogHeader>
           <TaskForm onAddTask={handleAddTask} selectedDate={selectedDateForTask} />
@@ -179,7 +179,6 @@ export function Dashboard() {
             <p className="text-sm text-muted-foreground text-center max-w-md">
                 Select a date to quickly add a new task or choose a tool from the sidebar.
             </p>
-            <p className="text-xs text-muted-foreground mt-2">✨ Created By Shivam Kaushik ✨</p>
         </div>
     </div>
   );

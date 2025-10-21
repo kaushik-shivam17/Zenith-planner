@@ -18,8 +18,10 @@ export const DataContext = createContext<DataContextType | undefined>(undefined)
 export function DataProvider({ children }: { children: ReactNode }) {
   const { user, isUserLoading } = useUser();
   const pathname = usePathname();
+  const isAuthPage = pathname === '/login' || pathname === '/signup';
 
   // These hooks will now only fetch if the user is logged in.
+  // The hooks themselves are lightweight and won't fetch until a user is present.
   const tasksHook = useTasks();
   const missionsHook = useMissions();
   const timetableHook = useTimetable();
@@ -36,8 +38,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     isLoading,
   };
   
-  const isAuthPage = pathname === '/login' || pathname === '/signup';
-
   // If we are on a protected route and still loading crucial auth/data, show a loading screen.
   // This prevents rendering components with incomplete or no data.
   if (isLoading && !isAuthPage) {

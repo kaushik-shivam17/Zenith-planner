@@ -45,8 +45,7 @@
         "id",
         "name",
         "email",
-        "createdAt",
-        "updatedAt"
+        "createdAt"
       ]
     },
     "Roadmap": {

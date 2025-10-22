@@ -29,7 +29,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Overall loading state: true if...
   // 1. We are still checking the user's auth state.
   // 2. The user is logged in, but one of the data hooks is still loading its initial data.
-  const isLoading = isUserLoading || (!!user && (tasksHook.isLoading || missionsHook.isLoading || timetableHook.isLoading));
+  const isLoading = isUserLoading || (!isAuthPage && !!user && (tasksHook.isLoading || missionsHook.isLoading || timetableHook.isLoading));
   
   const value: DataContextType = {
     ...tasksHook,

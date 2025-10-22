@@ -30,10 +30,14 @@ export function initializeFirebase() {
   }
 
   const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+  
+  const auth = getAuth(app);
+  const firestore = getFirestore(app);
+
   firebaseServices = {
     firebaseApp: app,
-    auth: getAuth(app),
-    firestore: getFirestore(app),
+    auth: auth,
+    firestore: firestore,
   };
   
   return firebaseServices;

@@ -1,6 +1,6 @@
 <div align="center">
   <h1 style="font-size: 3rem; font-weight: bold; margin-bottom: 0;">🚀 Zenith Planner 🚀</h1>
-  <p style="font-size: 1.25rem; font-style: italic; color: #888;">Your AI-Powered Personal Command Center</p>
+  <p style="font-size: 1.25rem; font-style: italic; color: #888;">Your AI-Powered Personal Command Center, to use this remember correct all api keys </p>
 </div>
 
 ---

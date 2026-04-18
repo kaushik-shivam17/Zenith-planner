@@ -1,18 +1,9 @@
-
 'use client';
 
-import {
-  useCallback,
-} from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import type { Goal } from '@/lib/types';
-import {
-  useFirebase,
-  useCollection,
-  useMemoFirebase,
-  errorEmitter,
-  FirestorePermissionError,
-} from '@/firebase';
-import { collection, doc, serverTimestamp, runTransaction, increment } from 'firebase/firestore';
+import { blink } from '@/blink/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface GoalsContextType {
   goals: Goal[];
@@ -22,111 +13,106 @@ interface GoalsContextType {
   isLoading: boolean;
 }
 
-// This is not a real provider. It's a hook that scopes goals to a mission.
 export function useGoals(missionId: string): GoalsContextType {
-  const { user, firestore, isUserLoading } = useFirebase();
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [areGoalsLoading, setAreGoalsLoading] = useState(true);
 
-  const goalsCollectionRef = useMemoFirebase(
-    () => (user && firestore ? collection(firestore, 'users', user.uid, 'missions', missionId, 'goals') : null),
-    [user, firestore, missionId]
-  );
-  
-  const { data: goals, isLoading: areGoalsLoading } = useCollection<Goal>(goalsCollectionRef);
+  const fetchGoals = useCallback(async () => {
+    if (!user || !missionId) {
+      setGoals([]);
+      setAreGoalsLoading(false);
+      return;
+    }
+
+    try {
+      const { data } = await blink.db.goals.list({
+        where: { userId: user.id, missionId }
+      });
+      setGoals((data || []) as Goal[]);
+    } catch (error) {
+      console.error('Error fetching goals:', error);
+    } finally {
+      setAreGoalsLoading(false);
+    }
+  }, [user, missionId]);
+
+  useEffect(() => {
+    fetchGoals();
+  }, [fetchGoals]);
+
+  const updateMissionStats = useCallback(async () => {
+    if (!user || !missionId) return;
+    const { data: allGoals } = await blink.db.goals.list({ where: { userId: user.id, missionId } });
+    const totalGoals = allGoals?.length || 0;
+    const completedGoals = allGoals?.filter(g => g.completed).length || 0;
+    
+    await blink.db.missions.update({
+      id: missionId,
+      totalGoals,
+      completedGoals
+    });
+  }, [user, missionId]);
 
   const addGoal = useCallback(
     async (goalData: Pick<Goal, 'title' | 'description'>) => {
-      if (!user || !firestore) return;
-      
-      const goalsColRef = collection(firestore, 'users', user.uid, 'missions', missionId, 'goals');
-      const missionDocRef = doc(firestore, 'users', user.uid, 'missions', missionId);
-      const newGoalRef = doc(goalsColRef);
-
-      const newGoal = {
-        ...goalData,
-        id: newGoalRef.id,
-        userId: user.uid,
-        missionId,
-        completed: false,
-        createdAt: serverTimestamp(),
-      };
-      
+      if (!user) return;
       try {
-        await runTransaction(firestore, async (transaction) => {
-          transaction.set(newGoalRef, newGoal);
-          transaction.update(missionDocRef, { totalGoals: increment(1) });
+        await blink.db.goals.create({
+          id: crypto.randomUUID(),
+          userId: user.id,
+          missionId,
+          ...goalData,
+          completed: false,
+          createdAt: new Date().toISOString()
         });
-      } catch (e) {
-        console.error("Transaction failed: ", e);
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: newGoalRef.path,
-          operation: 'create',
-          requestResourceData: newGoal
-        }));
+        await fetchGoals();
+        await updateMissionStats();
+      } catch (error) {
+        console.error('Error adding goal:', error);
       }
     },
-    [user, firestore, missionId]
+    [user, missionId, fetchGoals, updateMissionStats]
   );
 
   const toggleGoalCompletion = useCallback(
     async (goalId: string) => {
-      if (!user || !firestore || !goals) return;
+      if (!user) return;
       const goal = goals.find((g) => g.id === goalId);
       if (goal) {
-        const goalDocRef = doc(firestore, 'users', user.uid, 'missions', missionId, 'goals', goalId);
-        const missionDocRef = doc(firestore, 'users', user.uid, 'missions', missionId);
-        
         try {
-           await runTransaction(firestore, async (transaction) => {
-            transaction.update(goalDocRef, { completed: !goal.completed });
-            transaction.update(missionDocRef, { completedGoals: increment(!goal.completed ? 1 : -1) });
+          await blink.db.goals.update({
+            id: goalId,
+            completed: !goal.completed
           });
-        } catch (e) {
-          console.error("Transaction failed: ", e);
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: goalDocRef.path,
-            operation: 'update',
-            requestResourceData: { completed: !goal.completed }
-          }));
+          await fetchGoals();
+          await updateMissionStats();
+        } catch (error) {
+          console.error('Error toggling goal:', error);
         }
       }
     },
-    [goals, user, firestore, missionId]
+    [user, goals, fetchGoals, updateMissionStats]
   );
 
   const deleteGoal = useCallback(
     async (goalId: string) => {
-      if (!user || !firestore || !goals) return;
-      
-      const goalToDelete = goals.find(g => g.id === goalId);
-      if (!goalToDelete) return;
-
-      const goalDocRef = doc(firestore, 'users', user.uid, 'missions', missionId, 'goals', goalId);
-      const missionDocRef = doc(firestore, 'users', user.uid, 'missions', missionId);
-
+      if (!user) return;
       try {
-        await runTransaction(firestore, async (transaction) => {
-          transaction.delete(goalDocRef);
-          const decrementCompleted = goalToDelete.completed ? -1 : 0;
-          transaction.update(missionDocRef, { 
-            totalGoals: increment(-1),
-            completedGoals: increment(decrementCompleted),
-           });
-        });
-      } catch (e) {
-        console.error("Transaction failed: ", e);
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: goalDocRef.path,
-          operation: 'delete',
-        }));
+        await blink.db.goals.delete(goalId);
+        await fetchGoals();
+        await updateMissionStats();
+      } catch (error) {
+        console.error('Error deleting goal:', error);
       }
     },
-    [user, firestore, missionId, goals]
+    [user, fetchGoals, updateMissionStats]
   );
 
-  const isLoading = isUserLoading || areGoalsLoading;
+  const isLoading = isAuthLoading || areGoalsLoading;
 
   return {
-    goals: goals || [],
+    goals,
     addGoal,
     toggleGoalCompletion,
     deleteGoal,

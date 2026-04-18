@@ -3,10 +3,10 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AppShell } from '@/components/app-shell';
-import { FirebaseClientProvider } from '@/firebase';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { DataProvider } from '@/context/data-provider';
+import { BlinkProvider } from '@blinkdotnew/react';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -27,11 +27,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} dark`}>
       <body className="font-body antialiased">
-        <FirebaseClientProvider>
+        <BlinkProvider projectId={import.meta.env.VITE_BLINK_PROJECT_ID}>
           <DataProvider>
             <AppShell>{children}</AppShell>
           </DataProvider>
-        </FirebaseClientProvider>
+        </BlinkProvider>
         <Toaster />
         <Analytics />
         <SpeedInsights />

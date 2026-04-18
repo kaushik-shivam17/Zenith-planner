@@ -4,7 +4,7 @@ import React, { createContext, useContext, ReactNode } from 'react';
 import { useTasks, type TasksHook } from '@/hooks/use-tasks';
 import { useMissions, type MissionsHook } from '@/hooks/use-missions';
 import { useTimetable, type TimetableHook } from '@/hooks/use-timetable';
-import { useUser } from '@/firebase';
+import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
@@ -16,7 +16,7 @@ type DataContextType = TasksHook & MissionsHook & TimetableHook & {
 export const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const { user, isUserLoading } = useUser();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const pathname = usePathname();
   const isAuthPage = pathname === '/login' || pathname === '/signup';
 
@@ -29,7 +29,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Overall loading state: true if...
   // 1. We are still checking the user's auth state.
   // 2. The user is logged in, but one of the data hooks is still loading its initial data.
-  const isLoading = isUserLoading || (!isAuthPage && !!user && (tasksHook.isLoading || missionsHook.isLoading || timetableHook.isLoading));
+  const isLoading = isAuthLoading || (!isAuthPage && !!user && (tasksHook.isLoading || missionsHook.isLoading || timetableHook.isLoading));
   
   const value: DataContextType = {
     ...tasksHook,
@@ -42,10 +42,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // This prevents rendering components with incomplete or no data.
   if (isLoading && !isAuthPage) {
      return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <div className="flex items-center gap-2 text-lg font-semibold text-foreground">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Loading Your Workspace...</span>
+      <div className="flex h-screen items-center justify-center bg-background cyber-bg">
+        <div className="flex flex-col items-center gap-4 text-primary animate-pulse">
+          <Loader2 className="h-12 w-12 animate-spin glow-primary" />
+          <span className="text-xl font-mono tracking-tighter glow-primary">INITIALIZING_SYSTEM_SYNC...</span>
         </div>
       </div>
     );

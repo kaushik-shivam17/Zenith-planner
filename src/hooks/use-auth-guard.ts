@@ -2,10 +2,10 @@
 
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useUser } from '@/firebase';
+import { useAuth } from '@/hooks/useAuth';
 
 export function useAuthGuard(isProtectedRoute: boolean) {
-  const { user, isUserLoading } = useUser();
+  const { user, isLoading: isUserLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 

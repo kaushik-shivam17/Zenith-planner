@@ -1,19 +1,10 @@
 'use client';
 
-import {
-  useCallback,
-} from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import type { TimetableEvent } from '@/lib/types';
-import {
-  useFirebase,
-  useCollection,
-  useMemoFirebase,
-  errorEmitter,
-  FirestorePermissionError,
-} from '@/firebase';
-import { collection, writeBatch, doc, getDocs } from 'firebase/firestore';
-import { addDocument, deleteDocument } from '@/firebase/non-blocking-updates';
-
+import { blink } from '@/blink/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/hooks/use-toast';
 
 interface TimetableHook {
   events: TimetableEvent[];
@@ -25,91 +16,110 @@ interface TimetableHook {
 }
 
 export function useTimetable(): TimetableHook {
-  const { user, firestore, isUserLoading, areServicesAvailable } = useFirebase();
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const [events, setEventsState] = useState<TimetableEvent[]>([]);
+  const [areEventsLoading, setAreEventsLoading] = useState(true);
 
-  const timetableCollectionRef = useMemoFirebase(
-    () => {
-        if (!areServicesAvailable || isUserLoading || !user || !firestore) return null;
-        return collection(firestore, 'users', user.uid, 'timetableEvents');
-    },
-    [areServicesAvailable, isUserLoading, user, firestore]
-  );
+  const fetchEvents = useCallback(async () => {
+    if (!user) {
+      setEventsState([]);
+      setAreEventsLoading(false);
+      return;
+    }
 
-  const { data: eventsData, isLoading: areEventsLoading } = useCollection<TimetableEvent>(timetableCollectionRef);
+    try {
+      const { data } = await blink.db.timetable_events.list({
+        where: { userId: user.id }
+      });
+      setEventsState((data || []) as TimetableEvent[]);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    } finally {
+      setAreEventsLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
 
   const setEvents = useCallback(async (newEvents: Omit<TimetableEvent, 'id' | 'userId'>[]) => {
-      if (!timetableCollectionRef || !user || !firestore) return;
-      const batch = writeBatch(firestore);
-      
-      try {
-        // Delete all existing events first. This is simpler than diffing.
-        const snapshot = await getDocs(timetableCollectionRef);
-        snapshot.docs.forEach(doc => {
-          batch.delete(doc.ref);
-        });
-
-        // Add new events
-        newEvents.forEach(event => {
-          const newEventRef = doc(timetableCollectionRef);
-          const eventWithUser = { ...event, id: newEventRef.id, userId: user.uid };
-          batch.set(newEventRef, eventWithUser);
-        });
-        
-        await batch.commit();
-      } catch (error) {
-        console.error('Error setting events: ', error);
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: timetableCollectionRef.path,
-          operation: 'write', // This is a batch write, so 'write' is a general term
-        }));
+    if (!user) return;
+    try {
+      // Clear existing first
+      const { data: existing } = await blink.db.timetable_events.list({ where: { userId: user.id } });
+      if (existing) {
+        for (const e of existing) {
+          await blink.db.timetable_events.delete(e.id);
+        }
       }
-    }, [timetableCollectionRef, user, firestore]);
+
+      // Add new
+      for (const event of newEvents) {
+        await blink.db.timetable_events.create({
+          id: crypto.randomUUID(),
+          userId: user.id,
+          ...event,
+          createdAt: new Date().toISOString()
+        });
+      }
+      await fetchEvents();
+      toast({ title: 'Schedule Updated', description: 'Timetable synchronized.' });
+    } catch (error) {
+      console.error('Error setting events:', error);
+    }
+  }, [user, fetchEvents]);
 
   const addCustomEvents = useCallback(async (customEvents: Omit<TimetableEvent, 'id' | 'userId' | 'type'>[]) => {
-      if (!timetableCollectionRef || !user) return;
-      
+    if (!user) return;
+    try {
       for (const event of customEvents) {
-          const eventWithUser = { ...event, userId: user.uid, type: 'custom' as 'custom' };
-          addDocument(timetableCollectionRef, eventWithUser);
+        await blink.db.timetable_events.create({
+          id: crypto.randomUUID(),
+          userId: user.id,
+          ...event,
+          type: 'custom',
+          createdAt: new Date().toISOString()
+        });
       }
-      
-  }, [timetableCollectionRef, user]);
+      await fetchEvents();
+    } catch (error) {
+      console.error('Error adding custom events:', error);
+    }
+  }, [user, fetchEvents]);
 
   const deleteCustomEvent = useCallback(async (eventId: string) => {
-    if (!timetableCollectionRef) return;
-    const eventDocRef = doc(timetableCollectionRef, eventId);
-    deleteDocument(eventDocRef);
-  }, [timetableCollectionRef]);
-
+    if (!user) return;
+    try {
+      await blink.db.timetable_events.delete(eventId);
+      await fetchEvents();
+    } catch (error) {
+      console.error('Error deleting event:', error);
+    }
+  }, [user, fetchEvents]);
 
   const clearEvents = useCallback(async (type: 'task' | 'custom' | 'all') => {
-      if (!timetableCollectionRef || !eventsData || !firestore) return;
-
-      const batch = writeBatch(firestore);
-      
-      eventsData.forEach(event => {
-        if (type === 'all' || event.type === type) {
-          const eventDocRef = doc(timetableCollectionRef, event.id);
-          batch.delete(eventDocRef);
+    if (!user) return;
+    try {
+      const { data: existing } = await blink.db.timetable_events.list({ where: { userId: user.id } });
+      if (existing) {
+        for (const e of existing) {
+          if (type === 'all' || e.type === type) {
+            await blink.db.timetable_events.delete(e.id);
+          }
         }
-      });
-      
-      try {
-        await batch.commit();
-      } catch (error) {
-         console.error('Error clearing events: ', error);
-         errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: timetableCollectionRef.path,
-          operation: 'delete',
-        }));
       }
-    }, [timetableCollectionRef, eventsData, firestore]);
+      await fetchEvents();
+      toast({ title: 'Schedule Cleared', description: 'Timetable data purged.' });
+    } catch (error) {
+      console.error('Error clearing events:', error);
+    }
+  }, [user, fetchEvents]);
 
-
-  const isLoading = isUserLoading || (!!user && areEventsLoading);
+  const isLoading = isAuthLoading || areEventsLoading;
 
   return {
-    events: eventsData || [],
+    events,
     setEvents,
     addCustomEvents,
     deleteCustomEvent,

@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -11,10 +10,11 @@ import {
   LogOut,
   Rocket,
   User as UserIcon,
+  Terminal,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { getAuth, signOut } from 'firebase/auth';
+import { blink } from '@/blink/client';
 
 import {
   Sidebar,
@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Header } from '@/components/header';
 import { useToast } from '@/hooks/use-toast';
-import { useUser } from '@/firebase';
+import { useAuth } from '@/hooks/useAuth';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { NotificationManager } from './notification-manager';
 
@@ -50,7 +50,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
   
   const isAuthPage = pathname === '/login' || pathname === '/signup';
   useAuthGuard(!isAuthPage);
-  const { user } = useUser();
+  const { user } = useAuth();
 
   const { toast } = useToast();
   const isActive = (href: string) => pathname === href || (href === '/dashboard' && pathname === '/');
@@ -63,94 +63,103 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
   const handleSignOut = async () => {
     try {
-      const auth = getAuth();
-      await signOut(auth);
+      await blink.auth.signOut();
       toast({
-        title: 'Signed Out',
-        description: 'You have been successfully signed out.',
+        title: 'CONNECTION_TERMINATED',
+        description: 'Session has been securely closed.',
       });
       router.push('/login');
     } catch (error) {
       console.error('Sign out error', error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to sign out. Please try again.',
+        title: 'ERROR',
+        description: 'Failed to terminate session. Try again.',
       });
     }
   };
 
   return (
-    <div className="flex w-full">
-      <Sidebar>
-        <SidebarHeader>
-          <div className="flex items-center gap-3 p-2">
+    <div className="flex w-full min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <Sidebar className="border-r border-primary/20 bg-card/50 backdrop-blur-xl">
+        <SidebarHeader className="border-b border-primary/10">
+          <div className="flex items-center gap-3 p-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 border border-primary/30 glow-primary">
+              <Terminal className="text-primary h-6 w-6" />
+            </div>
             <div className="flex flex-col">
-              <h1 className="text-xl font-bold tracking-tighter font-headline">
-                Zenith Planner
+              <h1 className="text-xl font-bold tracking-tighter font-headline glow-primary text-primary">
+                ZENITH_OS
               </h1>
-              <p className="text-xs text-muted-foreground">
-                Your AI-powered assistant
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground animate-pulse">
+                v1.0.4_STABLE
               </p>
             </div>
           </div>
         </SidebarHeader>
-        <SidebarContent>
+        <SidebarContent className="py-4">
           <SidebarMenu>
             {navItems.map((item) => (
-              <SidebarMenuItem key={item.href} onClick={handleLinkClick}>
+              <SidebarMenuItem key={item.href} onClick={handleLinkClick} className="px-2">
                 <Link href={item.href} className="w-full">
                   <SidebarMenuButton
                     isActive={isActive(item.href)}
-                    className="w-full"
+                    className={`w-full transition-all duration-300 ${
+                      isActive(item.href) 
+                        ? 'bg-primary/20 text-primary border-r-2 border-primary glow-primary' 
+                        : 'hover:bg-primary/5 text-muted-foreground hover:text-primary'
+                    }`}
                     tooltip={{
                       children: item.label,
                     }}
                   >
-                    <item.icon />
-                    <span>{item.label}</span>
+                    <item.icon className={isActive(item.href) ? 'text-primary' : ''} />
+                    <span className="font-mono text-xs tracking-wider">{item.label.toUpperCase()}</span>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter className="pt-2">
+        <SidebarFooter className="pt-2 border-t border-primary/10 bg-black/20">
           {user ? (
             <>
-              <SidebarMenuItem onClick={handleLinkClick}>
+              <SidebarMenuItem onClick={handleLinkClick} className="px-2">
                 <Link href="/profile" className="w-full">
                   <SidebarMenuButton
                     isActive={isActive('/profile')}
-                    className="w-full flex items-center gap-2"
+                    className="w-full flex items-center gap-2 hover:bg-primary/5 text-xs font-mono"
                   >
-                    <UserIcon />
-                    <span>Profile</span>
+                    <UserIcon size={16} />
+                    <span>USER_PROFILE</span>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={handleSignOut} className="w-full">
-                  <LogOut />
-                  <span>Logout</span>
+              <SidebarMenuItem className="px-2">
+                <SidebarMenuButton 
+                  onClick={handleSignOut} 
+                  className="w-full text-destructive hover:bg-destructive/10 text-xs font-mono"
+                >
+                  <LogOut size={16} />
+                  <span>TERMINATE_SESSION</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </>
           ) : (
-            <SidebarMenuItem onClick={handleLinkClick}>
+            <SidebarMenuItem onClick={handleLinkClick} className="px-2">
               <Link href="/login" className="w-full">
                 <SidebarMenuButton
                   isActive={isActive('/login')}
-                  className="w-full"
+                  className="w-full hover:bg-primary/5 text-muted-foreground hover:text-primary font-mono text-xs"
                 >
                   <LogIn />
-                  <span>Login</span>
+                  <span>LOGIN</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
           )}
            <div className="text-center text-xs text-muted-foreground p-4 mt-4 border-t border-sidebar-border">
-            Created by Shivam Kaushik
+            CREATED BY SHIVAM KAUSHIK
           </div>
         </SidebarFooter>
       </Sidebar>

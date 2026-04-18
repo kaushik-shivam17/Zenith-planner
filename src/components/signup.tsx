@@ -4,8 +4,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
 import Link from 'next/link';
+import { useState } from 'react';
+import { Loader2, UserPlus, Database } from 'lucide-react';
+import { blink } from '@/blink/client';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -26,24 +28,17 @@ import {
   CardHeader,
   CardTitle,
 } from './ui/card';
-import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import { doc, serverTimestamp } from 'firebase/firestore';
-import { useFirebase } from '@/firebase';
-import { FirebaseError } from 'firebase/app';
-import { setDocument } from '@/firebase/non-blocking-updates';
 
 const formSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters.'),
-  email: z.string().email('Invalid email address.'),
-  password: z.string().min(6, 'Password must be at least 6 characters.'),
+  name: z.string().min(2, 'Identifier too short (min 2).'),
+  email: z.string().email('Invalid network address.'),
+  password: z.string().min(6, 'Security key too weak (min 6).'),
 });
 
 export function Signup() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { firestore, auth } = useFirebase();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -56,61 +51,24 @@ export function Signup() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    if (!auth || !firestore) {
-      toast({
-        variant: 'destructive',
-        title: 'Initialization Error',
-        description: 'Authentication service is not available. Please try again in a moment.',
-      });
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      const user = userCredential.user;
-
-      // Create a user document in Firestore
-      const userDocRef = doc(firestore, "users", user.uid);
-      const newUserProfile = {
-        id: user.uid,
-        email: user.email,
-        name: values.name,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-      
-      // Use the non-blocking write with error handling
-      setDocument(userDocRef, newUserProfile);
+      await blink.auth.signUp({
+        email: values.email,
+        password: values.password,
+        displayName: values.name
+      });
       
       toast({
-        title: 'Account Created!',
-        description: 'Welcome! You can now use the app.',
+        title: 'ENTITY_REGISTERED',
+        description: 'New node successfully added to the network.',
       });
       router.push('/dashboard'); 
     } catch (error: any) {
       console.error('Signup error', error);
-       let description = 'An unexpected error occurred.';
-      if (error instanceof FirebaseError) {
-        switch (error.code) {
-          case 'auth/email-already-in-use':
-            description = 'This email is already in use. Please log in instead.';
-            break;
-          case 'auth/weak-password':
-            description = 'The password is too weak. Please use at least 6 characters.';
-            break;
-          case 'auth/invalid-api-key':
-          case 'auth/api-key-not-valid':
-            description = 'The Firebase API key is invalid. Please check your project configuration.';
-            break;
-          default:
-            description = error.message;
-        }
-      }
       toast({
         variant: 'destructive',
-        title: 'Sign-up Failed',
-        description,
+        title: 'REGISTRATION_FAILED',
+        description: error.message || 'The system could not initialize your profile.',
       });
     } finally {
         setIsLoading(false);
@@ -118,30 +76,38 @@ export function Signup() {
   }
 
   return (
-    <div className="flex justify-center items-center min-h-[80vh]">
-      <Card className="w-full max-w-sm">
+    <div className="flex justify-center items-center min-h-[80vh] px-4">
+      <Card className="w-full max-w-sm cyber-card relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-2 opacity-20">
+          <Database className="text-primary h-12 w-12" />
+        </div>
+        <div className="absolute -top-4 -right-4 w-24 h-24 bg-accent/5 rounded-full blur-2xl" />
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardHeader>
-              <CardTitle>Create Account</CardTitle>
-              <CardDescription>
-                Sign up to start planning with Zenith.
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl font-mono tracking-tighter glow-primary">
+                NEW_NODE_ENTRY
+              </CardTitle>
+              <CardDescription className="text-xs font-mono uppercase opacity-70">
+                Register your biometrics in the Zenith network.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-4">
                <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name</FormLabel>
+                    <FormLabel className="text-[10px] uppercase font-mono tracking-widest opacity-60">Alias</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="e.g., John Doe"
+                        placeholder="Operator_01"
+                        className="bg-black/40 border-primary/20 focus:border-primary/60 font-mono transition-all"
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-[10px] font-mono" />
                   </FormItem>
                 )}
               />
@@ -150,15 +116,16 @@ export function Signup() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel className="text-[10px] uppercase font-mono tracking-widest opacity-60">Network ID</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="you@example.com"
+                        placeholder="operator@zenith.com"
+                        className="bg-black/40 border-primary/20 focus:border-primary/60 font-mono transition-all"
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-[10px] font-mono" />
                   </FormItem>
                 )}
               />
@@ -167,31 +134,36 @@ export function Signup() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel className="text-[10px] uppercase font-mono tracking-widest opacity-60">Security Key</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
                         placeholder="••••••••"
+                        className="bg-black/40 border-primary/20 focus:border-primary/60 font-mono transition-all"
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-[10px] font-mono" />
                   </FormItem>
                 )}
               />
             </CardContent>
-            <CardFooter className="flex-col gap-4">
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Sign Up
+            <CardFooter className="flex-col gap-4 pb-8">
+              <Button type="submit" className="w-full cyber-button bg-primary text-black hover:bg-primary/90 font-mono font-bold" disabled={isLoading}>
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <UserPlus className="mr-2 h-4 w-4" />
+                )}
+                INITIALIZE_ACCOUNT
               </Button>
-              <p className="text-xs text-muted-foreground">
-                Already have an account?{' '}
+              <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground text-center">
+                Already registered?{' '}
                 <Link
                   href="/login"
-                  className="text-primary hover:underline"
+                  className="text-primary hover:glow-primary transition-all underline decoration-primary/30"
                 >
-                  Log in
+                  Bypass Security
                 </Link>
               </p>
             </CardFooter>

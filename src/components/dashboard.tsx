@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Lightbulb, User } from 'lucide-react';
+import { Calendar as CalendarIcon, Lightbulb, Terminal, Cpu, Zap, Activity } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,7 @@ import { Button } from './ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import type { Task } from '@/lib/types';
 import { Clock } from '@/components/clock';
-import { useUser } from '@/firebase';
+import { useAuth } from '@/hooks/useAuth';
 import { PRODUCTIVITY_TIPS } from '@/lib/constants';
 
 function InteractiveDateCard() {
@@ -35,7 +35,7 @@ function InteractiveDateCard() {
     }
   };
 
-  const handleAddTask = (taskData: Omit<Task, 'id' | 'completed' | 'userId'>) => {
+  const handleAddTask = (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline' | 'roadmap'> & { deadline: Date }) => {
     addTask(taskData);
     setIsAddOpen(false);
   };
@@ -43,93 +43,117 @@ function InteractiveDateCard() {
   return (
     <>
       <Card
-        className="cursor-pointer hover:bg-card/70 transition-colors relative group border-dashed hover:border-primary"
+        className="cyber-card relative group border-primary/20 bg-black/40 cursor-pointer overflow-hidden transition-all hover:scale-[1.02]"
+        onClick={() => handleDateSelect(new Date())}
       >
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="absolute top-4 right-4 opacity-50 group-hover:opacity-100 transition-opacity"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsCalendarOpen(true);
-          }}
-        >
-          <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-          <span className="sr-only">Open Calendar</span>
-        </Button>
-        <CardContent 
-          className="p-6 flex flex-col items-center justify-center space-y-2"
-          onClick={() => handleDateSelect(new Date())}
-        >
-          <div className="text-xl md:text-2xl font-semibold text-muted-foreground">
+        <div className="absolute top-0 right-0 p-2 z-10">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-primary/40 hover:text-primary hover:bg-primary/10"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsCalendarOpen(true);
+            }}
+          >
+            <CalendarIcon className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+        <CardContent className="p-8 flex flex-col items-center justify-center space-y-4">
+          <div className="text-xs font-mono uppercase tracking-[0.3em] text-primary/60">
             {format(date, 'eeee')}
           </div>
-          <div className="text-6xl md:text-7xl font-bold text-primary">
+          <div className="text-7xl font-bold font-headline glow-primary text-primary tracking-tighter">
             {format(date, 'd')}
           </div>
-          <div className="text-xl md:text-2xl font-semibold text-muted-foreground">
+          <div className="text-sm font-mono uppercase tracking-widest text-muted-foreground">
             {format(date, 'MMMM yyyy')}
           </div>
-          <div className="absolute bottom-4 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-            Click to add a task for today
+          
+          <div className="pt-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+            <Zap size={12} className="text-primary animate-pulse" />
+            <span className="text-[10px] font-mono text-primary uppercase tracking-tighter">Initiate_Daily_Log</span>
           </div>
         </CardContent>
       </Card>
 
       <Dialog open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-        <DialogContent className="sm:max-w-auto p-0 w-min">
+        <DialogContent className="sm:max-w-auto p-0 w-min bg-card border-primary/20 cyber-card">
            <Calendar
               mode="single"
               selected={selectedDateForTask}
               onSelect={handleDateSelect}
-              className="p-0"
-              classNames={{ months: "p-4" }}
+              className="p-4 font-mono"
             />
         </DialogContent>
       </Dialog>
 
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] bg-card border-primary/20 cyber-card">
           <DialogHeader>
-            <DialogTitle>Log a New Task for {selectedDateForTask ? format(selectedDateForTask, 'PPP') : ''}</DialogTitle>
-            <DialogDescription>
-              Input the details for a new task objective. Click save when
-              you're done.
+            <DialogTitle className="font-mono text-primary glow-primary uppercase tracking-tighter">
+              NEW_TASK_ENTRY: {selectedDateForTask ? format(selectedDateForTask, 'dd_MM_yy') : ''}
+            </DialogTitle>
+            <DialogDescription className="text-xs font-mono uppercase opacity-70">
+              Inject mission parameters into the mainframe.
             </DialogDescription>
           </DialogHeader>
-          <TaskForm onAddTask={handleAddTask} selectedDate={selectedDateForTask} />
+          <div className="pt-4">
+            <TaskForm onAddTask={handleAddTask} selectedDate={selectedDateForTask} />
+          </div>
         </DialogContent>
       </Dialog>
     </>
   );
 }
 
-
 function WelcomeHeader() {
-    const { user } = useUser();
+    const { user } = useAuth();
     const [greeting, setGreeting] = useState('');
 
     useEffect(() => {
         const hour = new Date().getHours();
-        if (hour < 12) {
-            setGreeting('Good Morning');
-        } else if (hour < 18) {
-            setGreeting('Good Afternoon');
-        } else {
-            setGreeting('Good Evening');
-        }
+        if (hour < 12) setGreeting('MORNING_SEQUENCE');
+        else if (hour < 18) setGreeting('AFTERNOON_SEQUENCE');
+        else setGreeting('EVENING_SEQUENCE');
     }, []);
 
     return (
-        <div className="flex items-center gap-4">
-             <User className="w-10 h-10 text-primary" />
-            <div>
-                <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-                    {greeting}, {user?.displayName?.split(' ')[0] || 'User'}!
-                </h1>
-                <p className="text-muted-foreground">
-                    Ready to conquer your goals today?
-                </p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-primary/10 pb-8">
+            <div className="flex items-center gap-6">
+                <div className="relative">
+                    <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+                    <div className="relative h-16 w-16 rounded-full border-2 border-primary/50 flex items-center justify-center bg-card shadow-[0_0_15px_rgba(0,242,255,0.2)] overflow-hidden">
+                        {user?.photoURL ? (
+                           <img src={user.photoURL} alt="Profile" className="h-full w-full object-cover" />
+                        ) : (
+                           <Terminal size={32} className="text-primary" />
+                        )}
+                    </div>
+                </div>
+                <div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <div className="h-2 w-2 rounded-full bg-primary animate-ping" />
+                        <span className="text-[10px] font-mono tracking-widest text-primary uppercase">{greeting}_ACTIVE</span>
+                    </div>
+                    <h1 className="text-3xl md:text-4xl font-bold tracking-tighter font-headline glow-primary uppercase">
+                        HELLO, {user?.displayName?.split(' ')[0] || 'OPERATOR'}
+                    </h1>
+                </div>
+            </div>
+            
+            <div className="flex gap-4">
+                <div className="flex flex-col items-end">
+                    <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">System_Load</span>
+                    <div className="flex gap-1 mt-1">
+                        {[1, 2, 3, 4, 5].map(i => (
+                            <div key={i} className={`h-1 w-4 rounded-full ${i <= 3 ? 'bg-primary glow-primary' : 'bg-primary/20'}`} />
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -139,7 +163,6 @@ function ProductivityTipCard() {
     const [tip, setTip] = useState('');
 
     useEffect(() => {
-        // This ensures the same tip is shown for a given day, and it only runs on the client.
         const dayIndex = new Date().getDate() % PRODUCTIVITY_TIPS.length;
         setTip(PRODUCTIVITY_TIPS[dayIndex]);
     }, []);
@@ -147,15 +170,20 @@ function ProductivityTipCard() {
     if (!tip) return null;
 
     return (
-        <Card className="bg-secondary/50 border-l-4 border-accent">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-3 text-lg">
-                    <Lightbulb className="text-accent"/>
-                    Productivity Tip of the Day
+        <Card className="bg-accent/5 border border-accent/20 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <Cpu size={40} className="text-accent" />
+            </div>
+            <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-3 text-sm font-mono tracking-widest text-accent uppercase">
+                    <Lightbulb size={16} className="glow-accent"/>
+                    Tactical_Directive_Of_The_Day
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-muted-foreground italic">{tip}</p>
+                <p className="text-xs font-mono text-accent/80 italic leading-relaxed uppercase tracking-tight">
+                   {tip}
+                </p>
             </CardContent>
         </Card>
     )
@@ -163,11 +191,16 @@ function ProductivityTipCard() {
 
 export function Dashboard() {
   return (
-    <div className="space-y-8 fade-in">
+    <div className="space-y-10 fade-in py-6 pb-20">
         <WelcomeHeader />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 flex items-center justify-center p-6 rounded-lg bg-card">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 flex items-center justify-center p-8 rounded-2xl bg-black/40 border border-primary/20 relative overflow-hidden cyber-card group">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute bottom-4 left-6 flex items-center gap-2">
+                   <Activity size={14} className="text-primary/40 animate-pulse" />
+                   <span className="text-[10px] font-mono text-primary/40 tracking-[0.2em]">SYNC_ESTABLISHED</span>
+                </div>
                 <Clock />
             </div>
             <InteractiveDateCard />
@@ -175,9 +208,10 @@ export function Dashboard() {
         
         <ProductivityTipCard />
       
-        <div className="flex flex-col items-center justify-center space-y-4 pt-4">
-            <p className="text-sm text-muted-foreground text-center max-w-md">
-                Select a date to quickly add a new task or choose a tool from the sidebar.
+        <div className="flex flex-col items-center justify-center space-y-4 pt-10">
+            <div className="h-px w-24 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+            <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest text-center max-w-sm leading-loose opacity-60">
+                Select a network node to initiate logging or deploy AI protocols via the sidebar.
             </p>
         </div>
     </div>

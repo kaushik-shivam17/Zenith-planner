@@ -1,12 +1,13 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
 import Link from 'next/link';
+import { useState } from 'react';
+import { Loader2, ShieldCheck, Zap } from 'lucide-react';
+import { blink } from '@/blink/client';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -27,21 +28,16 @@ import {
   CardHeader,
   CardTitle,
 } from './ui/card';
-import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import { FirebaseError } from 'firebase/app';
-import { useAuth } from '@/firebase';
 
 const formSchema = z.object({
-  email: z.string().email('Invalid email address.'),
-  password: z.string().min(6, 'Password must be at least 6 characters.'),
+  email: z.string().email('Invalid access identifier.'),
+  password: z.string().min(6, 'Security key too short.'),
 });
 
 export function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const auth = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -53,45 +49,19 @@ export function Login() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    if (!auth) {
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: 'Authentication service is not available. Please try again later.',
-      });
-      setIsLoading(false);
-      return;
-    }
-    
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      await blink.auth.signInWithEmail(values.email, values.password);
       toast({
-        title: 'Login Successful',
-        description: 'Welcome back!',
+        title: 'ACCESS_GRANTED',
+        description: 'System synchronization established.',
       });
       router.push('/dashboard');
     } catch (error: any) {
       console.error('Login error', error);
-      let description = 'An unexpected error occurred.';
-      if (error instanceof FirebaseError) {
-        switch (error.code) {
-          case 'auth/user-not-found':
-          case 'auth/wrong-password':
-          case 'auth/invalid-credential':
-            description = 'Invalid email or password. Please try again.';
-            break;
-          case 'auth/invalid-api-key':
-          case 'auth/api-key-not-valid':
-            description = 'The Firebase API key is invalid. Please check your project configuration.';
-            break;
-          default:
-            description = error.message;
-        }
-      }
       toast({
         variant: 'destructive',
-        title: 'Login Failed',
-        description,
+        title: 'AUTH_FAILED',
+        description: error.message || 'Invalid credentials or system rejection.',
       });
     } finally {
       setIsLoading(false);
@@ -99,31 +69,39 @@ export function Login() {
   }
 
   return (
-    <div className="flex justify-center items-center min-h-[80vh]">
-      <Card className="w-full max-w-sm">
+    <div className="flex justify-center items-center min-h-[80vh] px-4">
+      <Card className="w-full max-w-sm cyber-card relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-2 opacity-20">
+          <ShieldCheck className="text-primary h-12 w-12" />
+        </div>
+        <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl" />
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardHeader>
-              <CardTitle>Login</CardTitle>
-              <CardDescription>
-                Enter your credentials to access your dashboard.
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl font-mono tracking-tighter glow-primary">
+                AUTH_PROTOCOL
+              </CardTitle>
+              <CardDescription className="text-xs font-mono uppercase opacity-70">
+                Identify yourself to bypass security barriers.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-4">
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel className="text-[10px] uppercase font-mono tracking-widest opacity-60">System ID</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="you@example.com"
+                        placeholder="user@network.net"
+                        className="bg-black/40 border-primary/20 focus:border-primary/60 font-mono transition-all"
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-[10px] font-mono" />
                   </FormItem>
                 )}
               />
@@ -132,31 +110,36 @@ export function Login() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel className="text-[10px] uppercase font-mono tracking-widest opacity-60">Access Key</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
                         placeholder="••••••••"
+                        className="bg-black/40 border-primary/20 focus:border-primary/60 font-mono transition-all"
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-[10px] font-mono" />
                   </FormItem>
                 )}
               />
             </CardContent>
-            <CardFooter className="flex-col gap-4">
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Login
+            <CardFooter className="flex-col gap-4 pb-8">
+              <Button type="submit" className="w-full cyber-button bg-primary text-black hover:bg-primary/90 font-mono font-bold" disabled={isLoading}>
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Zap className="mr-2 h-4 w-4" />
+                )}
+                ESTABLISH_LINK
               </Button>
-              <p className="text-xs text-muted-foreground">
-                Don&apos;t have an account?{' '}
+              <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground text-center">
+                New entity detected?{' '}
                 <Link
                   href="/signup"
-                  className="text-primary hover:underline"
+                  className="text-primary hover:glow-primary transition-all underline decoration-primary/30"
                 >
-                  Sign up
+                  Register Node
                 </Link>
               </p>
             </CardFooter>

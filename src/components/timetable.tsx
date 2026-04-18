@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { BrainCircuit, ListTodo, Loader2, Plus, Trash2 } from 'lucide-react';
+import { BrainCircuit, ListTodo, Loader2, Plus, Trash2, Calendar, Clock, Zap, Activity, Cpu, ShieldCheck } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { generateTimetableAction } from '@/app/actions';
+import { generateTimetable } from '@/lib/ai';
 import { ScrollArea } from './ui/scroll-area';
 import type { TimetableEvent } from '@/lib/types';
 import {
@@ -53,18 +53,18 @@ const timeSlots = [
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 const preferencesSchema = z.object({
-  studyTime: z.string().min(1, "Please select your preferred study time."),
-  energyLevel: z.string().min(1, "Please select your typical energy level pattern."),
-  sessionLength: z.string().min(1, "Please select your preferred session length."),
+  studyTime: z.string().min(1, "Preferred session time required."),
+  energyLevel: z.string().min(1, "Typical biometric pattern required."),
+  sessionLength: z.string().min(1, "Target focus duration required."),
   extraInfo: z.string().optional(),
 });
 
 
 const eventSchema = z.object({
-    title: z.string().min(1, "Title is required."),
-    day: z.string().min(1, "Day is required."),
-    startTime: z.string().min(1, "Start time is required."),
-    endTime: z.string().min(1, "End time is required."),
+    title: z.string().min(1, "Event identifier required."),
+    day: z.string().min(1, "Temporal node required."),
+    startTime: z.string().min(1, "Activation time required."),
+    endTime: z.string().min(1, "Termination time required."),
   }).refine(
     (event) => {
         const startIndex = timeSlots.indexOf(event.startTime);
@@ -72,7 +72,7 @@ const eventSchema = z.object({
         return startIndex !== -1 && endIndex !== -1 && startIndex < endIndex;
     },
     {
-      message: 'End time must be after start time.',
+      message: 'Termination sequence must follow activation.',
       path: ['endTime'],
     }
   );
@@ -103,8 +103,8 @@ function ScheduleManagerDialog({ events, addCustomEvents, deleteCustomEvent, isL
   const onSubmit = async (values: z.infer<typeof eventSchema>) => {
     await addCustomEvents([{...values, type: 'custom'}]);
     toast({
-      title: 'Event Added',
-      description: `${values.title} has been added to your schedule.`,
+      title: 'FIXED_NODE_LOCKED',
+      description: `${values.title} added to the grid.`,
     });
     form.reset();
     setIsAddOpen(false);
@@ -113,46 +113,47 @@ function ScheduleManagerDialog({ events, addCustomEvents, deleteCustomEvent, isL
   const handleDeleteEvent = (eventId: string) => {
     deleteCustomEvent(eventId);
     toast({
-      title: 'Event Removed',
+      title: 'NODE_DISCONNECTED',
     });
   };
 
   return (
     <Dialog>
         <DialogTrigger asChild>
-          <Button variant="outline"><ListTodo className="mr-2 h-4 w-4" /> Manage Schedule</Button>
+          <Button variant="outline" className="border-primary/20 text-primary hover:bg-primary/5 font-mono text-[10px] tracking-widest uppercase">
+             <ListTodo className="mr-2 h-3.5 w-3.5" /> MANAGE_GRID
+          </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] bg-card border-primary/30 cyber-card shadow-[0_0_50px_rgba(0,242,255,0.1)]">
           <DialogHeader>
-            <DialogTitle>Manage Schedule</DialogTitle>
-            <DialogDescription>Add, view, and remove your fixed classes and appointments.</DialogDescription>
+            <DialogTitle className="font-mono text-xl tracking-tighter text-primary glow-primary uppercase">STATIC_NODES_MANAGER</DialogTitle>
+            <DialogDescription className="text-xs font-mono uppercase opacity-70">Inject or terminate fixed temporal coordinates.</DialogDescription>
           </DialogHeader>
           
            {isLoading ? (
                 <div className="flex justify-center items-center h-40">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <Loader2 className="h-8 w-8 animate-spin text-primary glow-primary" />
                 </div>
             ) : customEvents.length === 0 ? (
-                <div className="text-center text-muted-foreground py-12">
-                    <ListTodo className="mx-auto h-12 w-12" />
-                    <h3 className="mt-4 text-lg font-semibold">No Scheduled Events</h3>
-                    <p className="mt-1 text-sm">Add a class or appointment to get started.</p>
+                <div className="text-center text-muted-foreground py-12 border border-dashed border-primary/10 rounded-xl bg-primary/5">
+                    <ListTodo className="mx-auto h-12 w-12 opacity-20" />
+                    <p className="mt-4 text-[10px] font-mono uppercase tracking-widest opacity-40">No static nodes detected.</p>
                 </div>
             ) : (
-                <ScrollArea className="h-[250px] pr-4">
+                <ScrollArea className="h-[250px] pr-4 pt-4">
                     <div className="space-y-3">
                     {customEvents.map((event) => (
-                        <div key={event.id} className="flex items-center justify-between p-3 rounded-md border group">
+                        <div key={event.id} className="flex items-center justify-between p-4 rounded-xl border border-primary/10 bg-primary/5 group hover:border-primary/30 transition-all">
                             <div>
-                                <p className="font-semibold">{event.title}</p>
-                                <p className="text-sm text-muted-foreground">{event.day}, {event.startTime} - {event.endTime}</p>
+                                <p className="font-mono font-bold text-primary glow-primary text-sm uppercase">{event.title}</p>
+                                <p className="text-[10px] font-mono text-muted-foreground uppercase mt-1 tracking-tighter">{event.day} // {event.startTime} - {event.endTime}</p>
                             </div>
                             <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="opacity-0 group-hover:opacity-100"
+                                className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 hover:bg-destructive/10 transition-all"
                                 onClick={() => handleDeleteEvent(event.id)}>
-                                <Trash2 className="h-4 w-4 text-destructive"/>
+                                <Trash2 className="h-4 w-4"/>
                             </Button>
                         </div>
                     ))}
@@ -162,27 +163,27 @@ function ScheduleManagerDialog({ events, addCustomEvents, deleteCustomEvent, isL
 
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="w-full">
-                <Plus className="mr-2 h-4 w-4" /> Add New Event
+              <Button className="cyber-button bg-primary text-black font-mono font-bold mt-4">
+                <Plus className="mr-2 h-4 w-4" /> INJECT_FIXED_NODE
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="bg-card border-primary/30 cyber-card shadow-[0_0_50px_rgba(0,242,255,0.1)]">
               <DialogHeader>
-                <DialogTitle>Add a New Scheduled Event</DialogTitle>
-                <DialogDescription>
-                  Enter the details for your class or appointment.
+                <DialogTitle className="font-mono text-xl tracking-tighter text-primary glow-primary uppercase">NODE_PARAMETERS_INIT</DialogTitle>
+                <DialogDescription className="text-xs font-mono uppercase opacity-70">
+                  Input temporal data for new static sequence.
                 </DialogDescription>
               </DialogHeader>
                <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
                    <FormField
                     control={form.control}
                     name="title"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Title</FormLabel>
+                        <FormLabel className="text-[10px] font-mono uppercase text-primary/60">Node_Identifier</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="e.g., Math Class" />
+                          <Input {...field} placeholder="e.g., CORE_LEVEL_LECTURE" className="bg-black/40 border-primary/20 font-mono" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -193,10 +194,10 @@ function ScheduleManagerDialog({ events, addCustomEvents, deleteCustomEvent, isL
                     name="day"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Day</FormLabel>
+                        <FormLabel className="text-[10px] font-mono uppercase text-primary/60">Target_Cycle</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select day" /></SelectTrigger></FormControl>
-                          <SelectContent>{days.map(day => <SelectItem key={day} value={day}>{day}</SelectItem>)}</SelectContent>
+                          <FormControl><SelectTrigger className="bg-black/40 border-primary/20 font-mono"><SelectValue placeholder="SELECT_DAY" /></SelectTrigger></FormControl>
+                          <SelectContent className="bg-card border-primary/20 font-mono">{days.map(day => <SelectItem key={day} value={day}>{day.toUpperCase()}</SelectItem>)}</SelectContent>
                         </Select>
                         <FormMessage />
                       </FormItem>
@@ -208,10 +209,10 @@ function ScheduleManagerDialog({ events, addCustomEvents, deleteCustomEvent, isL
                       name="startTime"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Start Time</FormLabel>
+                          <FormLabel className="text-[10px] font-mono uppercase text-primary/60">Activation</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger></FormControl>
-                            <SelectContent>{timeSlots.map(time => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
+                            <FormControl><SelectTrigger className="bg-black/40 border-primary/20 font-mono text-[10px]"><SelectValue placeholder="TIME" /></SelectTrigger></FormControl>
+                            <SelectContent className="bg-card border-primary/20 font-mono">{timeSlots.map(time => <SelectItem key={time} value={time} className="text-[10px]">{time}</SelectItem>)}</SelectContent>
                           </Select>
                            <FormMessage />
                         </FormItem>
@@ -222,19 +223,19 @@ function ScheduleManagerDialog({ events, addCustomEvents, deleteCustomEvent, isL
                       name="endTime"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>End Time</FormLabel>
+                          <FormLabel className="text-[10px] font-mono uppercase text-primary/60">Termination</FormLabel>
                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger></FormControl>
-                            <SelectContent>{timeSlots.slice(1).map(time => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
+                            <FormControl><SelectTrigger className="bg-black/40 border-primary/20 font-mono text-[10px]"><SelectValue placeholder="TIME" /></SelectTrigger></FormControl>
+                            <SelectContent className="bg-card border-primary/20 font-mono">{timeSlots.slice(1).map(time => <SelectItem key={time} value={time} className="text-[10px]">{time}</SelectItem>)}</SelectContent>
                           </Select>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Event
+                  <Button type="submit" className="w-full cyber-button bg-primary text-black font-mono font-bold" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                    LOCK_SEQUENCE
                   </Button>
                 </form>
                </Form>
@@ -286,206 +287,242 @@ export function Timetable() {
     if (tasks.length === 0) {
         toast({
             variant: 'destructive',
-            title: 'No tasks to schedule',
-            description: 'Please add some tasks in the Tasks page before generating a timetable.',
+            title: 'NO_TASKS_DETECTED',
+            description: 'Initialize mission nodes before grid synchronization.',
         });
         setIsGenerating(false);
         return;
     }
 
-    const result = await generateTimetableAction({ tasks, customEvents, preferences });
-    if (result.success && result.data) {
-      const taskEvents = result.data.timetable.map(item => ({...item, type: 'task' as 'task'}));
-      const customEventsToKeep = events.filter(e => e.type === 'custom');
-      const newEventList = [...customEventsToKeep, ...taskEvents];
-      
-      await setEvents(newEventList);
+    try {
+      const result = await generateTimetable({ tasks, customEvents, preferences });
+      const taskEvents = result.map((item: any) => ({...item, type: 'task' as 'task'}));
+      await setEvents(taskEvents);
 
       toast({
-        title: 'Timetable Generated',
-        description: 'Your AI-powered timetable is ready.',
+        title: 'GRID_SYNCHRONIZED',
+        description: 'AI strategy has been mapped to the weekly schedule.',
       });
-    } else {
+    } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: result.error,
+        title: 'SYNC_FAILURE',
+        description: error.message || 'The scheduling algorithm was interrupted.',
       });
+    } finally {
+      setIsGenerating(false);
     }
-    setIsGenerating(false);
   };
   
   const handleClearTasks = () => {
-    clearEvents('task');
-    toast({ title: 'Study blocks cleared from timetable.' });
+    if (confirm('CLEAR STUDY BLOCKS? STATIC NODES WILL REMAIN.')) {
+      clearEvents('task');
+      toast({ title: 'GRID_FLUSHED', description: 'Dynamic study blocks removed.' });
+    }
   }
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex flex-col justify-center items-center h-[70vh] gap-4 animate-pulse">
+        <Loader2 className="h-10 w-10 animate-spin text-primary glow-primary" />
+        <span className="text-[10px] font-mono tracking-widest text-primary uppercase">Deciphering_Temporal_Grid...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 fade-in">
-       <Card>
-        <CardHeader>
-            <div className='flex items-center justify-between'>
-                <div>
-                    <CardTitle>Your Weekly Timetable</CardTitle>
-                    <CardDescription>
-                    AI-generated study blocks and your custom events.
-                    </CardDescription>
-                </div>
-                <div className="flex flex-wrap gap-2 justify-end">
-                    <ScheduleManagerDialog events={events} addCustomEvents={addCustomEvents} deleteCustomEvent={deleteCustomEvent} isLoading={isLoading} />
-                    <Button variant="outline" onClick={handleClearTasks}>
-                        <Trash2 className="mr-2 h-4 w-4" /> Clear Study Blocks
-                    </Button>
-                    <Dialog open={isPrefsOpen} onOpenChange={setIsPrefsOpen}>
-                    <DialogTrigger asChild>
-                        <Button disabled={isGenerating}>
-                        {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
-                        Generate AI Timetable
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                        <DialogHeader>
-                        <DialogTitle>Personalize Your Timetable</DialogTitle>
-                        <DialogDescription>
-                            Answer a few questions to help the AI create the best schedule for you.
-                        </DialogDescription>
-                        </DialogHeader>
-                        <Form {...form}>
-                        <form onSubmit={form.handleSubmit(handleGenerateTimetable)} className="space-y-4">
-                            <FormField
-                            control={form.control}
-                            name="studyTime"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>When do you prefer to study?</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                    <SelectItem value="morning">Morning</SelectItem>
-                                    <SelectItem value="afternoon">Afternoon</SelectItem>
-                                    <SelectItem value="evening">Evening</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                            />
-                            <FormField
-                            control={form.control}
-                            name="energyLevel"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>What are your energy levels like?</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                    <SelectItem value="high-in-morning">Highest in the morning</SelectItem>
-                                    <SelectItem value="energized-after-lunch">I get a boost after lunch</SelectItem>
-                                    <SelectItem value="night-owl">I'm most focused at night</SelectItem>
-                                    <SelectItem value="consistent">Pretty consistent all day</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                            />
-                            <FormField
-                            control={form.control}
-                            name="sessionLength"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>How long do you like your study sessions?</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                    <SelectItem value="30-min">Short and focused (30 min)</SelectItem>
-                                    <SelectItem value="60-min">Standard (1 hour)</SelectItem>
-                                    <SelectItem value="90-min">Long and deep (90 min+)</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                            />
-                            <FormField
-                              control={form.control}
-                              name="extraInfo"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Additional Information (Optional)</FormLabel>
-                                  <FormControl>
-                                    <Textarea
-                                      placeholder="e.g., 'I have a big exam for Math on Friday' or 'Don't schedule anything on Saturday evening.'"
-                                      className="resize-none"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <Button type="submit" className="w-full">
-                            Generate My Timetable
-                            </Button>
-                        </form>
-                        </Form>
-                    </DialogContent>
-                    </Dialog>
-                </div>
-            </div>
+    <div className="space-y-10 fade-in pb-20">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-primary/10 pb-8">
+        <div className="flex items-center gap-6">
+          <div className="h-14 w-14 rounded border border-primary/30 bg-primary/10 flex items-center justify-center glow-primary shadow-[0_0_15px_rgba(0,242,255,0.1)]">
+            <Calendar size={32} className="text-primary" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold tracking-tighter font-headline glow-primary uppercase">TEMPORAL_SYNC</h1>
+            <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground mt-1 animate-pulse">WEEKLY_GRID_INTERFACE</p>
+          </div>
+        </div>
+        
+        <div className="flex flex-wrap gap-4">
+            <ScheduleManagerDialog events={events} addCustomEvents={addCustomEvents} deleteCustomEvent={deleteCustomEvent} isLoading={isLoading} />
+            
+            <Button variant="ghost" onClick={handleClearTasks} className="text-destructive hover:text-destructive hover:bg-destructive/10 font-mono text-[10px] tracking-widest uppercase">
+                <Trash2 className="mr-2 h-3.5 w-3.5" /> FLUSH_BLOCKS
+            </Button>
+            
+            <Dialog open={isPrefsOpen} onOpenChange={setIsPrefsOpen}>
+              <DialogTrigger asChild>
+                  <Button disabled={isGenerating} className="cyber-button bg-primary text-black font-mono font-bold text-xs h-10 px-6">
+                  {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
+                  INIT_AI_SYNC
+                  </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-card border-primary/30 cyber-card shadow-[0_0_50px_rgba(0,242,255,0.1)]">
+                  <DialogHeader>
+                  <DialogTitle className="font-mono text-xl tracking-tighter text-primary glow-primary uppercase">SYNC_PREFERENCES</DialogTitle>
+                  <DialogDescription className="text-xs font-mono uppercase opacity-70">
+                      Configure algorithm parameters for optimal grid distribution.
+                  </DialogDescription>
+                  </DialogHeader>
+                  <Form {...form}>
+                  <form onSubmit={form.handleSubmit(handleGenerateTimetable)} className="space-y-6 pt-4">
+                      <FormField
+                      control={form.control}
+                      name="studyTime"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel className="text-[10px] font-mono uppercase text-primary/60">Preferred_Window</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl><SelectTrigger className="bg-black/40 border-primary/20 font-mono text-xs"><SelectValue /></SelectTrigger></FormControl>
+                              <SelectContent className="bg-card border-primary/20 font-mono">
+                                <SelectItem value="morning">MORNING_PHASE</SelectItem>
+                                <SelectItem value="afternoon">AFTERNOON_PHASE</SelectItem>
+                                <SelectItem value="evening">EVENING_PHASE</SelectItem>
+                              </SelectContent>
+                          </Select>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                      />
+                      <FormField
+                      control={form.control}
+                      name="energyLevel"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel className="text-[10px] font-mono uppercase text-primary/60">Biometric_Peak</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl><SelectTrigger className="bg-black/40 border-primary/20 font-mono text-xs"><SelectValue /></SelectTrigger></FormControl>
+                              <SelectContent className="bg-card border-primary/20 font-mono">
+                                <SelectItem value="high-in-morning">HIGHEST_IN_AM</SelectItem>
+                                <SelectItem value="energized-after-lunch">POST_MERIDIAN_BOOST</SelectItem>
+                                <SelectItem value="night-owl">LATE_CYCLE_FOCUS</SelectItem>
+                                <SelectItem value="consistent">STABLE_OSCILLATION</SelectItem>
+                              </SelectContent>
+                          </Select>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                      />
+                      <FormField
+                      control={form.control}
+                      name="sessionLength"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel className="text-[10px] font-mono uppercase text-primary/60">Focus_Duration</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl><SelectTrigger className="bg-black/40 border-primary/20 font-mono text-xs"><SelectValue /></SelectTrigger></FormControl>
+                              <SelectContent className="bg-card border-primary/20 font-mono">
+                                <SelectItem value="30-min">FOCUSED (30 MIN)</SelectItem>
+                                <SelectItem value="60-min">STANDARD (1 HOUR)</SelectItem>
+                                <SelectItem value="90-min">DEEP_SYNC (90 MIN+)</SelectItem>
+                              </SelectContent>
+                          </Select>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="extraInfo"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-[10px] font-mono uppercase text-primary/60">Directive_Supplementary</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="e.g., 'PRIORITIZE_MATH_EXAM' or 'NO_DATA_SYNC_ON_SUNDAY'"
+                                className="bg-black/40 border-primary/20 font-mono text-xs h-24 resize-none"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button type="submit" className="w-full cyber-button bg-primary text-black font-mono font-bold h-12">
+                         <Zap className="mr-2 h-4 w-4" /> GENERATE_GRID_SYNC
+                      </Button>
+                  </form>
+                  </Form>
+              </DialogContent>
+            </Dialog>
+        </div>
+      </div>
+
+       <Card className="cyber-card bg-black/40 border-primary/20 overflow-hidden relative">
+        <div className="absolute inset-0 pointer-events-none opacity-5">
+           <div className="h-full w-full bg-[linear-gradient(rgba(0,242,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,242,255,0.1)_1px,transparent_1px)] bg-[size:40px_40px]" />
+        </div>
+        <CardHeader className="bg-primary/5 border-b border-primary/10">
+           <div className="flex items-center gap-2">
+              <Activity size={14} className="text-primary animate-pulse" />
+              <span className="text-[10px] font-mono tracking-widest text-primary uppercase">Live_Grid_Monitor</span>
+           </div>
         </CardHeader>
-        <CardContent>
-          <ScrollArea className="w-full h-[600px]">
-            <div className="grid grid-cols-[auto,repeat(7,1fr)] grid-rows-[auto,repeat(13,1fr)] gap-px bg-border relative">
-              {/* Time slots column */}
-              {timeSlots.map((time, index) => (
-                <div key={time} className="row-start-2 row-span-1 p-2 text-xs text-center bg-card text-muted-foreground" style={{ gridRow: `${index + 2}` }}>
-                  {time}
-                </div>
-              ))}
-              {/* Day headers */}
-              {days.map((day, index) => (
-                <div key={day} className="col-start-2 col-span-1 p-2 text-sm font-semibold text-center bg-card" style={{ gridColumn: `${index + 2}` }}>
-                  {day}
-                </div>
-              ))}
-              
-              {/* Grid cells */}
-              {Array.from({ length: timeSlots.length * days.length }).map((_, index) => {
-                const dayIndex = index % days.length;
-                const timeIndex = Math.floor(index / days.length);
-                return (
+        <CardContent className="p-0">
+          <ScrollArea className="w-full">
+            <div className="min-w-[800px]">
+              <div className="grid grid-cols-[80px,repeat(7,1fr)] grid-rows-[auto,repeat(13,1fr)] gap-px bg-primary/10">
+                {/* Intersection empty cell */}
+                <div className="bg-black/40 p-4 border-b border-r border-primary/10" />
+                
+                {/* Day headers */}
+                {days.map((day, index) => (
+                  <div key={day} className="p-4 text-[10px] font-mono font-bold text-center bg-primary/5 text-primary glow-primary uppercase tracking-widest border-b border-primary/10">
+                    {day}
+                  </div>
+                ))}
+                
+                {/* Time slots column */}
+                {timeSlots.map((time, index) => (
+                  <div key={time} className="p-3 text-[9px] font-mono text-center bg-black/20 text-muted-foreground border-r border-primary/10 flex items-center justify-center">
+                    {time}
+                  </div>
+                ))}
+                
+                {/* Grid cells */}
+                {Array.from({ length: timeSlots.length * days.length }).map((_, index) => {
+                  return (
+                    <div
+                      key={index}
+                      className="bg-black/10 border-b border-r border-primary/5 h-[60px]"
+                    />
+                  );
+                })}
+                
+                {/* Events */}
+                {events.map((event, index) => (
                   <div
-                    key={`${dayIndex}-${timeIndex}`}
-                    className="bg-card"
-                    style={{ gridColumn: dayIndex + 2, gridRow: timeIndex + 2 }}
-                  />
-                );
-              })}
-              
-              {/* Events */}
-              {events.map((event, index) => (
-                <div
-                  key={event.id || index}
-                  style={getGridPosition(event)}
-                  className={`p-2 rounded-lg text-white text-xs overflow-hidden flex flex-col ${event.type === 'custom' ? 'bg-secondary' : 'bg-primary'}`}
-                >
-                  <span className="font-bold">{event.title}</span>
-                  <span className="opacity-80">{event.startTime} - {event.endTime}</span>
-                </div>
-              ))}
+                    key={event.id || index}
+                    style={getGridPosition(event)}
+                    className={`m-1 p-2 rounded-lg text-xs overflow-hidden flex flex-col border shadow-lg transition-all hover:scale-[1.02] hover:z-10 ${
+                      event.type === 'custom' 
+                        ? 'bg-secondary/40 border-secondary-foreground/20 text-secondary-foreground' 
+                        : 'bg-primary/20 border-primary/40 text-primary glow-primary'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1 mb-1">
+                       {event.type === 'custom' ? <Clock size={10} /> : <Zap size={10} />}
+                       <span className="font-mono font-bold text-[10px] uppercase truncate">{event.title}</span>
+                    </div>
+                    <span className="text-[8px] font-mono opacity-60 truncate uppercase">{event.startTime} - {event.endTime}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </ScrollArea>
         </CardContent>
       </Card>
+      
+      <div className="flex items-center gap-4 text-primary/40 px-2">
+         <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-primary glow-primary" />
+            <span className="text-[9px] font-mono tracking-widest uppercase">DYNAMIC_STUDY_BLOCK</span>
+         </div>
+         <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-secondary border border-primary/20" />
+            <span className="text-[9px] font-mono tracking-widest uppercase">STATIC_NODE</span>
+         </div>
+      </div>
     </div>
   );
 }

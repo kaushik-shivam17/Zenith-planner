@@ -1,21 +1,12 @@
 'use client';
 
-import {
-  useCallback,
-  useMemo,
-} from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import type { Mission } from '@/lib/types';
-import {
-  useFirebase,
-  useCollection,
-  useMemoFirebase,
-  errorEmitter,
-  FirestorePermissionError,
-} from '@/firebase';
-import { collection, doc, serverTimestamp, getDocs, writeBatch } from 'firebase/firestore';
-import { addDocument, updateDocument } from '@/firebase/non-blocking-updates';
+import { blink } from '@/blink/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/hooks/use-toast';
 
-interface MissionsHook {
+export interface MissionsHook {
   missions: Mission[];
   getMissionById: (missionId: string) => Mission | undefined;
   addMission: (missionData: Pick<Mission, 'title'>) => Promise<void>;
@@ -25,102 +16,122 @@ interface MissionsHook {
 }
 
 export function useMissions(): MissionsHook {
-  const { user, firestore, isUserLoading, areServicesAvailable } = useFirebase();
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const [missions, setMissions] = useState<Mission[]>([]);
+  const [areMissionsLoading, setAreMissionsLoading] = useState(true);
 
-  const missionsCollectionRef = useMemoFirebase(
-    () => {
-      if (!areServicesAvailable || isUserLoading || !user || !firestore) return null;
-      return collection(firestore, 'users', user.uid, 'missions');
-    },
-    [areServicesAvailable, isUserLoading, user, firestore]
-  );
+  const fetchMissions = useCallback(async () => {
+    if (!user) {
+      setMissions([]);
+      setAreMissionsLoading(false);
+      return;
+    }
 
-  const { data: missionsData, isLoading: isMissionsLoading } = useCollection<Omit<Mission, 'id'|'progress'>>(missionsCollectionRef);
+    try {
+      const { data } = await blink.db.missions.list({
+        where: { userId: user.id },
+        orderBy: { createdAt: 'desc' }
+      });
+      
+      const formattedMissions = (data || []).map(mission => {
+        const totalGoals = mission.totalGoals || 0;
+        const completedGoals = mission.completedGoals || 0;
+        const progress = totalGoals > 0 ? (completedGoals / totalGoals) * 100 : 0;
+        return {
+          ...mission,
+          progress,
+          createdAt: new Date(mission.createdAt),
+          roadmap: typeof mission.roadmap === 'string' ? JSON.parse(mission.roadmap) : mission.roadmap
+        };
+      }) as Mission[];
 
-  const missions = useMemo(() => {
-    if (!missionsData) return [];
-    
-    return missionsData.map(mission => {
-      const progress = mission.totalGoals > 0 ? (mission.completedGoals / mission.totalGoals) * 100 : 0;
-      return {
-        ...mission,
-        progress,
-      };
-    });
-  }, [missionsData]);
+      setMissions(formattedMissions);
+    } catch (error) {
+      console.error('Error fetching missions:', error);
+    } finally {
+      setAreMissionsLoading(false);
+    }
+  }, [user]);
 
+  useEffect(() => {
+    fetchMissions();
+  }, [fetchMissions]);
 
   const getMissionById = useCallback(
     (missionId: string) => {
-      return missions?.find((mission) => mission.id === missionId);
+      return missions.find((mission) => mission.id === missionId);
     },
     [missions]
   );
 
   const addMission = useCallback(
     async (missionData: Pick<Mission, 'title'>) => {
-      if (!missionsCollectionRef || !user) return;
-      const newMission = {
-        ...missionData,
-        userId: user.uid,
-        progress: 0,
-        createdAt: serverTimestamp(),
-        totalGoals: 0,
-        completedGoals: 0,
-      };
-      addDocument(missionsCollectionRef, newMission);
-    },
-    [missionsCollectionRef, user]
-  );
-  
-  const updateMission = useCallback(
-    async (missionId: string, updates: Partial<Omit<Mission, 'id' | 'userId'>>) => {
-        if (!missionsCollectionRef) return;
-        const missionDocRef = doc(missionsCollectionRef, missionId);
-        updateDocument(missionDocRef, updates);
-    },
-    [missionsCollectionRef]
-  );
-
-
-   const deleteMission = useCallback(
-    async (missionId: string) => {
-      if (!user || !firestore) return;
-      
-      const missionDocRef = doc(firestore, 'users', user.uid, 'missions', missionId);
-      const goalsCollectionRef = collection(missionDocRef, 'goals');
-      
+      if (!user) return;
       try {
-        const batch = writeBatch(firestore);
-        
-        // Delete goals subcollection
-        const goalsSnapshot = await getDocs(goalsCollectionRef);
-        goalsSnapshot.forEach(goalDoc => {
-          batch.delete(goalDoc.ref);
+        const id = crypto.randomUUID();
+        await blink.db.missions.create({
+          id,
+          userId: user.id,
+          ...missionData,
+          totalGoals: 0,
+          completedGoals: 0,
+          progress: 0,
+          createdAt: new Date().toISOString()
         });
-      
-        // Delete the mission document itself
-        batch.delete(missionDocRef);
-
-        await batch.commit();
+        await fetchMissions();
+        toast({ title: 'Mission Initiated', description: 'System tracking started.' });
       } catch (error) {
-        // A more specific error would be better, but we don't know which operation failed.
-         errorEmitter.emit(
-            'permission-error',
-            new FirestorePermissionError({
-              path: missionDocRef.path, // or goalsCollectionRef.path
-              operation: 'delete',
-            })
-        );
+        console.error('Error adding mission:', error);
       }
     },
-    [user, firestore]
+    [user, fetchMissions]
   );
-  
-  const isLoading = isUserLoading || (!!user && isMissionsLoading);
+
+  const updateMission = useCallback(
+    async (missionId: string, updates: Partial<Omit<Mission, 'id' | 'userId'>>) => {
+      if (!user) return;
+      try {
+        const formattedUpdates = { ...updates };
+        if (updates.roadmap) {
+          (formattedUpdates as any).roadmap = JSON.stringify(updates.roadmap);
+        }
+        await blink.db.missions.update({
+          id: missionId,
+          ...formattedUpdates
+        });
+        await fetchMissions();
+      } catch (error) {
+        console.error('Error updating mission:', error);
+      }
+    },
+    [user, fetchMissions]
+  );
+
+  const deleteMission = useCallback(
+    async (missionId: string) => {
+      if (!user) return;
+      try {
+        await blink.db.missions.delete(missionId);
+        // Also delete associated goals
+        const { data: goals } = await blink.db.goals.list({ where: { missionId } });
+        if (goals) {
+          for (const goal of goals) {
+            await blink.db.goals.delete(goal.id);
+          }
+        }
+        await fetchMissions();
+        toast({ title: 'Mission Terminated', description: 'Data purged from system.' });
+      } catch (error) {
+        console.error('Error deleting mission:', error);
+      }
+    },
+    [user, fetchMissions]
+  );
+
+  const isLoading = isAuthLoading || areMissionsLoading;
 
   return {
-    missions: missions || [],
+    missions,
     getMissionById,
     addMission,
     updateMission,

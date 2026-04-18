@@ -2,12 +2,9 @@
 
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Bot, Loader2, Send, Split } from 'lucide-react';
-import {
-  generateTaskRoadmapAction,
-  continueConversationAction,
-} from '@/app/actions';
-import type { GenerateTaskRoadmapOutput } from '@/ai/flows/generate-task-roadmap';
+import { ArrowLeft, Bot, Loader2, Send, ShieldAlert, Cpu, Terminal } from 'lucide-react';
+import { generateTaskRoadmap, type RoadmapOutput } from '@/lib/ai';
+import { blink } from '@/blink/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -22,9 +19,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useTasks } from '@/hooks/use-tasks';
 import { useMissions } from '@/hooks/use-missions';
-import { setDocument } from '@/firebase/non-blocking-updates';
-import { doc } from 'firebase/firestore';
-import { useFirebase } from '@/firebase';
 
 type ChatMessage = {
   role: 'user' | 'model';
@@ -35,14 +29,13 @@ export function RoadmapContent({ taskId }: { taskId: string }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
-  const { firestore, user } = useFirebase();
 
   const itemType = searchParams.get('type') === 'mission' ? 'mission' : 'task';
 
-  const { getTaskById, isLoading: areTasksLoading } = useTasks();
-  const { getMissionById, isLoading: areMissionsLoading } = useMissions();
+  const { getTaskById, updateTask, isLoading: areTasksLoading } = useTasks();
+  const { getMissionById, updateMission, isLoading: areMissionsLoading } = useMissions();
 
-  const [roadmap, setRoadmap] = useState<GenerateTaskRoadmapOutput | null>(null);
+  const [roadmap, setRoadmap] = useState<RoadmapOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,34 +54,33 @@ export function RoadmapContent({ taskId }: { taskId: string }) {
   const isItemLoading = areTasksLoading || areMissionsLoading;
 
   useEffect(() => {
-    if (isItemLoading) {
-      return;
-    }
+    if (isItemLoading) return;
+    
     if (item) {
       if (item.roadmap) {
-        setRoadmap(item.roadmap);
-        setChatHistory([{ role: 'model', content: item.roadmap.introduction }]);
+        setRoadmap(item.roadmap as RoadmapOutput);
+        setChatHistory([{ role: 'model', content: (item.roadmap as RoadmapOutput).introduction }]);
         setIsLoading(false);
       } else {
         const fetchRoadmap = async () => {
           setIsLoading(true);
           setError(null);
-          const result = await generateTaskRoadmapAction(item.title);
-          if (result.success) {
-            const newRoadmap = result.data;
+          try {
+            const newRoadmap = await generateTaskRoadmap(item.title);
             setRoadmap(newRoadmap);
             setChatHistory([{ role: 'model', content: newRoadmap.introduction }]);
-            if (firestore && user) {
-                const collectionName = itemType === 'task' ? 'tasks' : 'missions';
-                const docRef = doc(firestore, 'users', user.uid, collectionName, item.id);
-                setDocument(docRef, { roadmap: newRoadmap }, { merge: true });
+            
+            if (itemType === 'task') {
+              await updateTask(item.id, { roadmap: newRoadmap });
+            } else {
+              await updateMission(item.id, { roadmap: newRoadmap });
             }
-          } else {
-            setError(result.error);
+          } catch (err: any) {
+            setError(err.message || 'FAILED_TO_DECODE_ROADMAP');
             toast({
               variant: 'destructive',
-              title: 'Error Generating Roadmap',
-              description: result.error,
+              title: 'SYSTEM_ERROR',
+              description: 'Could not initialize mission roadmap.',
             });
           }
           setIsLoading(false);
@@ -96,10 +88,10 @@ export function RoadmapContent({ taskId }: { taskId: string }) {
         fetchRoadmap();
       }
     } else if (!isItemLoading) {
-      setError(`The requested ${itemType} could not be found.`);
+      setError(`NODE_NOT_FOUND: ${taskId}`);
       setIsLoading(false);
     }
-  }, [item, isItemLoading, toast, itemType, firestore, user]);
+  }, [item, isItemLoading, taskId, itemType, toast, updateTask, updateMission]);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -110,72 +102,67 @@ export function RoadmapContent({ taskId }: { taskId: string }) {
   const handleSendMessage = async () => {
     if (!userInput.trim() || !item) return;
   
-    const newUserMessage: ChatMessage = { role: 'user', content: userInput };
-    setChatHistory((prev) => [...prev, newUserMessage]);
+    const userMsg = userInput;
     setUserInput('');
+    setChatHistory((prev) => [...prev, { role: 'user', content: userMsg }]);
     setIsChatLoading(true);
-  
-    // Convert the full chat history into the {user, model} pair format
-    const conversationHistoryForApi = chatHistory
-      .reduce((acc, msg) => {
-        if (msg.role === 'user') {
-          acc.push({ user: msg.content, model: '' }); // Push user message
-        } else if (msg.role === 'model' && acc.length > 0) {
-          acc[acc.length - 1].model = msg.content; // Add model response to last user message
-        }
-        return acc;
-      }, [] as { user: string; model: string }[]);
-      
-    // Add the latest user message
-    conversationHistoryForApi.push({ user: newUserMessage.content, model: '' });
 
-    const result = await continueConversationAction(
-      item.title,
-      conversationHistoryForApi
-    );
-  
-    if (result.success) {
-      setChatHistory((prev) => [
-        ...prev,
-        { role: 'model', content: result.data.response },
-      ]);
-    } else {
+    try {
+      const { textStream } = await blink.ai.streamText({
+        model: 'google/gemini-2.0-flash',
+        prompt: `You are the Zenith AI Architect. A user is asking about their ${itemType}: "${item.title}".
+        Context: They are following this roadmap: ${JSON.stringify(roadmap)}.
+        User query: ${userMsg}
+        Provide a sharp, helpful, and cyber-themed response. Keep it concise.`,
+      });
+
+      let fullText = '';
+      setChatHistory((prev) => [...prev, { role: 'model', content: '' }]);
+
+      for await (const delta of textStream) {
+        fullText += delta;
+        setChatHistory((prev) => {
+          const newHistory = [...prev];
+          newHistory[newHistory.length - 1].content = fullText;
+          return newHistory;
+        });
+      }
+    } catch (err) {
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: result.error,
+        title: 'COMM_FAILURE',
+        description: 'Failed to receive AI transmission.',
       });
-      // remove the user message if AI fails
-      setChatHistory(prev => prev.slice(0, -1));
+    } finally {
+      setIsChatLoading(false);
     }
-    setIsChatLoading(false);
   };
   
   const backUrl = itemType === 'mission' ? '/missions' : '/tasks';
-  const backLabel = itemType === 'mission' ? 'Back to Missions' : 'Back to Tasks';
+  const backLabel = itemType === 'mission' ? 'EXIT_CAMPAIGNS' : 'EXIT_LOGS';
 
   if (isLoading || isItemLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[80vh] text-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <h2 className="text-2xl font-semibold">Generating Your Roadmap...</h2>
-        <p className="text-muted-foreground">The AI is crafting a personalized plan for your {itemType}.</p>
+      <div className="flex flex-col items-center justify-center h-full min-h-[80vh] text-center animate-pulse">
+        <Cpu className="h-16 w-16 text-primary mb-6 animate-spin glow-primary" />
+        <h2 className="text-2xl font-mono tracking-tighter glow-primary">DECODING_MISSION_PATH...</h2>
+        <p className="text-muted-foreground font-mono text-xs mt-2 uppercase">Synthesizing high-performance protocols.</p>
       </div>
     );
   }
 
   if (error || !item) {
     return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[80vh] text-center">
-         <Split className="h-16 w-16 text-destructive mb-4" />
-        <h2 className="text-2xl font-semibold text-destructive">
-          {error ? 'Failed to Generate Roadmap' : `${itemType === 'task' ? 'Task' : 'Mission'} Not Found`}
+      <div className="flex flex-col items-center justify-center h-full min-h-[80vh] text-center border border-destructive/20 rounded-xl bg-destructive/5 p-8">
+         <ShieldAlert className="h-20 w-20 text-destructive mb-6 glow-accent" />
+        <h2 className="text-2xl font-mono tracking-tighter text-destructive uppercase">
+          {error || 'NODE_ERROR'}
         </h2>
-        <p className="text-muted-foreground max-w-md mt-2">
-          {error || `We couldn't find the ${itemType} you're looking for. It might have been deleted.`}
+        <p className="text-muted-foreground font-mono text-xs mt-4 max-w-md uppercase tracking-widest">
+          The requested data node has been corrupted or disconnected from the core.
         </p>
-        <Button onClick={() => router.push(backUrl)} className="mt-6">
-          <ArrowLeft className="mr-2" />
+        <Button onClick={() => router.push(backUrl)} variant="destructive" className="mt-8 cyber-button px-8">
+          <ArrowLeft className="mr-2 h-4 w-4" />
           {backLabel}
         </Button>
       </div>
@@ -183,26 +170,55 @@ export function RoadmapContent({ taskId }: { taskId: string }) {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">
-      <div className="lg:col-span-2 space-y-6">
-        <Button variant="ghost" onClick={() => router.push(backUrl)} className="mb-4">
-          <ArrowLeft className="mr-2" />
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 fade-in pb-12">
+      <div className="lg:col-span-2 space-y-8">
+        <Button variant="ghost" onClick={() => router.push(backUrl)} className="text-primary hover:text-primary/80 font-mono text-xs tracking-widest p-0">
+          <ArrowLeft className="mr-2 h-4 w-4" />
           {backLabel}
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Roadmap: {item.title}</h1>
+        
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="h-1 w-8 bg-primary glow-primary" />
+            <span className="text-[10px] font-mono tracking-widest text-primary uppercase">Protocol Overview</span>
+          </div>
+          <h1 className="text-4xl font-bold tracking-tighter font-headline glow-primary uppercase break-words">
+            {item.title}
+          </h1>
+        </div>
+
         {roadmap && (
-          <Accordion type="multiple" defaultValue={roadmap.milestones.map(m => m.title)} className="w-full">
-            {roadmap.milestones.map((milestone) => (
-              <AccordionItem value={milestone.title} key={milestone.title}>
-                <AccordionTrigger className="text-lg font-semibold">
-                  <span className="mr-4 text-2xl">{milestone.emoji}</span> {milestone.title}
+          <Accordion type="multiple" defaultValue={roadmap.milestones.map(m => m.title)} className="w-full space-y-4">
+            {roadmap.milestones.map((milestone, mIdx) => (
+              <AccordionItem 
+                value={milestone.title} 
+                key={milestone.title} 
+                className="cyber-card border-primary/20 bg-black/40 px-6 py-2"
+              >
+                <AccordionTrigger className="hover:no-underline py-4">
+                  <div className="flex items-center gap-4 text-left">
+                    <span className="text-3xl filter drop-shadow-[0_0_8px_rgba(0,242,255,0.4)]">{milestone.emoji}</span>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-mono text-primary/60 tracking-widest uppercase">Phase_0{mIdx + 1}</span>
+                      <span className="text-lg font-mono font-bold tracking-tight text-foreground glow-primary uppercase">{milestone.title}</span>
+                    </div>
+                  </div>
                 </AccordionTrigger>
-                <AccordionContent>
-                  <ul className="space-y-3 pl-8 py-2">
+                <AccordionContent className="pt-2 pb-6">
+                  <div className="h-px w-full bg-gradient-to-r from-primary/30 to-transparent mb-6" />
+                  <ul className="space-y-4 pl-4">
                     {milestone.steps.map((step, index) => (
-                      <li key={index} className="flex items-start gap-3">
-                        <Checkbox id={`${milestone.title}-step-${index}`} className="mt-1" />
-                        <label htmlFor={`${milestone.title}-step-${index}`} className="text-muted-foreground">{step}</label>
+                      <li key={index} className="flex items-start gap-4 group">
+                        <Checkbox 
+                          id={`${milestone.title}-step-${index}`} 
+                          className="mt-1 border-primary/40 data-[state=checked]:bg-primary data-[state=checked]:text-black" 
+                        />
+                        <label 
+                          htmlFor={`${milestone.title}-step-${index}`} 
+                          className="text-sm font-mono text-muted-foreground group-hover:text-primary transition-colors cursor-pointer leading-relaxed uppercase tracking-tight"
+                        >
+                          {step}
+                        </label>
                       </li>
                     ))}
                   </ul>
@@ -211,55 +227,71 @@ export function RoadmapContent({ taskId }: { taskId: string }) {
             ))}
           </Accordion>
         )}
-         {roadmap && (
-          <p className="text-center text-lg font-semibold text-primary pt-4">{roadmap.conclusion}</p>
+        
+        {roadmap && (
+          <Card className="bg-primary/5 border border-primary/20 p-6 rounded-xl border-dashed">
+            <p className="text-center text-sm font-mono tracking-wider text-primary glow-primary italic uppercase leading-relaxed">
+              "{roadmap.conclusion}"
+            </p>
+          </Card>
         )}
       </div>
 
-      <div className="lg:col-span-1">
-        <Card className="h-full flex flex-col">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bot />
-              AI Mentor Chat
+      <div className="lg:col-span-1 h-fit sticky top-8">
+        <Card className="cyber-card border-primary/30 bg-black/60 flex flex-col h-[650px] shadow-2xl">
+          <CardHeader className="border-b border-primary/10 py-4 bg-primary/5">
+            <CardTitle className="flex items-center gap-3 text-sm font-mono tracking-tighter glow-primary text-primary uppercase">
+              <Terminal size={18} />
+              Architect_Mentor_v2
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col gap-4">
-            <ScrollArea className="flex-1 h-[400px] pr-4" ref={chatContainerRef}>
-              <div className="space-y-4">
+          <CardContent className="flex-1 flex flex-col gap-4 p-4 overflow-hidden">
+            <ScrollArea className="flex-1 pr-4" ref={chatContainerRef}>
+              <div className="space-y-6 pt-2">
                 {chatHistory.map((msg, index) => (
-                  <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-                    {msg.role === 'model' && <Bot className="h-6 w-6 text-accent flex-shrink-0" />}
-                    <div className={`rounded-lg p-3 max-w-[85%] ${
+                  <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                    <div className={`flex h-8 w-8 items-center justify-center rounded border shrink-0 ${
+                      msg.role === 'user' ? 'bg-accent/10 border-accent/30' : 'bg-primary/10 border-primary/30'
+                    }`}>
+                      {msg.role === 'model' ? <Bot size={16} className="text-primary" /> : <ShieldAlert size={16} className="text-accent" />}
+                    </div>
+                    <div className={`rounded-lg p-3 max-w-[85%] border shadow-lg ${
                         msg.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-secondary'
+                          ? 'bg-accent/10 border-accent/20 text-accent-foreground rounded-tr-none'
+                          : 'bg-primary/5 border-primary/20 text-foreground rounded-tl-none'
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      <p className="text-xs font-mono leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                     </div>
                   </div>
                 ))}
                 {isChatLoading && (
                    <div className="flex items-start gap-3">
-                     <Bot className="h-6 w-6 text-accent flex-shrink-0" />
-                     <div className="rounded-lg p-3 bg-secondary">
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                     <div className="flex h-8 w-8 items-center justify-center rounded border bg-primary/10 border-primary/30 shrink-0">
+                        <Loader2 size={16} className="text-primary animate-spin" />
+                     </div>
+                     <div className="rounded-lg p-3 bg-primary/5 border border-primary/20 animate-pulse">
+                        <div className="h-2 w-12 bg-primary/20 rounded" />
                      </div>
                    </div>
                 )}
               </div>
             </ScrollArea>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pt-4 border-t border-primary/10">
               <Input
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Ask a follow-up question..."
+                placeholder="TERMINAL_PROMPT..."
+                className="bg-black/60 border-primary/20 focus:border-primary/60 font-mono text-xs h-10"
                 disabled={isChatLoading}
               />
-              <Button onClick={handleSendMessage} disabled={isChatLoading || !userInput.trim()}>
-                <Send />
+              <Button 
+                onClick={handleSendMessage} 
+                disabled={isChatLoading || !userInput.trim()}
+                className="cyber-button bg-primary hover:bg-primary/90 text-black h-10 w-10 p-0"
+              >
+                <Send size={18} />
               </Button>
             </div>
           </CardContent>

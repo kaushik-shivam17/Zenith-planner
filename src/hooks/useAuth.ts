@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { blink } from '@/blink/client'
-import type { BlinkUser } from '@blinkdotnew/sdk'
+import { blink, type BlinkUser } from '@/blink/client'
 
 export function useAuth() {
   const [user, setUser] = useState<BlinkUser | null>(null)

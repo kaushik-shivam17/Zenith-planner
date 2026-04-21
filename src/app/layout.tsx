@@ -2,11 +2,9 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { AppShell } from '@/components/app-shell';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { DataProvider } from '@/context/data-provider';
-import { BlinkProvider } from '@blinkdotnew/react';
+import { Providers } from '@/components/providers';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -27,11 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} dark`}>
       <body className="font-body antialiased">
-        <BlinkProvider projectId={import.meta.env.VITE_BLINK_PROJECT_ID}>
-          <DataProvider>
-            <AppShell>{children}</AppShell>
-          </DataProvider>
-        </BlinkProvider>
+        <Providers>{children}</Providers>
         <Toaster />
         <Analytics />
         <SpeedInsights />

@@ -2,10 +2,11 @@ import './_group.css';
 import { useEffect, useState } from 'react';
 import {
   Calendar as CalendarIcon, ArrowUpRight, ArrowRight, Play, Pause, Plus, Check,
-  Quote, Minus, ChevronRight, Search,
+  Quote, Minus, ChevronRight, Search, Home, FileText, Library, Compass, Mail,
+  Settings, Bell, Inbox, BookOpen, Sun, CloudSun, CloudRain, Wind, Bookmark, Newspaper,
 } from 'lucide-react';
 
-function fmt(d: Date, kind: 'weekday' | 'day' | 'month' | 'year' | 'time' | 'iso' | 'mday') {
+function fmt(d: Date, kind: 'weekday' | 'day' | 'month' | 'year' | 'time' | 'iso') {
   const opts: Record<string, Intl.DateTimeFormatOptions> = {
     weekday: { weekday: 'long' },
     day: { day: '2-digit' },
@@ -13,9 +14,71 @@ function fmt(d: Date, kind: 'weekday' | 'day' | 'month' | 'year' | 'time' | 'iso
     year: { year: 'numeric' },
     time: { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false },
     iso: { year: 'numeric', month: '2-digit', day: '2-digit' },
-    mday: { month: 'short', day: 'numeric' },
   };
   return new Intl.DateTimeFormat('en-US', opts[kind]).format(d);
+}
+
+function Sidebar() {
+  const sections = [
+    {
+      head: 'i.', label: 'Editions', items: [
+        { Icon: Home, name: 'Today', active: true },
+        { Icon: FileText, name: 'Docket', n: 5 },
+        { Icon: Newspaper, name: 'Almanac' },
+        { Icon: Compass, name: 'Chapters', n: 4 },
+      ],
+    },
+    {
+      head: 'ii.', label: 'Library', items: [
+        { Icon: BookOpen, name: 'Reading' },
+        { Icon: Library, name: 'Archive' },
+        { Icon: Bookmark, name: 'Marginalia' },
+      ],
+    },
+    {
+      head: 'iii.', label: 'Correspondence', items: [
+        { Icon: Mail, name: 'Letters', n: 3 },
+        { Icon: Inbox, name: 'Bulletins', n: 4 },
+      ],
+    },
+  ];
+  return (
+    <aside className="w-60 shrink-0 bg-[#f3f0e8] border-r-4 border-double border-black flex flex-col">
+      <div className="p-6 border-b border-black">
+        <div className="text-[9px] tracking-[0.4em] uppercase text-neutral-500">Vol. xii</div>
+        <div className="font-['Cormorant_Garamond'] italic text-2xl leading-tight">The Quiet Ledger</div>
+        <div className="text-[9px] tracking-[0.4em] uppercase text-neutral-500 mt-1">— a daily reader —</div>
+      </div>
+      <nav className="flex-1 p-4 space-y-5">
+        {sections.map(sec => (
+          <div key={sec.label}>
+            <div className="flex items-baseline gap-2 mb-2 px-2">
+              <span className="font-['Cormorant_Garamond'] italic text-neutral-500">{sec.head}</span>
+              <span className="text-[9px] tracking-[0.4em] uppercase text-neutral-500">{sec.label}</span>
+            </div>
+            <div className="space-y-px">
+              {sec.items.map(({ Icon, name, n, active }: any) => (
+                <button key={name} className={`w-full flex items-center gap-3 px-3 py-2 text-left transition border-l-2
+                  ${active ? 'bg-black text-white border-black' : 'border-transparent text-neutral-800 hover:border-black hover:bg-white/60'}`}>
+                  <Icon size={14} strokeWidth={1.5} />
+                  <span className="flex-1 font-['Cormorant_Garamond'] text-base">{name}</span>
+                  {n && <span className={`text-[9px] tracking-[0.3em] uppercase ${active ? 'text-neutral-400' : 'text-neutral-500'}`}>{String(n).padStart(2,'0')}</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </nav>
+      <div className="p-4 m-3 border border-black">
+        <div className="text-[9px] tracking-[0.4em] uppercase text-neutral-500">The reader</div>
+        <div className="font-['Cormorant_Garamond'] text-xl leading-tight mt-1">M. Hartley</div>
+        <div className="text-[9px] tracking-[0.3em] uppercase text-neutral-500 mt-1">Day 047 · 12-day streak</div>
+      </div>
+      <button className="m-3 flex items-center gap-2 px-3 py-2 text-neutral-700 text-[10px] tracking-[0.4em] uppercase font-['JetBrains_Mono']">
+        <Settings size={12} strokeWidth={1.5} /> Preferences
+      </button>
+    </aside>
+  );
 }
 
 function Masthead() {
@@ -198,6 +261,46 @@ function DateCard() {
   );
 }
 
+function TimelineCard() {
+  const blocks = [
+    { h: '07:00', l: 'Slow waking · tea', cat: 'Care', done: true },
+    { h: '08:30', l: 'Morning pages · journal', cat: 'Reflect', done: true },
+    { h: '11:00', l: 'A walk through Hyde Park', cat: 'Move', done: true },
+    { h: '14:00', l: 'Drafting · Hartley proposal', cat: 'Write', now: true },
+    { h: '16:30', l: 'Reading hour · Dillard', cat: 'Read' },
+    { h: '17:30', l: 'Tea with Soren · no devices', cat: 'Care' },
+    { h: '21:00', l: 'Evening pages · three pages', cat: 'Reflect' },
+  ];
+  return (
+    <div className="border border-black bg-[#fafaf7]">
+      <div className="border-b border-black p-4 flex items-center justify-between">
+        <div className="flex items-baseline gap-4">
+          <span className="font-['Cormorant_Garamond'] italic text-xl">ii.</span>
+          <h3 className="font-['Cormorant_Garamond'] text-2xl">A day in measured hours</h3>
+        </div>
+        <span className="text-[10px] tracking-[0.4em] uppercase font-['JetBrains_Mono'] text-neutral-500">Now · 14:42</span>
+      </div>
+      <div className="p-6 grid grid-cols-[80px_1fr] gap-x-5">
+        {blocks.map((b, i) => (
+          <div key={i} className="contents">
+            <div className="text-right pr-3 pt-1 font-['JetBrains_Mono'] text-[11px] text-neutral-500 tabular-nums">{b.h}</div>
+            <div className={`relative pb-4 pl-5 border-l border-black ${i === blocks.length - 1 ? 'pb-0' : ''}`}>
+              <div className={`absolute -left-[5px] top-1 h-2.5 w-2.5 ${b.now ? 'bg-black ring-4 ring-neutral-300' : b.done ? 'bg-black' : 'bg-[#fafaf7] border border-black'}`} />
+              <div className={`flex items-center justify-between border-b border-neutral-200 pb-3 ${b.now ? '-mx-3 px-3 py-2 bg-neutral-100 border-l-2 border-l-black' : ''}`}>
+                <div>
+                  <div className={`font-['Cormorant_Garamond'] text-lg ${b.done ? 'line-through text-neutral-400' : 'text-black'}`}>{b.l}</div>
+                  {b.now && <div className="text-[10px] tracking-[0.4em] uppercase font-['JetBrains_Mono'] mt-1">— in hand —</div>}
+                </div>
+                <span className="text-[10px] tracking-[0.4em] uppercase font-['JetBrains_Mono'] text-neutral-500">{b.cat}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Docket() {
   const items = [
     { id: '01', t: 'Read · chapter on attention', cat: 'Mind',  dur: '00:42', done: true },
@@ -219,7 +322,7 @@ function Docket() {
           </tr>
         </thead>
         <tbody>
-          {items.map((it, i) => (
+          {items.map((it) => (
             <tr key={it.id} className={`border-b border-neutral-200 hover:bg-neutral-50 ${it.now ? 'bg-neutral-100' : ''}`}>
               <td className="p-4 font-['JetBrains_Mono'] text-xs text-neutral-500 tabular-nums">{it.id}</td>
               <td className="p-4">
@@ -254,7 +357,6 @@ function Stats() {
   const max = Math.max(...week);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-px bg-black border border-black">
-      {/* Sparkline */}
       <div className="lg:col-span-2 bg-[#fafaf7] p-8">
         <div className="flex items-end justify-between mb-6">
           <div>
@@ -279,7 +381,6 @@ function Stats() {
         </div>
       </div>
 
-      {/* Summary */}
       <div className="bg-[#fafaf7] p-8 flex flex-col">
         <div className="text-[10px] tracking-[0.4em] uppercase font-['JetBrains_Mono'] text-neutral-500">iv.b</div>
         <h3 className="font-['Cormorant_Garamond'] text-2xl mb-4">A brief summary</h3>
@@ -304,10 +405,48 @@ function Stats() {
   );
 }
 
+function MoodLedger() {
+  const days = [
+    { d: 'M', m: 'Bright',   v: 0.7 },
+    { d: 'T', m: 'Steady',   v: 0.6 },
+    { d: 'W', m: 'Drifting', v: 0.45 },
+    { d: 'T', m: 'Clear',    v: 0.85 },
+    { d: 'F', m: 'Spirited', v: 0.95 },
+    { d: 'S', m: 'Quiet',    v: 0.6 },
+    { d: 'S', m: 'Settled',  v: 0.75 },
+  ];
+  return (
+    <div className="border border-black bg-[#fafaf7] p-8">
+      <div className="flex items-end justify-between mb-4">
+        <div>
+          <div className="text-[10px] tracking-[0.4em] uppercase font-['JetBrains_Mono'] text-neutral-500">iv.c</div>
+          <h3 className="font-['Cormorant_Garamond'] text-xl">Mood ledger</h3>
+        </div>
+        <span className="text-[10px] tracking-[0.4em] uppercase font-['JetBrains_Mono'] text-neutral-500">a private measure</span>
+      </div>
+      <svg viewBox="0 0 280 100" className="w-full h-24">
+        <line x1="0" y1="50" x2="280" y2="50" stroke="#d1cfc4" strokeDasharray="2 4" />
+        <polyline fill="none" stroke="#000" strokeWidth="1.5"
+          points={days.map((p, i) => `${(i / 6) * 280},${100 - p.v * 90}`).join(' ')} />
+        {days.map((p, i) => (
+          <circle key={i} cx={(i / 6) * 280} cy={100 - p.v * 90} r="2.5" fill="#000" />
+        ))}
+      </svg>
+      <div className="grid grid-cols-7 mt-2 text-center text-[10px] tracking-[0.3em] uppercase font-['JetBrains_Mono']">
+        {days.map((p, i) => (
+          <div key={i}>
+            <div className="text-neutral-500">{p.d}</div>
+            <div className="font-['Cormorant_Garamond'] normal-case tracking-normal text-base text-black mt-0.5">{p.m}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Editorial() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-px bg-black border border-black">
-      {/* AI counsel */}
       <div className="lg:col-span-2 bg-[#fafaf7] p-10 grid grid-cols-12 gap-6">
         <div className="col-span-2">
           <div className="text-[10px] tracking-[0.4em] uppercase font-['JetBrains_Mono'] text-neutral-500">v.</div>
@@ -329,7 +468,6 @@ function Editorial() {
         </div>
       </div>
 
-      {/* Aphorism */}
       <div className="bg-black text-white p-10 flex flex-col justify-between">
         <div>
           <div className="text-[10px] tracking-[0.4em] uppercase font-['JetBrains_Mono'] text-neutral-400">vi.</div>
@@ -391,6 +529,129 @@ function Chapters() {
   );
 }
 
+function Library() {
+  const books = [
+    { t: 'Pilgrim at Tinker Creek', a: 'Annie Dillard', pct: 64, since: 'p. 142 of 282' },
+    { t: 'Letters to a Young Poet', a: 'R. M. Rilke', pct: 28, since: 'p. 32 of 116' },
+    { t: 'The Art of Stillness', a: 'Pico Iyer', pct: 92, since: 'p. 86 of 96' },
+  ];
+  return (
+    <div className="border border-black bg-[#fafaf7]">
+      <div className="border-b border-black p-4 flex items-center justify-between">
+        <div className="flex items-baseline gap-4">
+          <span className="font-['Cormorant_Garamond'] italic text-xl">viii.</span>
+          <h3 className="font-['Cormorant_Garamond'] text-2xl">From the library · currently open</h3>
+        </div>
+        <span className="text-[10px] tracking-[0.4em] uppercase font-['JetBrains_Mono'] text-neutral-500">3 volumes</span>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 divide-x divide-neutral-200">
+        {books.map(b => (
+          <div key={b.t} className="p-6 group cursor-pointer hover:bg-neutral-50">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <div className="text-[10px] tracking-[0.4em] uppercase font-['JetBrains_Mono'] text-neutral-500">A volume</div>
+                <div className="font-['Cormorant_Garamond'] text-2xl leading-tight italic mt-1">{b.t}</div>
+                <div className="text-[11px] tracking-[0.3em] uppercase font-['JetBrains_Mono'] text-neutral-500 mt-1">— {b.a} —</div>
+              </div>
+              <Bookmark size={14} strokeWidth={1.5} className="text-neutral-400" />
+            </div>
+            <div className="mt-4 h-px bg-neutral-300 relative">
+              <div className="absolute inset-y-0 left-0 bg-black" style={{ width: `${b.pct}%` }} />
+            </div>
+            <div className="flex items-center justify-between mt-2 text-[10px] tracking-[0.3em] uppercase font-['JetBrains_Mono'] text-neutral-500 tabular-nums">
+              <span>{b.pct}%</span>
+              <span>{b.since}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Almanac() {
+  const items = [
+    { l: 'On this day · 2025', t: 'Began the Hartley correspondence' },
+    { l: 'Sunrise · sunset', t: '06:14 · 19:42 · 13h 28m of daylight' },
+    { l: 'Forecast', t: 'Wed clear · Thu showers · Fri mild' },
+    { l: 'In the garden', t: 'Tulips opening · plant basil this week' },
+  ];
+  return (
+    <div className="border border-black bg-[#fafaf7] p-7">
+      <div className="flex items-end justify-between mb-4">
+        <div>
+          <div className="text-[10px] tracking-[0.4em] uppercase font-['JetBrains_Mono'] text-neutral-500">ix.</div>
+          <h3 className="font-['Cormorant_Garamond'] text-2xl">Almanac</h3>
+        </div>
+        <Wind size={14} strokeWidth={1.2} className="text-neutral-400" />
+      </div>
+      <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+        {items.map(it => (
+          <div key={it.l} className="border-b border-neutral-200 pb-3">
+            <div className="text-[10px] tracking-[0.4em] uppercase font-['JetBrains_Mono'] text-neutral-500">{it.l}</div>
+            <div className="font-['Cormorant_Garamond'] text-base mt-1 leading-snug">{it.t}</div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-5 grid grid-cols-5 gap-2">
+        {[
+          { d: 'Tue', t: 14, Icon: CloudSun },
+          { d: 'Wed', t: 16, Icon: Sun },
+          { d: 'Thu', t: 12, Icon: CloudRain },
+          { d: 'Fri', t: 15, Icon: CloudSun },
+          { d: 'Sat', t: 18, Icon: Sun },
+        ].map((w, i) => (
+          <div key={i} className={`border ${i === 0 ? 'border-black bg-black text-white' : 'border-neutral-300'} p-2 text-center`}>
+            <div className="text-[9px] tracking-[0.3em] uppercase font-['JetBrains_Mono'] opacity-80">{w.d}</div>
+            <w.Icon size={16} className="mx-auto my-1" strokeWidth={1.2} />
+            <div className="font-['Cormorant_Garamond'] text-lg">{w.t}°</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Correspondence() {
+  const items = [
+    { from: 'S. Lindqvist', subj: 'Tea at five?', body: 'Bring the Rilke if you like — the small one with your notes.', when: 'Today · 11:14', unread: true },
+    { from: 'L. Hartley', subj: 'On Thursday', body: 'Looking forward to your draft. I have set aside the morning to read.', when: 'Today · 09:02', unread: true },
+    { from: 'Garden Society', subj: 'Spring planting evening', body: 'Members are invited to the May 4 evening at the Conservatory.', when: 'Yesterday', unread: false },
+  ];
+  return (
+    <div className="border border-black bg-[#fafaf7]">
+      <div className="border-b border-black p-4 flex items-center justify-between">
+        <div className="flex items-baseline gap-4">
+          <span className="font-['Cormorant_Garamond'] italic text-xl">x.</span>
+          <h3 className="font-['Cormorant_Garamond'] text-2xl">Correspondence</h3>
+        </div>
+        <span className="text-[10px] tracking-[0.4em] uppercase font-['JetBrains_Mono'] text-neutral-500">2 unopened</span>
+      </div>
+      <ul>
+        {items.map((m, i) => (
+          <li key={i} className="grid grid-cols-12 gap-4 p-5 border-b border-neutral-200 hover:bg-neutral-50 cursor-pointer last:border-0">
+            <div className="col-span-3">
+              <div className="font-['Cormorant_Garamond'] text-lg flex items-center gap-2">
+                {m.unread && <span className="h-1.5 w-1.5 rounded-full bg-black" />}
+                {m.from}
+              </div>
+              <div className="text-[10px] tracking-[0.4em] uppercase font-['JetBrains_Mono'] text-neutral-500 mt-1">{m.when}</div>
+            </div>
+            <div className="col-span-9">
+              <div className="font-['Cormorant_Garamond'] text-lg italic">{m.subj}</div>
+              <div className="font-['Cormorant_Garamond'] text-base text-neutral-700 leading-snug mt-1">{m.body}</div>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className="border-t border-black p-4 flex items-center justify-between">
+        <button className="text-[10px] tracking-[0.4em] uppercase font-['JetBrains_Mono']">Compose a letter</button>
+        <ArrowRight size={12} />
+      </div>
+    </div>
+  );
+}
+
 function QuickCapture() {
   return (
     <div className="border border-black bg-black text-white p-5 flex items-center gap-4">
@@ -406,8 +667,9 @@ function QuickCapture() {
 
 export function ZenMonochrome() {
   return (
-    <div className="min-h-screen bg-[#fafaf7] text-black font-['JetBrains_Mono']">
-      <div className="max-w-6xl mx-auto px-12 py-10 space-y-10">
+    <div className="min-h-screen flex bg-[#fafaf7] text-black font-['JetBrains_Mono']">
+      <Sidebar />
+      <main className="flex-1 px-12 py-10 space-y-10 overflow-x-hidden">
         <Masthead />
 
         <section>
@@ -419,13 +681,23 @@ export function ZenMonochrome() {
         </section>
 
         <section>
+          <SectionHead roman="II" title="Today's procession" sub="A measured day" />
+          <TimelineCard />
+        </section>
+
+        <section>
           <SectionHead roman="III" title="The day's docket" sub="2 of 5 settled" />
           <Docket />
         </section>
 
         <section>
           <SectionHead roman="IV" title="A brief almanac" sub="Week 17 · Q2" />
-          <Stats />
+          <div className="space-y-px bg-black border border-black">
+            <Stats />
+          </div>
+          <div className="mt-6">
+            <MoodLedger />
+          </div>
         </section>
 
         <section>
@@ -439,7 +711,22 @@ export function ZenMonochrome() {
         </section>
 
         <section>
-          <SectionHead roman="VIII" title="A passing thought" />
+          <SectionHead roman="VIII" title="From the library" sub="Currently open" />
+          <Library />
+        </section>
+
+        <section>
+          <SectionHead roman="IX" title="Almanac & weather" sub="Notes for the week" />
+          <Almanac />
+        </section>
+
+        <section>
+          <SectionHead roman="X" title="Correspondence" sub="Unopened first" />
+          <Correspondence />
+        </section>
+
+        <section>
+          <SectionHead roman="XI" title="A passing thought" />
           <QuickCapture />
         </section>
 
@@ -448,7 +735,7 @@ export function ZenMonochrome() {
           <span className="text-[10px] tracking-[0.4em] uppercase text-neutral-500">Turn the page in the margin to continue.</span>
           <span className="text-[10px] tracking-[0.4em] uppercase text-neutral-500">p. 047</span>
         </footer>
-      </div>
+      </main>
     </div>
   );
 }

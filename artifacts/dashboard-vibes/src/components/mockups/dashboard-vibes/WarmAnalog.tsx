@@ -3,16 +3,17 @@ import { useEffect, useState } from 'react';
 import {
   Calendar as CalendarIcon, Feather, Sun, BookOpen, Sparkles, Coffee, Droplet, Leaf,
   Play, Pause, Plus, Check, ChevronRight, Quote, Cloud, Moon, Wind, Brain, NotebookPen,
+  Home, ListChecks, Compass, Library, Settings, Bell, Mail, MessageCircle, Heart,
+  Sunrise, CloudRain, CloudSun, Bookmark, Users, Search, ArrowUpRight,
 } from 'lucide-react';
 
-function fmt(d: Date, kind: 'weekday' | 'day' | 'month' | 'time' | 'date' | 'short') {
+function fmt(d: Date, kind: 'weekday' | 'day' | 'month' | 'time' | 'date') {
   const opts: Record<string, Intl.DateTimeFormatOptions> = {
     weekday: { weekday: 'long' },
     day: { day: 'numeric' },
     month: { month: 'long', year: 'numeric' },
     time: { hour: '2-digit', minute: '2-digit', hour12: true },
     date: { weekday: 'long', month: 'long', day: 'numeric' },
-    short: { month: 'short', day: 'numeric' },
   };
   return new Intl.DateTimeFormat('en-US', opts[kind]).format(d);
 }
@@ -20,30 +21,89 @@ function fmt(d: Date, kind: 'weekday' | 'day' | 'month' | 'time' | 'date' | 'sho
 const intentions = [
   { id: 1, text: 'Finish the chapter on attention', tag: 'Read', done: true, time: '08:30' },
   { id: 2, text: 'A long walk through the park', tag: 'Move', done: true, time: '11:00' },
-  { id: 3, text: 'Draft the proposal for L. Hartley', tag: 'Write', done: false, time: '14:00' },
+  { id: 3, text: 'Draft the proposal for L. Hartley', tag: 'Write', done: false, time: '14:00', now: true },
   { id: 4, text: 'Tea with Soren, no phones', tag: 'Care', done: false, time: '17:30' },
   { id: 5, text: 'Three pages of evening journal', tag: 'Reflect', done: false, time: '21:00' },
 ];
 
 const habits = [
-  { name: 'Read', icon: BookOpen, value: 42, goal: 60, unit: 'min' },
-  { name: 'Water', icon: Droplet, value: 5, goal: 8, unit: 'cups' },
-  { name: 'Walk', icon: Leaf, value: 3.2, goal: 5, unit: 'km' },
-  { name: 'Sleep', icon: Moon, value: 7.4, goal: 8, unit: 'hr' },
+  { name: 'Read', icon: BookOpen, value: 42, goal: 60 },
+  { name: 'Water', icon: Droplet, value: 5, goal: 8 },
+  { name: 'Walk', icon: Leaf, value: 3.2, goal: 5 },
+  { name: 'Sleep', icon: Moon, value: 7.4, goal: 8 },
 ];
 
-function Section({ roman, title, hint, children }: any) {
+function Sidebar() {
+  const items = [
+    { Icon: Home, name: 'Today', active: true },
+    { Icon: ListChecks, name: 'Intentions', n: 3 },
+    { Icon: Compass, name: 'Chapters' },
+    { Icon: NotebookPen, name: 'Journal' },
+    { Icon: Library, name: 'Library', n: 12 },
+    { Icon: Heart, name: 'Practices' },
+    { Icon: Users, name: 'Companions' },
+    { Icon: Bell, name: 'Bulletins', n: 4 },
+  ];
   return (
-    <section>
-      <div className="flex items-end justify-between mb-5 pb-3 border-b border-stone-300/60">
-        <div className="flex items-baseline gap-4">
-          <span className="font-['Fraunces'] italic text-[#a8482b] text-2xl">{roman}.</span>
-          <h2 className="font-['Fraunces'] text-2xl text-stone-800">{title}</h2>
+    <aside className="w-60 shrink-0 bg-[#efe2c8] border-r border-stone-300/70 flex flex-col">
+      <div className="p-6 border-b border-stone-300/70">
+        <div className="flex items-center gap-2">
+          <div className="h-9 w-9 rounded-full bg-[#a8482b] text-[#f5ead4] flex items-center justify-center">
+            <Feather size={16} strokeWidth={1.5} />
+          </div>
+          <div>
+            <div className="font-['Fraunces'] text-stone-800 text-lg leading-none">Zenith</div>
+            <div className="text-[10px] tracking-[0.3em] uppercase text-stone-500 font-['Inter']">A Daily Reader</div>
+          </div>
         </div>
-        {hint && <span className="text-[10px] tracking-[0.35em] uppercase text-stone-500 font-['Inter']">{hint}</span>}
       </div>
-      {children}
-    </section>
+      <nav className="flex-1 p-3 space-y-1">
+        {items.map(({ Icon, name, n, active }) => (
+          <button key={name} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition
+            ${active ? 'bg-[#a8482b] text-[#f5ead4]' : 'text-stone-700 hover:bg-white/50'}`}>
+            <Icon size={16} strokeWidth={1.5} />
+            <span className="flex-1 font-['Fraunces'] italic">{name}</span>
+            {n && <span className={`text-[10px] font-['Inter'] font-semibold ${active ? 'bg-[#f5ead4]/20 text-[#f5ead4]' : 'bg-[#a8482b]/15 text-[#a8482b]'} px-2 py-0.5 rounded-full`}>{n}</span>}
+          </button>
+        ))}
+      </nav>
+      <div className="p-4 m-3 rounded-2xl bg-[#a8482b]/8 border border-stone-300/60">
+        <div className="flex items-center gap-2 text-[10px] tracking-[0.35em] uppercase text-stone-600 font-['Inter']">
+          <Sparkles size={12} className="text-[#a8482b]" />
+          The reader
+        </div>
+        <div className="font-['Fraunces'] text-stone-800 mt-1">Maya Hartley</div>
+        <div className="text-[11px] text-stone-500 font-['Fraunces'] italic">Day 047 · Vol. xii</div>
+      </div>
+      <button className="m-3 flex items-center gap-2 px-3 py-2 text-stone-600 hover:text-[#a8482b]">
+        <Settings size={14} strokeWidth={1.5} />
+        <span className="font-['Fraunces'] italic">Preferences</span>
+      </button>
+    </aside>
+  );
+}
+
+function TopBar() {
+  return (
+    <div className="flex items-center justify-between gap-4 mb-8">
+      <div className="text-[11px] tracking-[0.4em] uppercase font-['Inter'] text-stone-500">
+        ✦ A quiet Tuesday — Apr 21, 2026
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+          <input readOnly defaultValue="Search the archive…" className="pl-9 pr-12 py-2 rounded-full bg-white/60 border border-stone-300/60 font-['Fraunces'] italic text-sm text-stone-700 w-64 outline-none" />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-['Inter'] text-stone-400">⌘K</span>
+        </div>
+        <button className="h-9 w-9 rounded-full bg-white/60 border border-stone-300/60 flex items-center justify-center text-stone-600 relative">
+          <Bell size={14} strokeWidth={1.5} />
+          <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 text-[9px] bg-[#a8482b] text-[#f5ead4] rounded-full flex items-center justify-center font-bold">4</span>
+        </button>
+        <button className="h-9 w-9 rounded-full bg-white/60 border border-stone-300/60 flex items-center justify-center text-stone-600">
+          <Mail size={14} strokeWidth={1.5} />
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -72,10 +132,10 @@ function WelcomeHeader() {
       </div>
 
       <div className="flex items-stretch gap-4">
-        <div className="px-5 py-3 rounded-2xl bg-white/60 border border-stone-300/60 backdrop-blur-sm">
-          <div className="text-[10px] tracking-[0.3em] uppercase text-stone-500 font-['Inter']">Weather</div>
+        <div className="px-5 py-3 rounded-2xl bg-white/60 border border-stone-300/60">
+          <div className="text-[10px] tracking-[0.3em] uppercase text-stone-500 font-['Inter']">Today</div>
           <div className="flex items-center gap-2 mt-1">
-            <Cloud size={18} className="text-stone-500" strokeWidth={1.5} />
+            <CloudSun size={18} className="text-stone-500" strokeWidth={1.5} />
             <span className="font-['Fraunces'] text-2xl text-stone-800">14°</span>
             <span className="text-stone-500 italic font-['Fraunces']">overcast</span>
           </div>
@@ -86,6 +146,21 @@ function WelcomeHeader() {
         </div>
       </div>
     </header>
+  );
+}
+
+function Section({ roman, title, hint, children }: any) {
+  return (
+    <section>
+      <div className="flex items-end justify-between mb-5 pb-3 border-b border-stone-300/60">
+        <div className="flex items-baseline gap-4">
+          <span className="font-['Fraunces'] italic text-[#a8482b] text-2xl">{roman}.</span>
+          <h2 className="font-['Fraunces'] text-2xl text-stone-800">{title}</h2>
+        </div>
+        {hint && <span className="text-[10px] tracking-[0.35em] uppercase text-stone-500 font-['Inter']">{hint}</span>}
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -191,6 +266,48 @@ function DateCard() {
   );
 }
 
+function TimelineCard() {
+  const blocks = [
+    { h: 7, label: 'Slow waking + tea', tag: 'Care', filled: true },
+    { h: 9, label: 'Morning pages · journal', tag: 'Reflect', filled: true },
+    { h: 11, label: 'Walk through Hyde Park', tag: 'Move', filled: true },
+    { h: 14, label: 'Drafting · Hartley proposal', tag: 'Write', now: true },
+    { h: 16, label: 'Tea + reading hour', tag: 'Read' },
+    { h: 18, label: 'Tea with Soren', tag: 'Care' },
+    { h: 21, label: 'Evening pages', tag: 'Reflect' },
+  ];
+  return (
+    <div className="rounded-[28px] bg-white/60 border border-stone-300/60 p-8">
+      <div className="flex items-end justify-between mb-6">
+        <div>
+          <div className="text-[10px] tracking-[0.35em] uppercase text-stone-500 font-['Inter']">A day in measured hours</div>
+          <h3 className="font-['Fraunces'] text-2xl italic text-stone-800 mt-1">Today's procession</h3>
+        </div>
+        <span className="text-[10px] tracking-widest uppercase text-stone-500 font-['Inter']">Now · 14:42</span>
+      </div>
+      <div className="grid grid-cols-[60px_1fr] gap-x-5">
+        {blocks.map((b, i) => (
+          <div key={i} className="contents">
+            <div className="text-right pr-2 pt-1 font-['Fraunces'] italic text-stone-500 text-sm tabular-nums">
+              {String(b.h).padStart(2,'0')}:00
+            </div>
+            <div className={`relative pb-5 pl-5 border-l-2 ${b.now ? 'border-[#a8482b]' : 'border-stone-300'}`}>
+              <div className={`absolute -left-1.5 top-2 h-3 w-3 rounded-full ${b.now ? 'bg-[#a8482b] ring-4 ring-[#a8482b]/20' : b.filled ? 'bg-[#a8482b]' : 'bg-stone-300'}`} />
+              <div className={`p-3 rounded-xl ${b.now ? 'bg-[#a8482b]/10 border border-[#a8482b]/30' : 'bg-stone-50 border border-stone-200'}`}>
+                <div className="flex items-center justify-between">
+                  <span className={`font-['Fraunces'] ${b.filled ? 'text-stone-400 line-through' : 'text-stone-800'}`}>{b.label}</span>
+                  <span className="text-[10px] uppercase tracking-widest font-['Inter'] text-[#a8482b] bg-[#a8482b]/10 px-2 py-0.5 rounded-full">{b.tag}</span>
+                </div>
+                {b.now && <div className="text-xs text-[#a8482b] italic font-['Fraunces'] mt-1">— in hand · 18 minutes remain in this stretch —</div>}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function IntentionsCard() {
   const done = intentions.filter(i => i.done).length;
   return (
@@ -207,9 +324,10 @@ function IntentionsCard() {
       </div>
       <ul className="space-y-3">
         {intentions.map(it => (
-          <li key={it.id} className="flex items-center gap-4 group">
-            <button className={`h-6 w-6 rounded-full border ${it.done ? 'bg-[#a8482b] border-[#a8482b] text-[#f5ead4]' : 'border-stone-400'} flex items-center justify-center shrink-0`}>
+          <li key={it.id} className={`flex items-center gap-4 group ${it.now ? 'p-2 -mx-2 rounded-lg bg-[#a8482b]/5 ring-1 ring-[#a8482b]/15' : ''}`}>
+            <button className={`h-6 w-6 rounded-full border ${it.done ? 'bg-[#a8482b] border-[#a8482b] text-[#f5ead4]' : it.now ? 'border-[#a8482b]' : 'border-stone-400'} flex items-center justify-center shrink-0`}>
               {it.done && <Check size={14} strokeWidth={2.5} />}
+              {it.now && <span className="h-2 w-2 rounded-full bg-[#a8482b] animate-pulse" />}
             </button>
             <span className={`flex-1 font-['Fraunces'] text-lg ${it.done ? 'line-through text-stone-400' : 'text-stone-800'}`}>
               {it.text}
@@ -250,42 +368,90 @@ function HabitRing({ value, goal, name, Icon }: any) {
   );
 }
 
-function HabitsAndArc() {
-  const week = [0.4, 0.6, 0.5, 0.8, 0.9, 0.7, 0.55];
+function MoodArc() {
+  const days = [
+    { d: 'M', mood: 0.6, e: 0.5 },
+    { d: 'T', mood: 0.7, e: 0.7 },
+    { d: 'W', mood: 0.5, e: 0.4 },
+    { d: 'T', mood: 0.8, e: 0.85 },
+    { d: 'F', mood: 0.9, e: 0.7 },
+    { d: 'S', mood: 0.65, e: 0.6 },
+    { d: 'S', mood: 0.75, e: 0.55 },
+  ];
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2 rounded-[28px] bg-white/60 border border-stone-300/60 p-8">
-        <div className="flex items-end justify-between mb-6">
-          <div>
-            <div className="text-[10px] tracking-[0.35em] uppercase text-stone-500 font-['Inter']">A small ritual</div>
-            <h3 className="font-['Fraunces'] text-2xl text-stone-800 italic mt-1">The four practices</h3>
-          </div>
-          <span className="text-[10px] uppercase tracking-widest text-stone-500 font-['Inter']">12-day streak</span>
+    <div className="rounded-[28px] bg-[#f3ead9] border border-stone-300/60 p-8">
+      <div className="flex items-end justify-between mb-4">
+        <div>
+          <div className="text-[10px] tracking-[0.35em] uppercase text-stone-500 font-['Inter']">A quiet measure</div>
+          <h3 className="font-['Fraunces'] text-xl text-stone-800 italic mt-1">Mood & energy this week</h3>
         </div>
-        <div className="grid grid-cols-4 gap-4">
-          {habits.map(h => <HabitRing key={h.name} {...h} Icon={h.icon} />)}
+        <span className="text-[10px] uppercase tracking-widest text-stone-500 font-['Inter']">7-day arc</span>
+      </div>
+      <svg viewBox="0 0 280 100" className="w-full h-28">
+        <polyline fill="none" stroke="#a8482b" strokeWidth="1.5"
+          points={days.map((p, i) => `${(i / 6) * 280},${100 - p.mood * 80}`).join(' ')} />
+        <polyline fill="none" stroke="#57361e" strokeOpacity="0.4" strokeWidth="1.5" strokeDasharray="3 3"
+          points={days.map((p, i) => `${(i / 6) * 280},${100 - p.e * 80}`).join(' ')} />
+        {days.map((p, i) => (
+          <circle key={i} cx={(i / 6) * 280} cy={100 - p.mood * 80} r="3" fill="#a8482b" />
+        ))}
+      </svg>
+      <div className="flex justify-between mt-1 text-[10px] uppercase tracking-widest text-stone-500 font-['Inter']">
+        {days.map(p => <span key={p.d}>{p.d}</span>)}
+      </div>
+      <div className="flex items-center gap-4 mt-3 text-[10px] uppercase tracking-widest text-stone-500 font-['Inter']">
+        <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 bg-[#a8482b]" /> mood</span>
+        <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 border-t border-dashed border-stone-700" /> energy</span>
+      </div>
+    </div>
+  );
+}
+
+function HabitsCard() {
+  return (
+    <div className="rounded-[28px] bg-white/60 border border-stone-300/60 p-8">
+      <div className="flex items-end justify-between mb-6">
+        <div>
+          <div className="text-[10px] tracking-[0.35em] uppercase text-stone-500 font-['Inter']">A small ritual</div>
+          <h3 className="font-['Fraunces'] text-2xl text-stone-800 italic mt-1">The four practices</h3>
+        </div>
+        <span className="text-[10px] uppercase tracking-widest text-stone-500 font-['Inter']">12-day streak</span>
+      </div>
+      <div className="grid grid-cols-4 gap-4">
+        {habits.map(h => <HabitRing key={h.name} {...h} Icon={h.icon} />)}
+      </div>
+    </div>
+  );
+}
+
+function WeatherCard() {
+  const days = [
+    { d: 'Today', t: 14, Icon: CloudSun, sky: 'overcast' },
+    { d: 'Wed', t: 16, Icon: Sun, sky: 'clear' },
+    { d: 'Thu', t: 12, Icon: CloudRain, sky: 'showers' },
+    { d: 'Fri', t: 15, Icon: CloudSun, sky: 'partly' },
+    { d: 'Sat', t: 18, Icon: Sun, sky: 'clear' },
+  ];
+  return (
+    <div className="rounded-[28px] bg-[#fff8ea] border border-stone-300/60 p-8">
+      <div className="flex items-end justify-between mb-5">
+        <div>
+          <div className="text-[10px] tracking-[0.35em] uppercase text-stone-500 font-['Inter']">From the window</div>
+          <h3 className="font-['Fraunces'] text-xl text-stone-800 italic mt-1">The week's weather</h3>
+        </div>
+        <div className="flex items-center gap-1 text-stone-500 text-[10px] uppercase tracking-widest font-['Inter']">
+          <Sunrise size={12} /> 06:14 · 19:42
         </div>
       </div>
-
-      <div className="rounded-[28px] bg-[#f3ead9] border border-stone-300/60 p-8">
-        <div className="flex items-end justify-between mb-4">
-          <div>
-            <div className="text-[10px] tracking-[0.35em] uppercase text-stone-500 font-['Inter']">A quiet arc</div>
-            <h3 className="font-['Fraunces'] text-xl text-stone-800 italic mt-1">This week</h3>
+      <div className="grid grid-cols-5 gap-2">
+        {days.map((w, i) => (
+          <div key={i} className={`flex flex-col items-center gap-1 p-3 rounded-xl ${i === 0 ? 'bg-[#a8482b]/10 border border-[#a8482b]/20' : ''}`}>
+            <span className="text-[10px] tracking-[0.3em] uppercase text-stone-500 font-['Inter']">{w.d}</span>
+            <w.Icon className="text-[#a8482b]" size={22} strokeWidth={1.5} />
+            <span className="font-['DM_Serif_Display'] text-2xl text-stone-800">{w.t}°</span>
+            <span className="text-[10px] italic font-['Fraunces'] text-stone-500">{w.sky}</span>
           </div>
-          <span className="font-['Fraunces'] text-3xl text-[#a8482b]">+18%</span>
-        </div>
-        <div className="flex items-end gap-2 h-28">
-          {week.map((v, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1">
-              <div className="w-full rounded-t-md bg-[#a8482b]/80" style={{ height: `${v * 100}%` }} />
-              <span className="text-[9px] uppercase tracking-widest text-stone-500 font-['Inter']">{['M','T','W','T','F','S','S'][i]}</span>
-            </div>
-          ))}
-        </div>
-        <p className="mt-4 text-xs text-stone-500 italic font-['Fraunces'] leading-relaxed">
-          Most settled hour: between three and four, with the lamp on.
-        </p>
+        ))}
       </div>
     </div>
   );
@@ -350,6 +516,111 @@ function MuseAndChapters() {
   );
 }
 
+function LibraryCard() {
+  const books = [
+    { t: 'Pilgrim at Tinker Creek', a: 'Annie Dillard', pct: 64, color: '#a8482b' },
+    { t: 'Letters to a Young Poet', a: 'R. M. Rilke', pct: 28, color: '#57361e' },
+    { t: 'The Art of Stillness', a: 'Pico Iyer', pct: 92, color: '#9c6b3f' },
+  ];
+  return (
+    <div className="rounded-[28px] bg-[#efe2c8] border border-stone-300/60 p-8">
+      <div className="flex items-end justify-between mb-6">
+        <div>
+          <div className="text-[10px] tracking-[0.35em] uppercase text-stone-500 font-['Inter']">In the library</div>
+          <h3 className="font-['Fraunces'] text-2xl italic text-stone-800 mt-1">Currently reading</h3>
+        </div>
+        <span className="text-[10px] uppercase tracking-widest text-stone-500 font-['Inter']">3 volumes open</span>
+      </div>
+      <div className="grid grid-cols-3 gap-5">
+        {books.map(b => (
+          <div key={b.t} className="space-y-3">
+            <div className="aspect-[3/4] rounded-md flex items-end p-3 shadow-md relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${b.color}, ${b.color}dd)` }}>
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
+              <div className="absolute top-2 right-2 text-[#f5ead4]/70">
+                <Bookmark size={14} fill="currentColor" />
+              </div>
+              <div className="relative">
+                <div className="text-[#f5ead4] font-['DM_Serif_Display'] text-base leading-tight">{b.t}</div>
+                <div className="text-[#f5ead4]/70 italic font-['Fraunces'] text-[10px] mt-1">{b.a}</div>
+              </div>
+            </div>
+            <div className="h-1 w-full bg-stone-300 rounded-full overflow-hidden">
+              <div className="h-full" style={{ width: `${b.pct}%`, background: b.color }} />
+            </div>
+            <div className="text-[10px] tracking-widest uppercase text-stone-500 font-['Inter'] tabular-nums">{b.pct}% · 18 min today</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CorrespondenceCard() {
+  const items = [
+    { from: 'Soren', preview: 'Tea at five? Bring the Rilke if you like.', when: '11m', unread: true },
+    { from: 'L. Hartley', preview: 'Looking forward to your draft on Thursday.', when: '2h', unread: true },
+    { from: 'Garden Society', preview: 'Spring planting evening · May 4', when: 'Yest', unread: false },
+  ];
+  return (
+    <div className="rounded-[28px] bg-white/60 border border-stone-300/60 p-8">
+      <div className="flex items-end justify-between mb-5">
+        <div>
+          <div className="text-[10px] tracking-[0.35em] uppercase text-stone-500 font-['Inter']">From the post</div>
+          <h3 className="font-['Fraunces'] text-2xl italic text-stone-800 mt-1">Correspondence</h3>
+        </div>
+        <span className="text-[10px] uppercase tracking-widest text-stone-500 font-['Inter']">2 unopened</span>
+      </div>
+      <ul className="space-y-3">
+        {items.map((m, i) => (
+          <li key={i} className="flex items-start gap-3 group">
+            <div className="h-9 w-9 rounded-full bg-[#a8482b]/10 text-[#a8482b] flex items-center justify-center font-['DM_Serif_Display']">{m.from[0]}</div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-['Fraunces'] text-stone-800">{m.from}</span>
+                {m.unread && <span className="h-1.5 w-1.5 rounded-full bg-[#a8482b]" />}
+                <span className="ml-auto text-[10px] uppercase tracking-widest text-stone-500 font-['Inter']">{m.when}</span>
+              </div>
+              <p className="text-sm font-['Fraunces'] italic text-stone-600 truncate mt-0.5">{m.preview}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <button className="mt-4 w-full text-center text-[10px] uppercase tracking-widest text-stone-500 hover:text-[#a8482b] font-['Inter']">Open the post →</button>
+    </div>
+  );
+}
+
+function BulletinsCard() {
+  const items = [
+    { what: 'Soren replied to your note', when: '11 minutes ago', Icon: MessageCircle },
+    { what: 'Streak quietly extended to 12 days', when: 'this morning', Icon: Sparkles },
+    { what: 'You finished “The Art of Stillness”', when: 'yesterday', Icon: BookOpen },
+    { what: 'Garden Society sent an invitation', when: 'yesterday', Icon: Mail },
+  ];
+  return (
+    <div className="rounded-[28px] bg-stone-800 text-[#f5ead4] p-8">
+      <div className="flex items-end justify-between mb-5">
+        <div>
+          <div className="text-[10px] tracking-[0.35em] uppercase opacity-60 font-['Inter']">From the desk</div>
+          <h3 className="font-['Fraunces'] text-2xl italic mt-1">Quiet bulletins</h3>
+        </div>
+        <span className="text-[10px] uppercase tracking-widest opacity-60 font-['Inter']">last 24 hours</span>
+      </div>
+      <ul className="space-y-3">
+        {items.map((b, i) => (
+          <li key={i} className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-[#f5ead4]/10 flex items-center justify-center">
+              <b.Icon size={14} strokeWidth={1.5} />
+            </div>
+            <span className="font-['Fraunces'] flex-1">{b.what}</span>
+            <span className="text-[10px] uppercase tracking-widest opacity-60 font-['Inter']">{b.when}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function QuickCapture() {
   return (
     <div className="rounded-[28px] bg-stone-800 text-[#f5ead4] p-6 flex items-center gap-4">
@@ -367,8 +638,10 @@ function QuickCapture() {
 
 export function WarmAnalog() {
   return (
-    <div className="min-h-screen bg-[#f5ead4] font-['Inter']" style={{ backgroundImage: 'radial-gradient(circle at 20% 10%, rgba(168,72,43,0.06), transparent 50%), radial-gradient(circle at 80% 80%, rgba(87,54,30,0.05), transparent 50%)' }}>
-      <div className="max-w-6xl mx-auto px-12 py-12 space-y-10">
+    <div className="min-h-screen flex bg-[#f5ead4] font-['Inter']" style={{ backgroundImage: 'radial-gradient(circle at 20% 10%, rgba(168,72,43,0.06), transparent 50%), radial-gradient(circle at 80% 80%, rgba(87,54,30,0.05), transparent 50%)' }}>
+      <Sidebar />
+      <main className="flex-1 px-12 py-10 space-y-10 overflow-x-hidden">
+        <TopBar />
         <WelcomeHeader />
 
         <Section roman="I" title="The hour & the day" hint="Live · pomodoro 3/4">
@@ -378,19 +651,35 @@ export function WarmAnalog() {
           </div>
         </Section>
 
-        <Section roman="II" title="A gentle list" hint="2 of 5 kept">
+        <Section roman="II" title="Today's procession" hint="Now · 14:42">
+          <TimelineCard />
+        </Section>
+
+        <Section roman="III" title="A gentle list" hint="2 of 5 kept">
           <IntentionsCard />
         </Section>
 
-        <Section roman="III" title="Practices & pace" hint="12-day streak">
-          <HabitsAndArc />
+        <Section roman="IV" title="Practices, weather & arc" hint="A measured week">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <HabitsCard />
+            <MoodArc />
+            <WeatherCard />
+          </div>
         </Section>
 
-        <Section roman="IV" title="Counsel & chapters" hint="Curated for you">
+        <Section roman="V" title="Counsel & chapters" hint="Curated for you">
           <MuseAndChapters />
         </Section>
 
-        <Section roman="V" title="A passing thought">
+        <Section roman="VI" title="Library, post & bulletins" hint="On the desk">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <LibraryCard />
+            <CorrespondenceCard />
+            <BulletinsCard />
+          </div>
+        </Section>
+
+        <Section roman="VII" title="A passing thought">
           <QuickCapture />
         </Section>
 
@@ -401,7 +690,7 @@ export function WarmAnalog() {
             Choose a chapter from the margin to continue your day.
           </p>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

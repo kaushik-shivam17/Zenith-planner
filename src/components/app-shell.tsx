@@ -101,10 +101,10 @@ function AppContent({ children }: { children: React.ReactNode }) {
           <SidebarMenu>
             {navItems.map((item) => (
               <SidebarMenuItem key={item.href} onClick={handleLinkClick} className="px-2">
-                <Link href={item.href} className="w-full">
+                <Link href={item.href} prefetch className="w-full" onMouseEnter={() => router.prefetch(item.href)}>
                   <SidebarMenuButton
                     isActive={isActive(item.href)}
-                    className={`w-full transition-all duration-300 ${
+                    className={`w-full transition-colors duration-150 ${
                       isActive(item.href) 
                         ? 'bg-primary/20 text-primary border-r-2 border-primary glow-primary' 
                         : 'hover:bg-primary/5 text-muted-foreground hover:text-primary'

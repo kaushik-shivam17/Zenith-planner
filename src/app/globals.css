@@ -114,22 +114,15 @@
 @supports (view-transition-name: root) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
-    animation-duration: 280ms;
+    animation-duration: 120ms;
     animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    mix-blend-mode: normal;
   }
-  ::view-transition-old(root) {
-    animation-name: zp-fade-out;
-  }
-  ::view-transition-new(root) {
-    animation-name: zp-fade-in;
-  }
+  ::view-transition-old(root) { animation-name: zp-fade-out; }
+  ::view-transition-new(root) { animation-name: zp-fade-in; }
 }
-@keyframes zp-fade-out {
-  to { opacity: 0; transform: translateY(-4px); }
-}
-@keyframes zp-fade-in {
-  from { opacity: 0; transform: translateY(6px); }
-}
+@keyframes zp-fade-out { to { opacity: 0; } }
+@keyframes zp-fade-in  { from { opacity: 0; } }
 
 @layer base {
   body::before {

@@ -1,6 +1,5 @@
 'use server';
 
-import { ai } from '@/ai/genkit';
 import {
   generateStudySchedule,
   type GenerateStudyScheduleOutput,
@@ -33,7 +32,8 @@ import { Timestamp } from 'firebase/firestore';
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string };
 
 const ensureAiReady = (): { ready: boolean; error?: string } => {
-  if (ai.listPlugins().length === 0) {
+  const hasKey = !!(process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY);
+  if (!hasKey) {
     return {
       ready: false,
       error:

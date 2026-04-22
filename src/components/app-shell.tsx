@@ -2,9 +2,7 @@
 
 import {
   BadgeCheck,
-  BrainCircuit,
   Calendar,
-  HeartPulse,
   LayoutDashboard,
   LogIn,
   LogOut,
@@ -38,8 +36,6 @@ const navItems = [
   { href: '/tasks', label: 'Tasks', icon: BadgeCheck },
   { href: '/missions', label: 'Missions', icon: Rocket },
   { href: '/timetable', label: 'Timetable', icon: Calendar },
-  { href: '/focus', label: 'Focus AI', icon: BrainCircuit },
-  { href: '/fitness', label: 'Fitness', icon: HeartPulse },
 ];
 
 function AppContent({ children }: { children: React.ReactNode }) {

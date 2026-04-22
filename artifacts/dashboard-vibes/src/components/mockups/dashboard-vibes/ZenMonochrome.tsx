@@ -2,7 +2,7 @@ import './_group.css';
 import { useEffect, useState } from 'react';
 import {
   Calendar as CalendarIcon, ArrowUpRight, ArrowRight, Play, Pause, Plus, Check,
-  Quote, Minus, ChevronRight, Search, Home, FileText, Library, Compass, Mail,
+  Quote, Minus, ChevronRight, Search, Home, FileText, Library as LibraryIcon, Compass, Mail,
   Settings, Bell, Inbox, BookOpen, Sun, CloudSun, CloudRain, Wind, Bookmark, Newspaper,
 } from 'lucide-react';
 
@@ -31,7 +31,7 @@ function Sidebar() {
     {
       head: 'ii.', label: 'Library', items: [
         { Icon: BookOpen, name: 'Reading' },
-        { Icon: Library, name: 'Archive' },
+        { Icon: LibraryIcon, name: 'Archive' },
         { Icon: Bookmark, name: 'Marginalia' },
       ],
     },

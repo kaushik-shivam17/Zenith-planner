@@ -42,15 +42,96 @@
   * {
     @apply border-border;
   }
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  html, body {
+    overscroll-behavior-y: none;
+  }
   body {
-    @apply bg-background text-foreground;
-    background-image: 
+    @apply bg-background text-foreground antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    background-image:
       linear-gradient(rgba(0, 242, 255, 0.03) 1px, transparent 1px),
       linear-gradient(90deg, rgba(0, 242, 255, 0.03) 1px, transparent 1px);
     background-size: 32px 32px;
     position: relative;
     overflow-x: hidden;
   }
+  ::selection {
+    background: hsl(var(--primary) / 0.35);
+    color: hsl(var(--foreground));
+  }
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring) / 0.7);
+    outline-offset: 2px;
+    border-radius: 4px;
+    transition: outline-offset 0.15s ease-out;
+  }
+  /* Sleeker scrollbars */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.18);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background 0.2s ease;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--primary) / 0.35); background-clip: padding-box; }
+  * { scrollbar-color: hsl(var(--primary) / 0.25) transparent; scrollbar-width: thin; }
+
+  /* Universal smoothness on interactive surfaces */
+  a, button, [role="button"], input, select, textarea, summary {
+    transition:
+      color 0.2s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease,
+      opacity 0.2s ease;
+  }
+  button:not(:disabled):active, [role="button"]:active {
+    transform: translateY(1px) scale(0.99);
+  }
+
+  /* Honor user motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* View Transitions for buttery page navigation */
+@supports (view-transition-name: root) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 280ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  ::view-transition-old(root) {
+    animation-name: zp-fade-out;
+  }
+  ::view-transition-new(root) {
+    animation-name: zp-fade-in;
+  }
+}
+@keyframes zp-fade-out {
+  to { opacity: 0; transform: translateY(-4px); }
+}
+@keyframes zp-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+@layer base {
   body::before {
     content: "";
     position: fixed;

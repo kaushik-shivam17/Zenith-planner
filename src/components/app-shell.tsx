@@ -159,7 +159,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
           </div>
         </SidebarFooter>
       </Sidebar>
-      <main className="min-h-screen p-4 sm:p-6 md:p-8 flex-1">
+      <main className="min-h-screen p-4 sm:p-6 md:p-8 pb-24 md:pb-8 flex-1">
         <div className="max-w-5xl mx-auto">
           <div className="md:hidden mb-4">
             <Header />

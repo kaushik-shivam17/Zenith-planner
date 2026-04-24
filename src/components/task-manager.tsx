@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2, PlusCircle, Terminal, Activity } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/task-form';
-import { TaskList } from '@/components/task-list';
+import { SortableTaskList } from '@/components/sortable-task-list';
 import { useData } from '@/context/data-provider';
 import type { Task } from '@/lib/types';
 
@@ -28,6 +28,12 @@ import type { Task } from '@/lib/types';
 export function TaskManager() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const { tasks, addTask, updateTask, toggleTaskCompletion, isLoading } = useData();
+
+  useEffect(() => {
+    const open = () => setIsAddOpen(true);
+    window.addEventListener('zenith:new-task', open as EventListener);
+    return () => window.removeEventListener('zenith:new-task', open as EventListener);
+  }, []);
 
 
   const handleTaskAdded = async (taskData: Omit<Task, 'id' | 'completed' | 'userId' | 'deadline' | 'roadmap'> & { deadline: Date }) => {
@@ -87,7 +93,7 @@ export function TaskManager() {
            <span className="text-[9px] font-mono tracking-widest text-primary uppercase">Active_Link_Established</span>
         </div>
         
-        <TaskList
+        <SortableTaskList
           tasks={tasks}
           onUpdateTask={(updatedTask) => updateTask(updatedTask.id, updatedTask)}
           onToggleTask={toggleTaskCompletion}
